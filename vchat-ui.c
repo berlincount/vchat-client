@@ -1010,7 +1010,8 @@ initui (void)
 
   /* install signalhandler */
 
-  signal (SIGWINCH, resize);
+  signal(SIGWINCH, resize);
+  signal(SIGCONT, resize);
 
   /* set options */
   keypad (stdscr, TRUE);
