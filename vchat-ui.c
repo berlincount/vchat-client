@@ -343,7 +343,7 @@ int writepriv (unsigned char *str) {
           fprintf( vchat_logfile, "%s1%s\n", date, str);
       }
 
-      if ( (sb_priv->scroll == sb_priv->scroll) &&
+      if ( !privwinhidden && (sb_priv->scroll == sb_priv->scroll) &&
            ((filtertype == 0) || ( testfilter(tmp)))) {
           i = writescr(private, tmp);
       }
@@ -639,7 +639,7 @@ scrolldown (void)
 void
 scrollwin (vod)
 {
-    if (!sb_win && private) sb_win = 1;
+    if (!sb_win && private && !privwinhidden) sb_win = 1;
     else sb_win = 0;
     topicline(NULL);
     consoleline(NULL);
@@ -668,6 +668,8 @@ void toggleprivwin (vod) {
            } else {
                privwinhidden      = privheight_desired;
                privheight_desired = 1;
+               sb_win             = 0;
+               sb_priv->scroll    = sb_priv->count;
            }
         resize(0);
        }
@@ -809,21 +811,24 @@ resize (int signal)
 
   wresize(console,1,screensx);
   wresize(input,1,screensx);
-  if (private)
+  if (private && !privwinhidden)
      wresize(private,privheight,screensx);
   wresize(topic,1,screensx);
-  wresize(channel,screensy-(privheight+3),screensx);
+  wresize(channel, privwinhidden ? screensy - 3 : screensy - (privheight + 3), screensx);
 
   mvwin(console,screensy-2,0);
   mvwin(input,screensy-1,0);
-  if(private)     mvwin(private,0,0);
-  mvwin(topic,privheight,0);
-  mvwin(channel,privheight+1,0);
+  if(private && !privwinhidden)
+     mvwin(private,0,0);
+  mvwin(topic,privwinhidden ? 0 : privheight, 0);
+  mvwin(channel,privwinhidden ? 1 : privheight + 1, 0);
 
                   drawwin(channel, sb_pub);
-  if(private)     drawwin(private, sb_priv);
+  if(private && !privwinhidden )
+                  drawwin(private, sb_priv);
                   wnoutrefresh(channel);
-  if(private)     wnoutrefresh(private);
+  if(private && !privwinhidden )
+                  wnoutrefresh(private);
 
   if(outputshown) resize_output();
                   topicline(NULL);
