@@ -1,0 +1,240 @@
+Newbies Guide to vchat via 'Buntclient'
+=======================================
+
+1. Get the Source, Luke
+-----------------------
+
+Make sure, you got a shell and the tool called cvs.
+cd to a directory the source shall reside in.
+
+Type:
+
+$ cvs -d:pserver:anoncvs@cvs.erdgeist.org:/home/cvsroot login
+$ cvs -z3 -d:pserver:anoncvs@cvs.erdgeist.org:/home/cvsroot co vchat-client
+
+(press return at password prompt)
+
+
+2. Do the verpile
+-----------------
+
+Enter the vchat-client/ directory.
+Type:
+
+$ make
+
+If that fails due to some readline fuckups, try again with:
+
+$ make OLDREADLINE=-DOLDREADLINE
+
+You may also try to enable the experimental ipv6 support
+
+$ make EXPERIMENTAL_IPV6=-DEXPERIMENTAL_IPV6
+
+If you are administrator of your computer and want to install
+vchat-client permanently, type:
+
+$ make install
+
+You may also run the binary from its compile location.
+
+
+3. Get protected
+----------------
+
+Run the script vchat-keygen, located in the vchat-client/ directory.
+Follow its instructions.
+
+
+4. Home sweet Home
+------------------
+
+Create a .vchat/ directory in your homedir.
+
+$ cd
+$ mkdir .vchat/
+
+Copy your key to the .vchat/ directory:
+
+$ cp ~/.vchat.key ~/.vchat/key
+
+Whenever your signed cert arrives from vchat at vchat.berlin.ccc dot de,
+copy it to the .vchat/ directory as well:
+
+$ cp ~/.vchat.cert ~/.vchat/cert
+
+In order to modify the look of your client, you may copy one of
+the sample-xxx.fmt files to the .vchat/ directory:
+
+$ cd vchat-client/
+$ cp sample-erdgeist.fmt ~/.vchat/formats
+
+If you want to set the chat server to vchat.berlin.ccc.de now,
+type:
+
+$ echo host=vchat.berlin.ccc.de >> ~/.vchat/config
+
+If you want a seperate private message window, type:
+
+$ echo messages=10 >> ~/.vchat/config
+
+If you want to have no topic line, like in the oldschool client,
+do not choose a private message window an type:
+
+$ echo usetopicbar=0 >> ~/.vchat/config
+
+5. First bunt
+-------------
+
+Check, whether you REALLY got a signed cert.
+
+[....
+If you did not get a reply from vchat at vchat.berlin.ccc dot de within
+3 days, this might either be due to you not being known to the
+certificate masters, or simply because of the verpeil. You may,
+after 3 days, contact me at erdgeist at erdgeist dot org. If I don't
+reply, too, reconsider your lifestyle.
+....]
+
+Start the client:
+
+$ vchat-client
+
+or
+
+$ vchat-client/vchat-client
+
+Enter the passphrase to your private key, if you added one.
+
+Look around.
+
+Try to feel comfortable with the new look of your vchat-
+environment. Close your mouth. Try playing around with the
+following commands:
+
+If you did not enable the seperate private message window,
+ignore this part:
+
+[ STARTIGNORE
+
+Press Ctrl-G and Ctrl-T several times.
+Press Ctrl-X, then send yourself a private message, watch, what
+happens
+Press Ctrl-C ONCE!!!
+Press Ctrl-R and watch the asteriks at the very right of your
+screen, this one indicates, which window to scroll back
+
+ENDIGNORE]
+
+Press Ctrl-B Ctrl-F, if you collected some text in your
+message window. This should scroll back and forth.
+A red console bar should indicate, that you scrolled up.
+
+Press Ctrl-L to redraw and reset scroll indices.
+
+Play around with the completion:
+
+Hitting <TAB> at start of line will complete to
+
+.m <lastpersonyouexchangedprivatemessageswith> 
+
+if you hit <TAB> more often, you will cycle through this list,
+sorted by the last time you exchanges PMs with.
+
+Hitting <TAB> when you already typed some letters but no space
+yet will expand to all nicks in your current channel. You may
+cycle through this list, too.
+
+Hitting tab anywhere else expands to all nicks in all channels.
+
+Most other readline hotkeys (Ctrl-U, Ctrl-K, Ctrl-W, Ctrl-A...)
+will work as expected.
+
+
+6. Commandoe
+------------
+
+In addition to the server commands (.h, .m, .a, .s ...) the
+client brings its own set of commands, which will be triggered
+IRC-style by /COMMAND. These may be abbrevated to the lowest
+unambigous substring.
+
+Try /HELP for a first glimpse.
+The status window may be forced off by hitting Ctrl-X.
+
+/HELP KEYS should give you a short summary of available hot
+key commands.
+
+Some client commands are wrappers around server commands:
+
+/ME   == .a
+/MSG  == .m
+/M    == .m
+/QUIT == .x
+
+The other commands are used to enable client side filtering
+and highlighting.
+
+Try:
+
+/HELP FILTERS
+/HELP FLT
+/HELP FILTERS
+
+Highlight yourself:
+
+/FLT 6 <nickname>
+
+if you don't see anything getting highlighted, you probably
+have a mac. If you got this far despite of that problem, you
+will surely find a way to enable colors in your terminal.
+
+Remove the filter rule:
+
+/rmflt 1
+
+Zoom in all channel leaves:
+
+/flt + left channel
+
+List your filter rules:
+
+/lsflt
+
+Remove all filters:
+
+/clflt
+
+Ignore all server leave and join messages
+
+/flt - ((left|joined|entered) (the )?(channel|chat))
+
+Reenable those lines
+
+/rmflt ((left|joined|entered) (the )?(channel|chat)) 
+
+Note: zoom overrides ignore.
+
+Be careful about setting your filters, as these are treated
+as regular expressions, which easily may lead to time
+consuming evaluations. Avoid brackets.
+
+
+7. Fiiiiiiiiieschas
+-------------------
+
+As I am still young *cough cough* I am _STILL_ willing to
+implement features of all stupidity grades. Contact me
+with /m erdgeist <feature request> at any time.
+
+
+8. You help
+-----------
+
+Since you will probably start fiddeling around with your
+.vchat/formats file, I'd appreciate getting YOUR format,
+too, as this may be helpful for others to make their own.
+Just send them to erdgeist at erdgeist dot org. Bug reports,
+feature request that are to long for the chat and diffs
+implementing some features are welcome at this address,
+too.
