@@ -108,6 +108,8 @@ static void parseformats(unsigned char *line) {
 
   while( *line == ' ') line++;
 
+  if( strlen( line ) > TMPSTRSIZE ) return;
+
   if( *line != '#') /* allow to comment out the line */
       for (i = 0; formatstrings[i].formatstr; i++)
           if (!strncasecmp(formatstrings[i].idstring, line, strlen( formatstrings[i].idstring) ))
@@ -379,7 +381,7 @@ cleanup (int signal)
     {
       fprintf (stderr, "vchat-client: terminated with signal %d.\n", signal);
     } else if (errstr[0])
-      fprintf (stderr, errstr);
+      fputs   (errstr, stderr);
   /* end of story */
   exit (0);
 }
@@ -435,19 +437,19 @@ eventloop (void)
 }
 
 void usage(unsigned char *name) {
-    printf("usage: %s [-C config-file] [-l] [-z] [-s host] [-p port] [-c channel] [-n nickname]\n",name);
-    printf("   -C   load a second config-file, overriding the first one\n");
-    printf("   -l   local connect (no SSL + connects localhost:2323)\n");
-    printf("   -z   don't use certificate files\n");
-    printf("   -s   set server (default \"%s\")\n",getstroption(CF_SERVERHOST));
-    printf("   -p   set port (default %d)\n",getintoption(CF_SERVERPORT));
-    printf("   -c   set channel (default %d)\n",getintoption(CF_CHANNEL));
+    printf   ("usage: %s [-C config-file] [-l] [-z] [-s host] [-p port] [-c channel] [-n nickname]\n",name);
+    puts     ("   -C   load a second config-file, overriding the first one\n");
+    puts     ("   -l   local connect (no SSL + connects localhost:2323)\n");
+    puts     ("   -z   don't use certificate files\n");
+    printf   ("   -s   set server (default \"%s\")\n",getstroption(CF_SERVERHOST));
+    printf   ("   -p   set port (default %d)\n",getintoption(CF_SERVERPORT));
+    printf   ("   -c   set channel (default %d)\n",getintoption(CF_CHANNEL));
     if (nick)
        printf("   -n   set nickname (default \"%s\")\n",nick);
     else
-       printf("   -n   set nickname\n");
-    printf("   -f   set from (default \"%s\")\n",getstroption(CF_FROM));
-    printf("   -h   gives this help\n");
+       puts  ("   -n   set nickname\n");
+    printf   ("   -f   set from (default \"%s\")\n",getstroption(CF_FROM));
+    puts     ("   -h   gives this help\n");
 }
 
 /* main - d'oh */
