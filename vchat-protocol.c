@@ -83,7 +83,7 @@ unsigned char *encoding;
 
 /* connects to server */
 int
-vcconnect (unsigned char *server, unsigned int port)
+vcconnect (unsigned char *server, unsigned char *port)
 {
   /* used for tilde expansion of cert & key filenames */
   unsigned char *tildex = NULL;
@@ -98,10 +98,16 @@ vcconnect (unsigned char *server, unsigned int port)
   EVP_PKEY *certpubkey = NULL;
   /* temporary result */
   int result;
+#ifndef EXPERIMENTAL_IPV6
   /* servers hostentry */
   struct hostent *serverhe;
   /* servers sockaddr */
   struct sockaddr_in serversi;
+  int portnr = strtoul(port,NULL,10);
+#else
+  /* protocol independent server addresses */
+  struct addrinfo hints, *addr, *tmpaddr;
+#endif
   /* SSL-context */
   SSL_CTX *sslctx = NULL;
   /* SSL server certificate */
@@ -115,6 +121,7 @@ vcconnect (unsigned char *server, unsigned int port)
   /* variable for verify return */
   long verify;
 
+#ifndef EXPERIMENTAL_IPV6
   /* get host-entry for server */
   if ((serverhe = gethostbyname (server)) == NULL)
     return 0;
@@ -125,13 +132,35 @@ vcconnect (unsigned char *server, unsigned int port)
 
   /* initialize datastructure for connect */
   serversi.sin_family = AF_INET;
-  serversi.sin_port = htons (port);
+  serversi.sin_port = htons(portnr);
   serversi.sin_addr = *((struct in_addr *) serverhe->h_addr);
   memset (&(serversi.sin_zero), 0, 8);
 
   /* attempt connect */
   if (connect (serverfd, (struct sockaddr *) &serversi, sizeof (struct sockaddr)) == -1)
     return 0;
+#else
+  memset( &hints, 0, sizeof(hints));
+  /* Expect v4 and v6 */
+  hints.ai_family   = PF_UNSPEC;
+  hints.ai_socktype = SOCK_STREAM;
+  if( getaddrinfo( server, port, &hints, &addr ))
+    return 0;
+  for( tmpaddr = addr; addr; addr = addr->ai_next )
+  {
+    if( (serverfd = socket( addr->ai_family, addr->ai_socktype, addr->ai_protocol)) < 0)
+      continue;
+    if( connect( serverfd, addr->ai_addr, addr->ai_addrlen ) < 0)
+    {
+      close( serverfd );
+      continue;
+    }
+    break;
+  }
+  if( serverfd < 0 )
+    return 0;
+  freeaddrinfo( tmpaddr );
+#endif
 
   /* inform user */
   snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_CONNECTED), server, port);
@@ -537,7 +566,7 @@ justloggedin (unsigned char *message)
      setstroption(CF_NICK,str1);
 
   /* show change in console window */
-  snprintf (consolestr, CONSOLESTRSIZE, getformatstr(FS_CONSOLE), nick, getstroption (CF_SERVERHOST), getintoption (CF_SERVERPORT));
+  snprintf (consolestr, CONSOLESTRSIZE, getformatstr(FS_CONSOLE), nick, getstroption (CF_SERVERHOST), getstroption (CF_SERVERPORT));
   consoleline (NULL);
 
   /* announce login as servermessage */

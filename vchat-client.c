@@ -458,7 +458,7 @@ void usage(unsigned char *name) {
     puts     ("   -l   local connect (no SSL + connects localhost:2323)");
     puts     ("   -z   don't use certificate files");
     printf   ("   -s   set server (default \"%s\")\n",getstroption(CF_SERVERHOST));
-    printf   ("   -p   set port (default %d)\n",getintoption(CF_SERVERPORT));
+    printf   ("   -p   set port (default %s)\n",getstroption(CF_SERVERPORT));
     printf   ("   -c   set channel (default %d)\n",getintoption(CF_CHANNEL));
     if (nick)
        printf("   -n   set nickname (default \"%s\")\n",nick);
@@ -499,7 +499,7 @@ main (int argc, char **argv)
           case 'l': setintoption(CF_USESSL,0); break;
           case 'z': setintoption(CF_USECERT,0); break;
           case 's': setstroption(CF_SERVERHOST,optarg); break;
-          case 'p': setintoption(CF_SERVERPORT,strtol(optarg,NULL,10)); break;
+          case 'p': setstroption(CF_SERVERPORT,optarg); break;
           case 'c': setintoption(CF_CHANNEL,strtol(optarg,NULL,10)); break;
           case 'n': setstroption(CF_NICK,optarg); break;
           case 'f': setstroption(CF_FROM,optarg); break;
@@ -518,7 +518,7 @@ main (int argc, char **argv)
 
   if (!getintoption(CF_USESSL)) {
       setstroption(CF_SERVERHOST,"localhost");
-      setintoption(CF_SERVERPORT,2323);
+      setstroption(CF_SERVERPORT,"2323");
   } else {
       SSL_library_init ();
       SSL_load_error_strings ();
@@ -535,7 +535,7 @@ main (int argc, char **argv)
   initui ();
 
   /* attempt connection */
-  if (!vcconnect (getstroption(CF_SERVERHOST), getintoption(CF_SERVERPORT)))
+  if (!vcconnect (getstroption(CF_SERVERHOST), getstroption(CF_SERVERPORT)))
     {
       snprintf (tmpstr, TMPSTRSIZE, "Could not connect to server, %s.",
 		sys_errlist[errno]);

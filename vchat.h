@@ -181,7 +181,7 @@ void         clearfilters     ( char colour );
 extern unsigned char *vchat_io_version;
 
 /*   connect/disconnect */
-int  vcconnect    (unsigned char *server, unsigned int port);
+int  vcconnect    (unsigned char *server, unsigned char *port);
 void vcdisconnect ();
 
 /*   network I/O */

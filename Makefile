@@ -12,7 +12,7 @@ CFLAGS = -Wall -Os
 ## use this line when you've got an readline before 4.(x|2)
 #CFLAGS += -DOLDREADLINE
 
-CFLAGS += $(OLDREADLINE)
+CFLAGS += $(OLDREADLINE) $(EXPERIMENTAL_IPV6)
 
 ## you might need one or more of these:
 #CFLAGS += -I/usr/local/ssl/include -L/usr/local/ssl/lib
@@ -39,6 +39,19 @@ OBJS   = vchat-client.o vchat-ui.o vchat-protocol.o vchat-user.o vchat-commands.
 
 
 all: vchat-client #vchat-client.1
+	@echo "  ***************************************"
+	@echo "  **                                   **"
+	@echo "  **       W  A  R  N  I  N  G         **"
+	@echo "  **                                   **"
+	@echo "  ** Internal representation of server **"
+	@echo "  ** port has changed. If you have got **"
+	@echo "  ** a ~/.vchat/formats laying around, **"
+	@echo "  ** please verify, that  FS_CONNECTED **"
+	@echo "  ** and FS_CONSOLE both don't contain **"
+	@echo "  **   '%d' and, if they do, please    **"
+	@echo "  **     change those '%d' to '%s'.    **"
+	@echo "  **                                   **"
+	@echo "  ***************************************"
 
 install: vchat-client vchat-keygen vchatrc.ex
 	install -d $(DESTDIR)/etc
@@ -48,7 +61,6 @@ install: vchat-client vchat-keygen vchatrc.ex
 	install -m 0755 ./vchat-keygen $(DESTDIR)$(PREFIX)/bin
 #	install -m 0644 ./vchat-client.1 $(DESTDIR)$(PREFIX)/share/man/man1
 	install -m 0644 ./vchatrc.ex $(DESTDIR)/etc/vchatrc
-
 
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/vchat-client
