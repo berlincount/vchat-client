@@ -109,6 +109,8 @@ static int             currentstamp = 0;
 /* Prototype declarations */
 
 static void resize           (int);
+static void forceredraw      (void);
+static void forceredraw_wrapper (int a) {forceredraw();}
 static void drawwin          (WINDOW *win, struct sb_data  *sb);
 static int  writescr         (WINDOW *win, struct sb_entry *entry);
 static int  testfilter       (             struct sb_entry *entry);
@@ -767,12 +769,20 @@ void ttgtsz(int *x,int *y) {
  }
 
 static void
-redraw (void)
+forceredraw (void)
 {
   sb_pub->scroll = sb_pub->count;
   sb_priv->scroll = sb_priv->count;
 
   resize(0);
+  if(console) wclear(console);
+  if(topic)   wclear(topic);
+  if(private) wclear(private);
+  if(channel) wclear( channel );  
+  if(output)  wclear(output);
+  if(input)   wclear(input);
+  resize(0);
+
 }
 
 /* resize display on SIGWINCH
@@ -1077,7 +1087,7 @@ initui (void)
   /* install signalhandler */
 
   signal(SIGWINCH, resize);
-  signal(SIGCONT, resize);
+  signal(SIGCONT, forceredraw_wrapper);
 
   /* set options */
   keypad (stdscr, TRUE);
@@ -1212,7 +1222,7 @@ initui (void)
   /* bind CTRL-L to clearmsg() */
   rl_bind_key ('J'-'@', (rl_command_func_t *) clearpriv);
   rl_bind_key ('O'-'@', (rl_command_func_t *) clearchan);
-  rl_bind_key ('L'-'@', (rl_command_func_t *) redraw);
+  rl_bind_key ('L'-'@', (rl_command_func_t *) forceredraw);
   rl_bind_key ('B'-'@', (rl_command_func_t *) scrollup);
   rl_bind_key ('P'-'@', (rl_command_func_t *) scrollup);
   rl_bind_key ('F'-'@', (rl_command_func_t *) scrolldown);
