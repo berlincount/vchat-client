@@ -717,7 +717,7 @@ clearpriv ()
 {
   WINDOW *dest = NULL;
   /* do we have a private window? */
-  if (private)
+  if (private && !privwinhidden )
       dest = private;
   else
       dest = channel;
@@ -726,6 +726,7 @@ clearpriv ()
   wclear (dest);
   wmove (dest, dest->_maxy, dest->_maxx);
   wrefresh (dest);
+
 }
 
 /* clear channel window */
