@@ -1170,7 +1170,7 @@ initui (void)
 #else
   rl_callback_handler_install ("", (rl_vcpfunc_t *) linecomplete);
 #endif
-
+/*
   writeout( ">> Ctrl-X <<");
 
   if (errstr[0] != '\0') {
@@ -1184,7 +1184,7 @@ initui (void)
   writeout (vchat_us_version);
   writeout (vchat_cm_version);
   showout( );
-
+*/
   if( getintoption( CF_KEEPLOG ) ) {
       unsigned char *logfile = getstroption( CF_LOGFILE );
       if( logfile && *logfile ) {
