@@ -39,7 +39,7 @@ typedef enum { CF_NIL, CF_NICK, CF_FROM, CF_SERVERHOST, CF_SERVERPORT,
 CF_CIPHERSUITE, CF_CONFIGFILE, CF_CERTFILE, CF_KEYFILE, CF_FORMFILE, CF_LOGFILE,
 CF_USESSL, CF_USECERT, CF_PRIVHEIGHT, CF_HSCROLL, CF_CHANNEL, CF_USETIME,
 CF_USETOPIC, CF_SCROLLBPRIV, CF_SCROLLBACK, CF_SCROLLBPRIVT, CF_SCROLLBACKT,
-CF_KEEPLOG, CF_ENCODING } confopt;
+CF_KEEPLOG, CF_ENCODING, CF_BELLPRIV } confopt;
 
 /* format strings */
 typedef enum { FS_PLAIN, FS_CHAN, FS_PRIV, FS_SERV, FS_GLOB, FS_DBG, FS_ERR,
@@ -149,7 +149,7 @@ void userinput (void);
 
 /*   display various messages */
 int   writechan (unsigned char *str);
-int   writepriv (unsigned char *str);
+int   writepriv (unsigned char *str, int maybeep );
 void  writeout  (unsigned char *str);
 void  showout   (void);
 void  flushout  (void);

@@ -178,7 +178,7 @@ privatemessagetx ( unsigned char *tail ) {
    
       /* show message in private window */
       snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_TXPRIVMSG), tail, mesg);
-      writepriv (tmpstr);
+      writepriv (tmpstr, 0);
           
       /* note we messaged someone */
       ul_msgto(tail);

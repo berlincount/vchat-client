@@ -324,7 +324,7 @@ int writecf (formtstr id,unsigned char *str) {
   return i;
 }
 
-int writepriv (unsigned char *str) {
+int writepriv (unsigned char *str, int maybeep) {
   int i = 0;
   if (private) {
 
@@ -341,6 +341,8 @@ int writepriv (unsigned char *str) {
           i = writescr(private, tmp);
       }
       if( privwinhidden ) {
+          if( maybeep && getintoption( CF_BELLPRIV ))
+            putchar( 7 );
           privheight_desired = privwinhidden;
           privwinhidden      = 0;
           resize(0);

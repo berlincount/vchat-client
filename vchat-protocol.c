@@ -385,7 +385,7 @@ pmnotsent (unsigned char *message)
 {
   while(*message && *message!=' ') message++;
   snprintf(tmpstr,TMPSTRSIZE,getformatstr(FS_ERR),message+1);
-  writepriv( tmpstr);
+  writepriv( tmpstr, 0);
 
 }
 
@@ -935,7 +935,7 @@ parsemsg (unsigned char *message)
     str2++;
     if (str2[0] == ' ') str2++;
     snprintf(tmpstr,TMPSTRSIZE,getformatstr(FS_RXPRIVMSG),str1,str2);
-    writepriv (tmpstr);
+    writepriv (tmpstr, 1);
     ul_msgfrom(str1);
   }
   /* message starts with a number? must be a servermessage */

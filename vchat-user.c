@@ -159,11 +159,13 @@ ul_join (unsigned char *name, int channel)
 user *
 ul_finduser (unsigned char *name) {
   user *tmp = nicks;
+  snprintf( tmpstr, TMPSTRSIZE, "%s:", name);
+
   /* search user */
   while (tmp)
     {
       /* is it this user? */
-      if (!strcmp (name, tmp->nick))
+      if (!strcmp (name, tmp->nick) || !strcmp(tmpstr, tmp->nick))
 	{
 	  return tmp;
 	}
