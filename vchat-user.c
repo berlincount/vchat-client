@@ -91,7 +91,9 @@ ul_add (unsigned char *name, int ignored)
 	    }
 	}
     }
+#ifndef OLDREADLINE
   rl_last_func = NULL;
+#endif
 }
 
 /* delete user from userlist */
@@ -132,7 +134,9 @@ ul_del (unsigned char *name, int ignored)
       ltmp = tmp;
       tmp = tmp->next;
     }
+#ifndef OLDREADLINE
   rl_last_func = NULL;
+#endif
 }
 
 /* let user join a channel */
@@ -145,7 +149,9 @@ ul_join (unsigned char *name, int channel)
       ownjoin (channel);
       return;
     } else ul_moveuser(name,channel);
+#ifndef OLDREADLINE
   rl_last_func = NULL;
+#endif
 }
 
 user *
@@ -196,7 +202,9 @@ ul_usertofront( user *who ) {
       who->next = nicks;
       nicks     = who;
   }
+#ifndef OLDREADLINE
   rl_last_func = NULL;
+#endif
 }
 
 void
@@ -229,7 +237,9 @@ ul_moveuser (unsigned char *name, int channel) {
      tmp->chan = channel;
      tmp->chan_valid = 1;
   }
+#ifndef OLDREADLINE
   rl_last_func = NULL;
+#endif
 }
 
 /* let user leave a channel */
@@ -250,7 +260,9 @@ ul_leave (unsigned char *name, int channel)
       tmp->chan_valid = 0;
       return;
     }
+#ifndef OLDREADLINE
   rl_last_func = NULL;
+#endif
 }
 
 /* let user change nick */
@@ -271,7 +283,9 @@ ul_nickchange (unsigned char *oldnick, unsigned char *newnick)
       tmp->nick = strdup (newnick);
       return;
     }
+#ifndef OLDREADLINE
   rl_last_func = NULL;
+#endif
 }
 
 /* clear userlist */
@@ -291,7 +305,9 @@ ul_clear (void)
     }
   /* mark list empty */
   nicks = NULL;
+#ifndef OLDREADLINE
   rl_last_func = NULL;
+#endif
 }
 
 int ulnc_casenick(user *tmp, const unsigned char *text, int len, int value) {
