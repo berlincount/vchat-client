@@ -39,19 +39,6 @@ OBJS   = vchat-client.o vchat-ui.o vchat-protocol.o vchat-user.o vchat-commands.
 
 
 all: vchat-client #vchat-client.1
-	@echo "  ***************************************"
-	@echo "  **                                   **"
-	@echo "  **       W  A  R  N  I  N  G         **"
-	@echo "  **                                   **"
-	@echo "  ** Internal representation of server **"
-	@echo "  ** port has changed. If you have got **"
-	@echo "  ** a ~/.vchat/formats laying around, **"
-	@echo "  ** please verify, that  FS_CONNECTED **"
-	@echo "  ** and FS_CONSOLE both don't contain **"
-	@echo "  **   '%d' and, if they do, please    **"
-	@echo "  **     change those '%d' to '%s'.    **"
-	@echo "  **                                   **"
-	@echo "  ***************************************"
 
 install: vchat-client vchat-keygen vchatrc.ex
 	install -d $(DESTDIR)/etc

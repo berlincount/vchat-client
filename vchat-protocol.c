@@ -163,7 +163,7 @@ vcconnect (unsigned char *server, unsigned char *port)
 #endif
 
   /* inform user */
-  snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_CONNECTED), server, port);
+  snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_CONNECTED), server, strtoul(port,NULL,10));
   writechan (tmpstr);
 
   usessl = getintoption(CF_USESSL);
@@ -566,7 +566,7 @@ justloggedin (unsigned char *message)
      setstroption(CF_NICK,str1);
 
   /* show change in console window */
-  snprintf (consolestr, CONSOLESTRSIZE, getformatstr(FS_CONSOLE), nick, getstroption (CF_SERVERHOST), getstroption (CF_SERVERPORT));
+  snprintf (consolestr, CONSOLESTRSIZE, getformatstr(FS_CONSOLE), nick, getstroption (CF_SERVERHOST), strtoul(getstroption (CF_SERVERPORT),NULL,10));
   consoleline (NULL);
 
   /* announce login as servermessage */
@@ -608,7 +608,7 @@ ownnickchange (unsigned char *newnick)
   setstroption(CF_NICK,newnick);
 
   /* show change in console window */
-  snprintf (consolestr, CONSOLESTRSIZE, getformatstr(FS_CONSOLE), nick, getstroption (CF_SERVERHOST), getintoption (CF_SERVERPORT));
+  snprintf (consolestr, CONSOLESTRSIZE, getformatstr(FS_CONSOLE), nick, getstroption (CF_SERVERHOST), strtoul(getstroption (CF_SERVERPORT),NULL,10));
   consoleline (NULL);
 }
 
