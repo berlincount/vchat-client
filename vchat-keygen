@@ -2,7 +2,10 @@
 
 #
 # vchat-client - alpha version
-# vchat-keygen - generate keypair for SSL with anon CA
+# vchat-keygen - generate certificate signing request for sending to
+# vchat@vchat.berlin.ccc.de
+#
+# changed by cryx
 #
 # Copyright (C) 2001 Andreas Kotes <count@flatline.de>
 #
@@ -32,96 +35,6 @@ else
 fi
 
 # no certificate? dump anonymous CA to disk.
-if [ ! -e $KEYBASE.cert ]; then
-   if [ ! -e $KEYBASE.ca.key ]; then
-      echo "vchat-keygen: saving CA key to $KEYBASE.ca.key"
-      cat >$KEYBASE.ca.key <<EOT
------BEGIN RSA PRIVATE KEY-----
-MIIEowIBAAKCAQEA0OydKPwRccotlfz4ZhKrVM1vbRa9bWOfZ1c4C6J+iLmZMjuk
-uALo5+c72phZjJ8qXTY+j+J4foRXgBD3qNwDFjtHaDtq4pK70WAWR7+gtnToVjvI
-ngq++Ht82GQQK34QKBBh4U/sdS1qvQWNkW6/tDa61pRwHI9xRhXG3YmVrE0mps/o
-JoaSxQQpk+6nTjuqfbFH+JEqzYgXLLYm5sZ3eRuClCezmQ9a1HSGW+JM4iL7xdRL
-u8o1Ml7PahODIr/Cb4nKco8grJ+gl4ChI+V8VsUNcmmoXdtb7b0x7tCOcvp2TPIE
-VK0sMTDCltGvXDKk3PrL+msAATJhA90FVTUjOQIDAQABAoIBAQCPZoks029J0kLd
-20fID/Jnf6aGkwAsMB/+d4AxhDQjtnivYP7biqvAWRfdH4r/mVQjrJLegczA0ieY
-8Ix86552yPNnWLkxkRO3T6ObVa2C7tV2MwytZaTUuzXi9TOgFqQSS8RTOV+MwkKs
-QT59Xy3YDWTK2hHlmJNgTpwz/Tatjv1zTXzDkb+rGLVjpanPoOvSbth2pXJL7kRf
-pkoDWqw59rDC6QQJxucYbueTSlw3YKg6ZJJ9dSsWf8pljCgwW0lLBHVmcsJw3C+z
-mzZW7I4I5wACGaAMjLR1p8bPWC4VF6cP9MdRJ77VZl2//HXb0nE6SHG5V2eDxiRJ
-NMqe/Z8BAoGBAOy6d7wRKADPPwZaLAKaKqsJSiK5DDnXloPgW4/IZrMmokQ0hF7m
-QXXtOvDkewGvIskLXk93/f47RQdGWZ/WRVPDBlxx2VbpxACJLb+EC9BEGOS/emdZ
-DI2934qMhGo4QCSq8I4RTDe0z+55Kj2yVzKv718J1lWaCpC+AtbIB1thAoGBAOHu
-sfcMYV5pV28y77yO/aVRaR19CjnH9mk5kdXLzITy5hYZskgQxmlB/zvMG/nEhAKz
-jwymL7PM0SXM/dWuz54nCYUDHdOexe2DHaFvNaalkziq3eU9B/ANY1+f/nk2TrBm
-+TVaAYWld2X8jcXJbevy3H9IgDfzD27M6tFW1W7ZAoGAT/2eMeVWMBfXgwz7LBHt
-8wdbjqoasHzhtkQcjFQ6J7UZRZS9WdfSLMfxj66Uxffo+CgoQRAZuktKwu+Jn1Hm
-8SvIPXqW5yBsg4XW+Izk9QXdp4XwFXXooQiUvZtHryC8w+cjC85ag8RMMpesp1ZY
-0p7Scrm/PAOmKEycZvkGS2ECgYAWYIjZ2i0Op8pUJixedZ8jr5OEqyzHGkoKk/wg
-u8Wu6Uvmpnbk8lxkcnfwGUAwFcmpZtVlQFR7L28LmmkNr/m6RU2JEgzzN8eMxa66
-nYQn1EBnnWzK1qehnAHap8MRiFJ04E4QfbCm5wOTY1c7Xr73Xp9+L9UbNYSyybL8
-Nuh+yQKBgHUJf3RslTr382pFcHxXNQpA5wQHhtuL+VacbddnZNZCflQoJ+Zk1/GV
-0fDgfrY1+LVQvo/rpm6N3FIdLSaFwn2OmZMIwLWfu4BL1NNdWMwjSWkQ8hToVe5e
-707+ARBWPZX0GfZXHUybrZDJNlT01brqo4DhlWxMCPrAj3XNY6yr
------END RSA PRIVATE KEY-----
-EOT
-   fi
-   if [ ! -e $KEYBASE.ca.crt ]; then
-      echo "vchat-keygen: saving CA cert to $KEYBASE.ca.crt"
-      cat >$KEYBASE.ca.crt <<EOT
------BEGIN CERTIFICATE-----
-MIIC4zCCAcugAwIBAgIBADANBgkqhkiG9w0BAQQFADAbMRkwFwYDVQQDExBBbm9u
-eW1vdXMgRk9PIENBMB4XDTAxMDcwOTE0MzAyM1oXDTExMDcwNzE0MzAyM1owGzEZ
-MBcGA1UEAxMQQW5vbnltb3VzIEZPTyBDQTCCASIwDQYJKoZIhvcNAQEBBQADggEP
-ADCCAQoCggEBANDsnSj8EXHKLZX8+GYSq1TNb20WvW1jn2dXOAuifoi5mTI7pLgC
-6OfnO9qYWYyfKl02Po/ieH6EV4AQ96jcAxY7R2g7auKSu9FgFke/oLZ06FY7yJ4K
-vvh7fNhkECt+ECgQYeFP7HUtar0FjZFuv7Q2utaUcByPcUYVxt2JlaxNJqbP6CaG
-ksUEKZPup047qn2xR/iRKs2IFyy2JubGd3kbgpQns5kPWtR0hlviTOIi+8XUS7vK
-NTJez2oTgyK/wm+JynKPIKyfoJeAoSPlfFbFDXJpqF3bW+29Me7QjnL6dkzyBFSt
-LDEwwpbRr1wypNz6y/prAAEyYQPdBVU1IzkCAwEAAaMyMDAwDwYDVR0TAQH/BAUw
-AwEB/zAdBgNVHQ4EFgQUFsM7fh5NPHIgbUBsGqp+IAH4AjIwDQYJKoZIhvcNAQEE
-BQADggEBALKjPE9OX+FrKOODs+d4P/QJdEwsTKwT3zHjxUTKmhIRE1qphAiEfH2g
-IMgr/7y4MZd7FIx84qrfA+a96Yyb5QdbRu0fGlkom1JZxkKOQ2T5SiX7iU2nXMLa
-tsFoqKwrjG4vWwN8ZrlLT72+fZGTtFCUQm7pTxd7UZcfIcmfE43OJGl155gd2X8j
-jbbyu/lBwdJXznK86cm++lvXYJTeJEybipX/XoGoJtCZq0dGyC7vBTGnBZGmNymQ
-1QHQ8LjnzGK3q1ccLuGZ9QjXOjMImfPXGxiXMHO63Ph27U3jP4LEBsW3iRaUqevY
-Id4rGHl2/jBQyE1CGeN1o9iZBGmFS1c=
------END CERTIFICATE-----
-EOT
-   fi
-   if [ -e /tmp/00.pem ]; then
-      echo "vchat-keygen: insecure files lying around, bailing out"
-      exit
-   fi
-   if [ ! -e $KEYBASE.ca.conf ]; then
-      echo "vchat-keygen: generating config-file for CA $KEYBASE.ca.conf"
-      cat >$KEYBASE.ca.conf <<EOT
-[ ca ]
-default_ca              = default_CA
-[ default_CA ]
-dir                     = .
-#certs                   = \$dir
-new_certs_dir           = /tmp
-database                = $KEYBASE.ca.db.index
-serial                  = $KEYBASE.ca.db.serial
-certificate             = $KEYBASE.ca.crt
-private_key             = $KEYBASE.ca.key
-default_days            = 1825
-default_crl_days        = 30
-default_md              = md5
-preserve                = no
-x509_extensions         = user_cert
-policy                  = policy_anything
-[ policy_anything ]
-commonName              = supplied
-emailAddress            = supplied
-[ user_cert ]
-basicConstraints        = critical,CA:false
-authorityKeyIdentifier  = keyid:always
-extendedKeyUsage        = clientAuth
-EOT
-      echo -n >$KEYBASE.ca.db.index
-      echo 00 >$KEYBASE.ca.db.serial
-   fi
    if [ ! -e $KEYBASE.csr ]; then 
       if [ ! -e $KEYBASE.ca.keyconf ]; then
          echo "vchat-keygen: generating config-file for self-signing $KEYBASE.ca.keyconf"
@@ -143,14 +56,11 @@ basicConstraints                = critical,CA:false
 EOT
       fi
       echo "vchat-keygen: generating Certificate Signing Request $KEYBASE.csr"
+		echo "vchat-keygen: please enter your nickname at the 'Name []:' prompt"
       openssl req -new -config $KEYBASE.ca.keyconf -key $KEYBASE.key -out $KEYBASE.csr
+		echo "vchat-keygen: send this ($KEYBASE.csr) Certificate Signing Request to
+		vchat@vchat.berlin.ccc.de to get it signed by the vchat-CA. You will
+		receive your signed Certificate shortly."
    else
       echo "vchat-keygen: Certificate Signing Request $KEYBASE.csr exists"
    fi
-   echo "vchat-keygen: signing certificate $KEYBASE.cert"
-   openssl ca -batch -config $KEYBASE.ca.conf -out $KEYBASE.cert -in $KEYBASE.csr
-   rm /tmp/00.pem $KEYBASE.ca.*
-   echo
-else
-   echo "vchat-keygen: certificate $KEYBASE.cert exists"
-fi
