@@ -15,15 +15,7 @@
  */
 
 /* user structure */
-struct user
-{
-  unsigned char *nick; /* nick of user */
-  int chan;            /* channel user is on */
-  int chan_valid;      /* are we sure he is? */
-  int client_pv;       /* client protocol version */
-  int messaged;        /* did we message with this user? */
-  struct user *next;   /* next user in linked list */
-};
+struct user;
 typedef struct user user;
 /* userlist from vchat-user.c */
 extern user *nicks;
