@@ -294,11 +294,8 @@ int writechan (unsigned char *str) {
   time_t now = time(NULL);
   tmp = sb_add(sb_pub,str,now);
 
-  if( getintoption( CF_KEEPLOG ) && vchat_logfile ) {
-      char date[16];
-      strftime( date, sizeof(date), "%Y%m%d%H%M%S", localtime(&now));
-      fprintf( vchat_logfile, "%s0%s\n", date, str);
-  }
+  if( getintoption( CF_KEEPLOG ) && vchat_logfile )
+      fprintf( vchat_logfile, "%016llX0%s\n", (signed long long)now, str);
 
   if ( (sb_pub->scroll == sb_pub->count) && ((filtertype == 0) || ( testfilter(tmp)))) {
      i = writescr(channel, tmp);
@@ -315,11 +312,8 @@ int writecf (formtstr id,unsigned char *str) {
   snprintf(tmpstr,TMPSTRSIZE,getformatstr(id),str);
   tmp = sb_add(sb_pub,tmpstr,now);
 
-  if( getintoption( CF_KEEPLOG ) && vchat_logfile ) {
-      char date[16];
-      strftime( date, sizeof(date), "%Y%m%d%H%M%S", localtime(&now));
-      fprintf( vchat_logfile, "%s0%s\n", date, tmpstr);
-  }
+  if( getintoption( CF_KEEPLOG ) && vchat_logfile )
+      fprintf( vchat_logfile, "%016llX0%s\n", (unsigned long long)now, tmpstr);
 
   if ( (sb_pub->scroll == sb_pub->count) &&
        ((filtertype == 0) || ( testfilter(tmp)))) {
@@ -339,9 +333,7 @@ int writepriv (unsigned char *str) {
       tmp = sb_add(sb_priv,str,now);
 
       if( getintoption( CF_KEEPLOG ) && vchat_logfile ) {
-          char date[16];
-          strftime( date, sizeof(date), "%Y%m%d%H%M%S", localtime(&now));
-          fprintf( vchat_logfile, "%s1%s\n", date, str);
+          fprintf( vchat_logfile, "%016llX1%s\n", (unsigned long long)now, str);
       }
 
       if ( !privwinhidden && (sb_priv->scroll == sb_priv->count) &&
@@ -1272,24 +1264,22 @@ initui (void)
               logfile = tilde_expand( logfile );
           vchat_logfile = fopen( logfile, "r+" );
           if( vchat_logfile ) {
-              char   date[16];
-              time_t now; struct tm now_tm;
-              int    dst, lenstr;
+              time_t    now;
+              long long now_;
+              char      dst;
+              int       lenstr;
               while( !feof( vchat_logfile)) {
-                  if( (fread( date, 14, 1, vchat_logfile) == 1) &&
-                      (strptime( date, "%Y%m%d%H%M%S", &now_tm)) &&
-                      (((dst = fgetc( vchat_logfile )) == '0') || (dst == '1')))
+                  if( (fscanf( vchat_logfile, "%016llX%c", (unsigned long long*)&now_, &dst)) &&
+                      ((dst == '0') || (dst == '1')))
                   {
+                      now = (time_t)now_;
                       if(fgets(tmpstr, TMPSTRSIZE, vchat_logfile)) {
                           lenstr = strlen( tmpstr );
                           tmpstr[lenstr-1] = '\0';
-                          now = mktime( &now_tm );
                           sb_add( dst == '0' ? sb_pub : sb_priv, tmpstr, now);
                       }
-                  } else {
-                      fseek( vchat_logfile, 0, SEEK_END);
-                      fgetc( vchat_logfile );
-                  }
+                  } else
+                      while( !feof( vchat_logfile) && ( fgetc( vchat_logfile ) != '\n'));
               }
           }
       }
