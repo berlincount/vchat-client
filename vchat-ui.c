@@ -780,21 +780,30 @@ redraw (void)
   resize(0);
 }
 
-/* resize display on SIGWINCH */
+/* resize display on SIGWINCH
+   Nowadays used as our main redraw trigger engine */
 void
 resize (int signal)
 {
   int xsize,ysize,topicheight=topic?1:0;
-  //errmsg ("! SIGWINCH raised without code for it, hope you didn't make it smaller ;)");
-  //endwin();
+
   ttgtsz(&xsize,&ysize);
   resizeterm(ysize,xsize);
-  //refresh();
+
   /* store screen-dimensions to local functions */
   getmaxyx (stdscr, screensy, screensx);
 
-  if (!privheight_desired) privheight_desired = getintoption(CF_PRIVHEIGHT);
-  if ( privheight_desired > screensy - 5)  privheight = screensy - 5; else privheight = privheight_desired;
+  /* desired height of PM window is user controllable,
+     actual size depends on space available on screen */
+  if (!privheight_desired)
+    privheight_desired = getintoption(CF_PRIVHEIGHT);
+
+  /* Leave at least 5 lines for input, console and
+     pubchannel */
+  if ( privheight_desired > screensy - 5)
+      privheight = screensy - 5;
+  else
+      privheight = privheight_desired;
 
   /* check dimensions or bump user */
   if (screensy - privheight < 4)
@@ -810,31 +819,68 @@ resize (int signal)
         cleanup (0);
     }
 
+  /*****
+   * Arrange windows on screen
+   *****/
+
+  /* console and input are always there and always 1 line tall */
   wresize(console,1,screensx);
   wresize(input,1,screensx);
+
+  /* If we got a private window and it is not hidden, set its size */
   if (private && !privwinhidden)
       wresize(private,privheight,screensx);
+
+  /* If oldschool vchat is not enabled, we have a topic line */
   if( topic )
       wresize(topic,1,screensx);
-  wresize(channel, privwinhidden ? screensy - ( topicheight + 2 ) : screensy - (privheight + ( topicheight + 2 )), screensx);
 
+  /* public channel is always their and its height depends on:
+     * existence and visibility of priv window
+     * existence of a topic line (oldschool vchat style)
+  */
+  wresize(channel, ( !private || privwinhidden ) ? screensy - ( topicheight + 2 ) : screensy - (privheight + ( topicheight + 2 )), screensx);
+
+  /* Console and input alway take bottommost lines */
   mvwin(console,screensy-2,0);
   mvwin(input,screensy-1,0);
+
+  /* Private window always is top left */
   if(private && !privwinhidden)
       mvwin(private,0,0);
+
+  /* Topic window may not exist without priv window, so it is
+     safe to assume sane values for privwinhidden and privheight */
   if( topic )
       mvwin(topic,privwinhidden ? 0 : privheight, 0);
-  mvwin(channel,privwinhidden ? topicheight : privheight + topicheight, 0);
 
+  /* chan window starts below private window and topic line */
+  mvwin(channel, ( !private || privwinhidden ) ? topicheight : privheight + topicheight, 0);
+
+  /*******
+   * Now actual redraw starts, note, that we only fill
+   * curses *WINDOW* buffers, changes reflect on screen
+   * only, after they've been drawn to curses virtual
+   * screen buffers by wnoutrefresh and this offscreen
+   * buffer gets painted to terminal. This is triggered
+   * by consoleline(), traditionally last window to be
+   * drawn
+   ******/
+
+  /* pub channel is always there, paint scrollback buffers */
                   drawwin(channel, sb_pub);
+  /* if priv exists and is visible, paint scrollback buffers */
   if(private && !privwinhidden )
                   drawwin(private, sb_priv);
+  /* Send window's contents to curses virtual buffers */
                   wnoutrefresh(channel);
   if(private && !privwinhidden )
                   wnoutrefresh(private);
 
+  /* Resize and draw our message window, render topic and
+     console line */
   if(outputshown) resize_output();
-                  topicline(NULL);
+  if(topic)       topicline(NULL);
                   consoleline(NULL);
   if(loggedin)    vciredraw();
 }
@@ -912,14 +958,31 @@ getsbeheight (struct sb_entry *entry, const int xwidth, int needstime )
  
 }
 
+/* Check, which kind of filter we have to apply:
+   white or black listing. As white listing always
+   superseeds black listing, a single white listing
+   rule makes the whole filtering type 1.
+   If no, or only colouring rules have been found,
+   no line filtering applies.
+*/
 static int
 analyzefilters( void ) {
   filt *filters = filterlist;
   int type = 0;
 
+  /* Analyzefilters is only being called
+     after filter list has changed. This
+     also reflects in resetting the scroll
+     offset */
   sb_pub->scroll = sb_pub->count;
   sb_priv->scroll = sb_priv->count;
 
+  /* To avoid filtering the same line for
+     identical filter sets, we keep a per
+     line indicator, which ruleset we
+     tested the line against. This Stamp
+     is updated for each change to the
+     filter list */
   if( ++currentstamp == 0x3fff ) currentstamp = 1;
 
   while( (type!=1) && filters ) {
@@ -969,12 +1032,20 @@ drawwin (WINDOW *win, struct sb_data *sb )
           }
       } else {
           while( now && (sumlines <= win->_maxy )) {
-              if ( (now->stamp != currentstamp) &&
-                   ( (now->stamp == (currentstamp | (1<<15))) || testfilter( now ) )
-                 )
-              {
-                  sumlines += getsbeheight( now, win->_maxx, ((win == channel)||(win == private)) && usetime );
-                  vis[ sumbuffers++ ] = now;
+
+              /* If stamp matches exactly, line has been filtered out, since top
+                 bit off means hidden */
+              if( now->stamp != currentstamp) {
+
+                  /* If stamp matches and has top bit set, it has been identified
+                     positively. Else stamp does not match and line has to be
+                     tested against filters, which updates stamp. */
+                  if( (now->stamp == (currentstamp | 0x8000) ) || testfilter( now ))
+                  {
+                      sumlines += getsbeheight( now, win->_maxx, ((win == channel)||(win == private)) && usetime );
+                      vis[ sumbuffers++ ] = now;
+                  }
+
               }
               tmp = now; now = (struct sb_entry*)((unsigned long)now->link ^ (unsigned long)prev); prev = tmp;
           }
