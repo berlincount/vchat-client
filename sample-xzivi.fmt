@@ -1,0 +1,68 @@
+# !!! This file must be named ~/.vchat/formats  in order to work !!!
+
+# please be REALLY REALLY careful here
+# the following lines will be used as
+# format strings
+
+# ^ introduces a style change:
+# TODO: ^^ == '^'
+
+# 0 - default colorpair for window
+# 1 - colorpair 1 RED
+# 2 - colorpair 2 GREEN
+# 3 - colorpair 3 YELLOW
+# 4 - colorpair 4 BLUE
+# 5 - colorpair 5 MAGENTA
+# 6 - colorpair 6 CYAN
+# 7 - colorpair 7 WHITE
+# 8 - colorpair 8 WHITE on RED
+# 9 - colorpair 9 WHITE on BLUE
+# aA - alternate charset on/off
+# bB - bold on/off
+# dD - dim on/off
+# iI - invisible on/off
+# lL - blink on/off
+# nN - normal on/off
+# pP - protected on/off
+# rR - reverse on/off
+# sS - standout on/off
+# uU - underlined on/off
+
+# xzivis colorset
+
+FS_PLAIN =		"%s"
+FS_CHAN =		"%s"
+FS_PRIV =		"%s"
+FS_SERV =		"%s"
+FS_GLOB =		"^1%s"
+FS_ERR =		"^1%s"
+FS_DBG =		"%s"
+FS_IDLE =		"^1^b%s^B"
+FS_TIME =		"^4[%H:%M]^0 "
+FS_TOPICW =		"Channel %d: %s"
+FS_NOTOPICW =		"Channel %d has no topic"
+FS_CONSOLE =		"%s@%s:%d"
+FS_CONNECTED =		"# Connected to %s:%d ..."
+FS_TOPIC =		"# Channel %d topic is: ^6%s"
+FS_NOTOPIC =		"# Channel %d has no topic"
+FS_CHGTOPIC =		"# ^b%s^B changes topic to: ^6%s"
+FS_USONLINE =		"# Users online: %s"
+FS_USMATCH =		"# Users matching \"%s\":%s"
+FS_SIGNON =		"# ^6^b%s^B %s"
+FS_SIGNOFF =		"# ^6^b%s^B %s"
+FS_JOIN =		"# ^6^b%s^B %s ^0%d"
+FS_LEAVE =		"# ^6^b%s^B %s ^0%d"
+FS_NICKCHANGE =		"# ^6^b%s %s^B %s"
+FS_RXPUBURL =		"^0[^6^b%s^B^0] %s"
+FS_MYPUBURL =		"^0[^6^b%s^B^0] %s"
+FS_RXPUBMSG =		"^0<^6%s^0> %s"
+FS_MYPUBMSG =		"^0<^6^b^u%s^U^B^0> %s"
+FS_TXPUBMSG =		"^0<^6^b%s^B^0> %s"
+FS_RXPRIVMSG =		"^0<- ^6^b^u%s^U^B^0 %s"
+FS_TXPRIVMSG =		"^0-> ^6%s^0 %s"
+FS_PUBACTION =		"^6^b%s^B %s^0"
+FS_TXPUBACTION =	"^6^b%s^B %s^0"
+FS_COMMAND =		"%s"
+FS_LOCALCOMMAND =	"%s"
+FS_SBINF =		" [%d/%d] "
+FS_SBINF_SCROLL =       " ^8[%d/%d]^0 "
