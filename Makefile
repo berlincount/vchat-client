@@ -6,10 +6,13 @@
 # configuration                              #
 ##############################################
 
-CFLAGS = -Wall -Os #-g -ggdb
+CFLAGS = -Wall -Os
+#CFLAGS = -Wall -g -ggdb
 
 ## use this line when you've got an readline before 4.(x|2)
 #CFLAGS += -DOLDREADLINE
+
+CFLAGS += $(OLDREADLINE)
 
 ## you might need one or more of these:
 #CFLAGS += -I/usr/local/ssl/include -L/usr/local/ssl/lib
