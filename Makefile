@@ -43,7 +43,7 @@ install: vchat-client vchat-keygen vchatrc.ex
 	install -d $(DESTDIR)$(PREFIX)/share/man/man1
 	install -m 0755 ./vchat-client $(DESTDIR)$(PREFIX)/bin
 	install -m 0755 ./vchat-keygen $(DESTDIR)$(PREFIX)/bin
-	install -m 0644 ./vchat-client.1 $(DESTDIR)$(PREFIX)/share/man/man1
+#	install -m 0644 ./vchat-client.1 $(DESTDIR)$(PREFIX)/share/man/man1
 	install -m 0644 ./vchatrc.ex $(DESTDIR)/etc/vchatrc
 
 
