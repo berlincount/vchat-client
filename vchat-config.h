@@ -43,6 +43,7 @@ static volatile configoption configoptions[] = {
   {CF_USESSL,      CO_INT, "usessl",     (char *) 1,         (char *)-1, (unsigned char **)&usessl   },
   {CF_USECERT,     CO_INT, "usecert",    (char *) 1,         (char *)-1, NULL      },
   {CF_USETIME,     CO_INT, "usetime",    (char *) 1,         (char *)-1, (unsigned char **)&usetime  },
+  {CF_USETOPIC,    CO_INT, "usetopicbar",(char *) 1,         (char *)-1, NULL      },
   {CF_PRIVHEIGHT,  CO_INT, "messages",   (char *) 0,         (char *)-1, NULL      },
   {CF_HSCROLL,     CO_INT, "hscroll",    (char *) 5,         (char *)-1, (unsigned char **)&hscroll  },
   {CF_CHANNEL,     CO_INT, "channel",    (char *) 0,         (char *)-1, NULL      },

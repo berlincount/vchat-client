@@ -784,7 +784,7 @@ redraw (void)
 void
 resize (int signal)
 {
-  int xsize,ysize;
+  int xsize,ysize,topicheight=topic?1:0;
   //errmsg ("! SIGWINCH raised without code for it, hope you didn't make it smaller ;)");
   //endwin();
   ttgtsz(&xsize,&ysize);
@@ -813,16 +813,18 @@ resize (int signal)
   wresize(console,1,screensx);
   wresize(input,1,screensx);
   if (private && !privwinhidden)
-     wresize(private,privheight,screensx);
-  wresize(topic,1,screensx);
-  wresize(channel, privwinhidden ? screensy - 3 : screensy - (privheight + 3), screensx);
+      wresize(private,privheight,screensx);
+  if( topic )
+      wresize(topic,1,screensx);
+  wresize(channel, privwinhidden ? screensy - ( topicheight + 2 ) : screensy - (privheight + ( topicheight + 2 )), screensx);
 
   mvwin(console,screensy-2,0);
   mvwin(input,screensy-1,0);
   if(private && !privwinhidden)
-     mvwin(private,0,0);
-  mvwin(topic,privwinhidden ? 0 : privheight, 0);
-  mvwin(channel,privwinhidden ? 1 : privheight + 1, 0);
+      mvwin(private,0,0);
+  if( topic )
+      mvwin(topic,privwinhidden ? 0 : privheight, 0);
+  mvwin(channel,privwinhidden ? topicheight : privheight + topicheight, 0);
 
                   drawwin(channel, sb_pub);
   if(private && !privwinhidden )
@@ -1070,12 +1072,13 @@ initui (void)
   console = newwin (1, screensx, screensy - 2, 0);
   input = newwin (1, screensx, screensy - 1, 0);
   if (privheight) private = newwin (privheight, screensx, 0, 0);
-  topic = newwin (1, screensx, privheight, 0);
+  if( private || getintoption(CF_USETOPIC))
+      topic = newwin (1, screensx, privheight, 0);
   channel = newwin (screensy - (privheight+3), screensx, (privheight+1), 0);
   output  = newwin (1, screensx, 1, 0);
 
   /* promblems opening windows? bye! */
-  if (!console || !input || !topic || !channel || !output )
+  if (!console || !input || (!topic && getintoption(CF_USETOPIC))|| !channel || !output || ( !private && privheight ))
     {
       fprintf (stderr, "vchat-client: could not open windows, bailing out.\n");
       cleanup (0);
@@ -1097,19 +1100,22 @@ initui (void)
   if (has_colors()) {
      wattrset (console, COLOR_PAIR (9));
      wattrset (input, COLOR_PAIR (0));
-     wattrset (topic, COLOR_PAIR (9));
      wbkgd (output, COLOR_PAIR(8));
      wbkgd (console, COLOR_PAIR (9));
      wbkgd (channel, COLOR_PAIR (0));
      wbkgd (input, COLOR_PAIR (0));
      if (private)
         wbkgd (private, COLOR_PAIR (0));
-     wbkgd (topic, COLOR_PAIR (9));
+     if( topic ) {
+         wattrset (topic, COLOR_PAIR (9));
+         wbkgd (topic, COLOR_PAIR (9));
+     }
   } else {
      wattron (console, A_REVERSE);
-     wattron (topic, A_REVERSE);
      wattron (output, A_REVERSE);
      wbkgd(output, A_REVERSE);
+     if( topic )
+         wattron (topic, A_REVERSE);
   }
 
   /* set some options */
@@ -1292,6 +1298,9 @@ topicline (unsigned char *message)
 {
   int i;
   ncurs_attr old_att, new_att;
+
+  if( !topic )
+      return;
 
   memset( &new_att, 0, sizeof(new_att));
   BCOLR_SET( (&new_att), 8 );
