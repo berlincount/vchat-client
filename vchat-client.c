@@ -28,7 +28,6 @@
 #include <openssl/ssl.h>
 #ifndef NO_LOCALE
 #include <locale.h>
-#include <langinfo.h>
 #endif
 #include "vchat.h"
 
