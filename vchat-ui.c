@@ -46,6 +46,9 @@ static WINDOW         *topic            = NULL;
 static WINDOW         *channel          = NULL;
 static WINDOW         *private          = NULL;
 static WINDOW         *output           = NULL;
+
+static FILE           *vchat_logfile    = NULL;
+
 /* our screen dimensions */
 static int             screensx         = 0;
 static int             screensy         = 0;
@@ -75,6 +78,7 @@ struct sb_entry {
 
 struct sb_data {
   struct sb_entry   *entries;
+  struct sb_entry   *last;
   int                count;
   int                scroll;
 };
@@ -242,7 +246,10 @@ sb_add (struct sb_data *sb, unsigned char *line, time_t when) {
       newone->what = strdup(line);
       newone->link = sb->entries;
       newone->stamp= 0xffff;
-      if( sb->entries ) sb->entries->link = (struct sb_entry*)((unsigned long)sb->entries->link ^ (unsigned long)newone);
+      if( sb->entries )
+          sb->entries->link = (struct sb_entry*)((unsigned long)sb->entries->link ^ (unsigned long)newone);
+      else
+          sb->last     = newone;
       sb->entries  = newone;
   }
   return newone;
@@ -258,8 +265,10 @@ void flushout ( )
 
 void hideout( )
 {
-  outputshown = 0;
-  resize(0);
+  if( outputshown ) {
+      outputshown = 0;
+      resize(0);
+  }
 }
 
 void showout (void)
@@ -284,6 +293,12 @@ int writechan (unsigned char *str) {
   time_t now = time(NULL);
   tmp = sb_add(sb_pub,str,now);
 
+  if( getintoption( CF_KEEPLOG ) && vchat_logfile ) {
+      char date[16];
+      strftime( date, sizeof(date), "%Y%m%d%H%M%S", localtime(&now));
+      fprintf( vchat_logfile, "%s0%s\n", date, str);
+  }
+
   if ( (sb_pub->scroll == sb_pub->count) && ((filtertype == 0) || ( testfilter(tmp)))) {
      i = writescr(channel, tmp);
      wnoutrefresh(channel);
@@ -293,42 +308,56 @@ int writechan (unsigned char *str) {
 }
 
 int writecf (formtstr id,unsigned char *str) {
-    struct sb_entry *tmp;
-    int i = 0;
-    time_t now = time(NULL);
-    snprintf(tmpstr,TMPSTRSIZE,getformatstr(id),str);
-    tmp = sb_add(sb_pub,tmpstr,now);
-    if ( (sb_pub->scroll == sb_pub->count) &&
-         ((filtertype == 0) || ( testfilter(tmp)))) {
-        i = writescr(channel, tmp);
-        wnoutrefresh(channel);
-    }
-    consoleline(NULL);
-    return i;
+  struct sb_entry *tmp;
+  int i = 0;
+  time_t now = time(NULL);
+  snprintf(tmpstr,TMPSTRSIZE,getformatstr(id),str);
+  tmp = sb_add(sb_pub,tmpstr,now);
+
+  if( getintoption( CF_KEEPLOG ) && vchat_logfile ) {
+      char date[16];
+      strftime( date, sizeof(date), "%Y%m%d%H%M%S", localtime(&now));
+      fprintf( vchat_logfile, "%s0%s\n", date, str);
+  }
+
+  if ( (sb_pub->scroll == sb_pub->count) &&
+       ((filtertype == 0) || ( testfilter(tmp)))) {
+      i = writescr(channel, tmp);
+      wnoutrefresh(channel);
+  }
+  consoleline(NULL);
+  return i;
 }
 
 int writepriv (unsigned char *str) {
-    int i = 0;
-    time_t now = time (NULL);
-    struct sb_entry *tmp;
+  int i = 0;
+  if (private) {
 
-    if (private) {
-        tmp = sb_add(sb_priv,str,now);
-        if ( (sb_priv->scroll == sb_priv->scroll) &&
-             ((filtertype == 0) || ( testfilter(tmp)))) {
-            i = writescr(private, tmp);
-        }
-        if( privwinhidden ) {
-            privheight_desired = privwinhidden;
-            privwinhidden      = 0;
-            resize(0);
-        }
-        wnoutrefresh(private);
-        topicline(NULL);
-    } else
-        i = writechan( str );
+      time_t now = time (NULL);
+      struct sb_entry *tmp;
+      tmp = sb_add(sb_priv,str,now);
 
-    return i;
+      if( getintoption( CF_KEEPLOG ) && vchat_logfile ) {
+          char date[16];
+          strftime( date, sizeof(date), "%Y%m%d%H%M%S", localtime(&now));
+          fprintf( vchat_logfile, "%s1%s\n", date, str);
+      }
+
+      if ( (sb_priv->scroll == sb_priv->scroll) &&
+           ((filtertype == 0) || ( testfilter(tmp)))) {
+          i = writescr(private, tmp);
+      }
+      if( privwinhidden ) {
+          privheight_desired = privwinhidden;
+          privwinhidden      = 0;
+          resize(0);
+      }
+      wnoutrefresh(private);
+      topicline(NULL);
+  } else
+      i = writechan( str );
+
+  return i;
 }
 
 /* Get #if 's out of code */
@@ -465,6 +494,87 @@ writescr ( WINDOW *win, struct sb_entry *entry ) {
   WATTR_SET (win, orgattr);
 
   return charcount;
+}
+
+static void
+writelog_processentry ( FILE *file, struct sb_entry* entry )
+{
+  char *outtmp;
+  int  outoff = 0;
+  if( usetime ) {
+      outtmp = tmpstr+64;
+      strftime(outtmp,64,getformatstr(FS_TIME),localtime(&entry->when));
+      while(*outtmp)
+          if( *outtmp > 1 )
+              tmpstr[outoff++] = *(outtmp++);
+          else 
+              if( *(++outtmp))
+                  outtmp++;
+  }
+
+  outtmp = entry->what;
+  while(*outtmp)
+      while(*outtmp && ( outoff < TMPSTRSIZE-1) ) {
+         if( *outtmp > 1 )
+             tmpstr[outoff++] = *(outtmp++);
+         else
+             if( *(++outtmp))
+                 outtmp++;
+      tmpstr[outoff]=0; outoff = 0;
+      fputs( tmpstr, file );
+  }
+
+  fputc( '\n', file);
+}
+
+void
+writelog_i ( FILE *file)
+{
+  if( !private ) {
+      writelog( file);
+  } else {
+      struct sb_entry *now1= sb_pub->last, *prev1 = NULL, *tmp;
+      struct sb_entry *now2= sb_priv->last, *prev2 = NULL;
+      fputs( "Interleaved messages:\n\n", file);
+      while( now1 || now2 ) {
+          int process;
+          if( now1 && now2 ) {
+              process = ( now1->when < now2->when ) ? 1 : 2;
+          } else {
+              process = now1 ? 1 : 2;
+          }
+
+          if( process == 1 ) {
+              writelog_processentry( file, now1 );
+              tmp = now1; now1 = (struct sb_entry*)((unsigned long)now1->link ^ (unsigned long)prev1); prev1 = tmp;
+          } else {
+              writelog_processentry( file, now2 );
+              tmp = now2; now2 = (struct sb_entry*)((unsigned long)now2->link ^ (unsigned long)prev2); prev2 = tmp;
+          }
+      }
+  }
+}
+
+void
+writelog ( FILE *file )
+{
+  if( sb_pub->last ) {
+      struct sb_entry *now = sb_pub->last, *prev = NULL, *tmp;
+      fputs( "Public messages:\n\n", file);
+      while( now ) {
+          writelog_processentry( file, now );
+          tmp = now; now = (struct sb_entry*)((unsigned long)now->link ^ (unsigned long)prev); prev = tmp;
+      }
+      putc( '\n', file );
+  }
+  if( private && sb_priv->last ) {
+      struct sb_entry *now = sb_priv->last, *prev = NULL, *tmp;
+      fputs( "Private messages:\n\n", file);
+      while( now ) {
+          writelog_processentry( file, now );
+          tmp = now; now = (struct sb_entry*)((unsigned long)now->link ^ (unsigned long)prev); prev = tmp;
+      }
+  }
 }
 
 static void
@@ -1068,6 +1178,15 @@ initui (void)
   writeout (vchat_us_version);
   writeout (vchat_cm_version);
   showout( );
+
+  if( getintoption( CF_KEEPLOG ) ) {
+      unsigned char *logfile = getstroption( CF_LOGFILE );
+      if( logfile && *logfile ) {
+          if( *logfile == '~' )
+              logfile = tilde_expand( logfile );
+          vchat_logfile = fopen( logfile, "a+" );
+      }
+  }
 }
 
 /* render colorized line to window */
@@ -1169,6 +1288,8 @@ exitui (void)
      rl_callback_handler_remove ();
      endwin ();
      ui_init = 0;
+     if( vchat_logfile )
+         fclose( vchat_logfile );
   }
 }
 
@@ -1414,7 +1535,7 @@ addfilter( char colour, unsigned char *regex ) {
       /* couldn't compile regex ... print error, return */
       free( newflt );
 
-      snprintf( tmpstr, TMPSTRSIZE, "  %s  ", regex);
+      snprintf( tmpstr, TMPSTRSIZE, "  %s ", regex);
       writeout( " Bad regular expression: ");
       writeout( tmpstr );
       showout( );

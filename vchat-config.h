@@ -38,6 +38,7 @@ static volatile configoption configoptions[] = {
   {CF_CERTFILE,    CO_STR, "certfile",   "~/.vchat/cert",    NULL,       NULL      },
   {CF_KEYFILE,     CO_STR, "keyfile",    "~/.vchat/key",     NULL,       NULL      },
   {CF_FORMFILE,    CO_STR, "formatfile", "~/.vchat/formats", NULL,       NULL      },
+  {CF_LOGFILE,     CO_STR, "logfile",    "~/.vchat/log",     NULL,       NULL,     },
   {CF_USESSL,      CO_INT, "usessl",     (char *) 1,         (char *)-1, (unsigned char **)&usessl   },
   {CF_USECERT,     CO_INT, "usecert",    (char *) 1,         (char *)-1, NULL      },
   {CF_USETIME,     CO_INT, "usetime",    (char *) 1,         (char *)-1, (unsigned char **)&usetime  },
@@ -48,6 +49,7 @@ static volatile configoption configoptions[] = {
   {CF_SCROLLBACK,  CO_INT, "scrollback", (char *) 8192,      (char *)-1, NULL      },
   {CF_SCROLLBPRIVT,CO_INT, "privscrollt",(char *) 0,         (char *)-1, NULL      },
   {CF_SCROLLBACKT, CO_INT, "scrolltime", (char *) 86400,     (char *)-1, NULL      },
+  {CF_KEEPLOG,     CO_INT, "keeplog",    (char *) 0,         (char *)-1, NULL      },
   {CF_NIL,         CO_NIL, NULL,         NULL,               NULL,       NULL      },
 };
 

@@ -2,7 +2,7 @@
  * vchat-client - alpha version
  * vchat-commands.c - handling of client commands
  *
- * Copyright (C) 2001 Andreas Kotes <count@flatline.de>
+ * Copyright (C) 2003 Dirk Engling <erdgeist@erdgeist.org>
  *
  * This program is free software. It can be redistributed and/or modified,
  * provided that this copyright notice is kept intact. This program is
@@ -38,6 +38,7 @@ COMMAND_HELP,
 COMMAND_KEYS,
 COMMAND_QUIT,
 COMMAND_USER,
+COMMAND_LOG,
 COMMAND_FLT,
 COMMAND_PM,
 COMMAND_ACTION,
@@ -57,6 +58,7 @@ static void command_clflt   ( unsigned char *tail);
 static void command_rmflt   ( unsigned char *tail);
        void command_version ( unsigned char *tail);
 static void command_none    ( unsigned char *line);
+static void command_log     ( unsigned char *tail);
 
 static void output_default  ( unsigned char *tail);
 
@@ -74,6 +76,7 @@ commandtable[] = {
 { COMMAND_QUIT,    "QUIT",      4, command_quit,    SHORT_HELPTEXT_QUIT,    LONG_HELPTEXT_QUIT    },
 { COMMAND_USER,    "USER",      4, command_user,    SHORT_HELPTEXT_USER,    LONG_HELPTEXT_USER    },
 { COMMAND_FLT,     "FLT",       3, command_flt,     NULL,                   LONG_HELPTEXT_FLT     },
+{ COMMAND_LOG,     "LOG",       3, command_log,     NULL,                   NULL                  },
 { COMMAND_PM,      "MSG",       3, command_pm,      SHORT_HELPTEXT_MSG,     LONG_HELPTEXT_MSG     },
 { COMMAND_ACTION,  "ME",        2, command_action,  SHORT_HELPTEXT_ME,      LONG_HELPTEXT_ME      },
 { COMMAND_PMSHORT, "M",         1, command_pm,      NULL,                   SHORT_HELPTEXT_MSG    },
@@ -89,18 +92,26 @@ translatecommand( unsigned char **cmd)
   int cut = 0;
   int maxcut = 0;
 
+  /* We do only want to allow Command abbrevation to
+     the next newline, so that /VRES won't expand to /V RES */
+
   while( (*cmd)[maxcut] && ((*cmd)[maxcut] != 0x20) && ((*cmd)[maxcut] != '\n')) maxcut++;
   if( maxcut ) maxcut--;
 
+  /* Repeatedly scan command table for command, with growing abbrevation cut off */
   do {
+      /* Looks ugly, needs rewrite for better understanding */
       for( result = 0;
              (result != COMMAND_NONE) &&
              (strncasecmp(*cmd, commandtable[result].name, commandtable[result].len -
                ((commandtable[result].len - maxcut - cut > 0) ? cut : 0)));
            result++);
   } while ((cut < commandtable[0].len) && (commandtable[result].number == COMMAND_NONE) && (++cut));
-  
+
+  /* Just leave the tail... */
   (*cmd) += commandtable[result].len;
+
+  /* ... whose start may be affected by abbrevation */
   if( commandtable[result].number !=  COMMAND_NONE )
       (*cmd) -= cut;
       
@@ -122,10 +133,8 @@ doaction( unsigned char *tail )
       snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_TXPUBACTION), nick, tail);
       writechan (tmpstr);
   } else {
-
       /* missing action */
-      snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_BGTXPUBACTION));
-      writechan (tmpstr);
+      msgout( "  You do nothing. " );
   }
 }
 
@@ -159,10 +168,8 @@ privatemessagetx ( unsigned char *tail ) {
       ul_msgto(tail);
           
   } else {
-      
-      /* missing nick or message body inform user */
-      snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_BGPRIVMSG));
-      writepriv (tmpstr);
+      /* Bump user to fill in missing parts */
+      msgout( *tail ? "  Won't send empty message. ":"  Recipient missing. " );
   }
 }
 
@@ -200,7 +207,6 @@ handleline (unsigned char *line)
           }
           break;
       default:
-
           /* generic server command, send to server, show to user */
           snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_COMMAND), line);
           networkoutput (line);
@@ -237,17 +243,17 @@ static void
 command_user( unsigned char *tail)
 {
   while( *tail == ' ') tail++;
-  if( strlen(tail) >= 3) {
+  if( *tail ) {
       unsigned char * out = ul_matchuser( tail);
       if( *out ) {
           snprintf( tmpstr, TMPSTRSIZE, getformatstr(FS_USMATCH), tail, out);
       } else {
-          snprintf( tmpstr, TMPSTRSIZE, getformatstr(FS_ERR), "No user matched that substring");
+          snprintf( tmpstr, TMPSTRSIZE, getformatstr(FS_ERR), "  No user matched that regex. ");
       }
   } else {
-      snprintf( tmpstr, TMPSTRSIZE, getformatstr(FS_ERR), "Specify at least 3 characters to match users");
+      snprintf( tmpstr, TMPSTRSIZE, getformatstr(FS_ERR), "  Which user? ");
   }
-  writechan( tmpstr );
+  msgout( tmpstr );
 }
 
 /* handle a "/msg " request */
@@ -296,10 +302,8 @@ command_help (unsigned char *line) {
 /* handle an unknown command */
 static void
 command_none( unsigned char *line) {
-    flushout( ); 
     snprintf(tmpstr, TMPSTRSIZE, "  Unknown client command: %s ", line);
-    writeout(tmpstr);
-    showout( );
+    msgout(tmpstr);
 }
  
 /* handle a "/flt " request */
@@ -365,4 +369,26 @@ command_version( unsigned char *tail)
   writeout (vchat_us_version);
   writeout (vchat_cm_version);
   showout();
+}
+
+/* Undocumented feature */
+void
+command_log ( unsigned char *tail)
+{
+  /* log to file */
+  FILE *logfile = NULL;
+  while( *tail == ' ' )
+      tail++;
+  if( (logfile = fopen( tail, "w")) ) {
+    if( *tail == '_' ) {
+        writelog_i(logfile);
+    } else {
+        writelog(logfile);
+    }
+    fclose( logfile );
+    msgout("  Log written. ");
+  } else {
+    snprintf(tmpstr, TMPSTRSIZE, "  Can't open file: %s ", tail);
+    msgout(tmpstr);
+  }
 }
