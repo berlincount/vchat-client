@@ -1,0 +1,89 @@
+# !!! This file must be named ~/.vchat/formats  in order to work !!!
+
+# please be REALLY REALLY careful here
+# the following lines will be used as
+# format strings
+
+# ^ introduces a style change:
+# TODO: ^^ == '^'
+
+# 0 - default colorpair for window
+# 1 - colorpair 1 RED
+# 2 - colorpair 2 GREEN
+# 3 - colorpair 3 YELLOW
+# 4 - colorpair 4 BLUE
+# 5 - colorpair 5 MAGENTA
+# 6 - colorpair 6 CYAN
+# 7 - colorpair 7 WHITE
+# 8 - colorpair 8 WHITE on RED
+# 9 - colorpair 9 WHITE on BLUE
+# aA - alternate charset on/off
+# bB - bold on/off
+# dD - dim on/off
+# iI - invisible on/off
+# lL - blink on/off
+# nN - normal on/off
+# pP - protected on/off
+# rR - reverse on/off
+# sS - standout on/off
+# uU - underlined on/off
+
+# devlogs colorset
+
+
+# normal text - normal
+FS_PLAIN =		"%s"
+FS_CHAN =		"%s"
+FS_PRIV =		"%s"
+
+#server and global info, errors - red.
+FS_SERV =		"^1%s"
+FS_GLOB =		"^1%s"
+FS_ERR =		"^1%s"
+
+#Stuff
+FS_DBG =		"^3%s"
+FS_IDLE =		"^8%s"
+FS_TIME =		"^2[%H:%M]^0 "
+FS_TOPICW =		"[ Channel %d: %s"
+FS_NOTOPICW =		"[ Channel %d has no topic"
+FS_CONSOLE =		"[ %s@%s:%d, use .h to get help"
+FS_CONNECTED =		"^2# Connected to '^0%s^2', port ^0%d^2 ..."
+FS_TOPIC =		"^1# Channel ^6%d^2 topic is: '^0%s^2'"
+FS_NOTOPIC =		"^1# Channel ^6%d^2 has no topic"
+FS_CHGTOPIC =		"^1# ^4%s^1 changes topic to: '^0%s^1'"
+FS_USONLINE =		"^0# Currently verpeiling:  %s users"
+FS_USMATCH =		"^0# Users matching \"%s\":%s"
+FS_SIGNON =		"^1# ^4%s^1 %s"
+FS_SIGNOFF =		"^1# ^4%s^1 %s"
+FS_JOIN =		"^1# ^4%s^1 %s ^0%d"
+FS_LEAVE =		"^1# ^4%s^1 %s ^0%d"
+FS_NICKCHANGE =		"^1# ^4%s^1 ^4%s^1 %s"
+FS_UNKNOWNMSG =		"?? unknown message: %s"
+FS_BOGUSMSG =		"?? bogus message: %s"
+
+# .u-style public urls -
+FS_RXPUBURL =		"^0[^8%s^0] %s"
+FS_MYPUBURL =		"^0[^8^u%s^U^0] %s"
+
+# public messages - nicks -> yellow & white
+FS_RXPUBMSG =		"^0<^3%s^0> %s"
+FS_MYPUBMSG =		"^0<^7%s^0> %s"
+FS_TXPUBMSG =		"^0<^3^b%s^B^0> %s"
+
+# private msgs - enclosed in ** or (), nick is white
+FS_RXPRIVMSG =		"^7(%s^7)^3 %s"
+FS_TXPRIVMSG =		"^1*^7%s^1*^0 %s"
+FS_BGPRIVMSG =		"^1! Bogus message, not sent."
+
+# public actions - yellow & blue
+FS_PUBACTION =		"^1*^0 ^3%s^0 %s"
+FS_TXPUBACTION =	"^1*^0 ^4^b%s^B^0 %s"
+FS_BGTXPUBACTION =	"^1! No action taken."
+
+FS_COMMAND =		"^2## command: %s"
+FS_LOCALCOMMAND =	"^2## local command (not executed yet): %s"
+FS_BOGUSCOMMAND =	"^2## bogus command (not executed or sent): %s"
+FS_SBINF =		" [%d/%d] "
+FS_SBINF_SCROLL =       " ^8[%d/%d]^0 "
+
