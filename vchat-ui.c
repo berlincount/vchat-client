@@ -225,12 +225,12 @@ sb_flush ( struct sb_data *sb ) {
   sb->entries = NULL;
 }
 
-static void
+/*static void
 sb_clear ( struct sb_data **sb ) {
   sb_flush(*sb);
   free( *sb );
   *sb = NULL;
-}
+}*/
 
 static struct sb_entry*
 sb_add (struct sb_data *sb, unsigned char *line, time_t when) {
@@ -272,8 +272,9 @@ void showout (void)
 
 void writeout (unsigned char *str)
 {
+  int i;
   sb_add(sb_out,str,time(NULL));
-  int i = 1 + gettextwidth( str );
+  i = 1 + gettextwidth( str );
   if( i > outputwidth_desired ) outputwidth_desired = i;
 }
 

@@ -300,7 +300,7 @@ ulnc_complete (const unsigned char *text, int state, int value, int (*checkfn)(u
 unsigned char *
 ul_nickcomp (const unsigned char *text, int state)
 {
-  int ncasemode;
+  int ncasemode = 1;
   unsigned char *name = NULL;
   if (!state) ncasemode = 0;
   if (!ncasemode) {
@@ -327,7 +327,7 @@ int ulnc_ncasenickc(user *tmp, const unsigned char *text, int len, int value) {
 unsigned char *
 ul_cnickcomp (const unsigned char *text, int state)
 {
-  int ncasemode;
+  int ncasemode = 1;
   static unsigned char *name = NULL;
 
   if (!state) ncasemode = 0;
@@ -356,7 +356,7 @@ int ulnc_ncasenickm(user *tmp, const unsigned char *text, int len, int value) {
 unsigned char *
 ul_mnickcomp (const unsigned char *text, int state)
 {
-  int ncasemode;
+  int ncasemode = 1;
   static unsigned char *name = NULL;
 
   if (!state) ncasemode = 0;
