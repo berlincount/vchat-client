@@ -20,7 +20,19 @@
 #include <string.h>
 #include <sys/types.h>
 #include <regex.h>
+#include <time.h>
+#include <readline/readline.h>
 #include "vchat.h"
+
+struct user
+{
+  unsigned char *nick; /* nick of user */
+  int chan;            /* channel user is on */
+  int chan_valid;      /* are we sure he is? */
+  int client_pv;       /* client protocol version */
+  int messaged;        /* did we message with this user? */
+  struct user *next;   /* next user in linked list */
+};
 
 /* version of this module */
 unsigned char *vchat_us_version = "$Id$";
@@ -79,6 +91,7 @@ ul_add (unsigned char *name, int ignored)
 	    }
 	}
     }
+  rl_last_func = NULL;
 }
 
 /* delete user from userlist */
@@ -119,6 +132,7 @@ ul_del (unsigned char *name, int ignored)
       ltmp = tmp;
       tmp = tmp->next;
     }
+  rl_last_func = NULL;
 }
 
 /* let user join a channel */
@@ -131,6 +145,7 @@ ul_join (unsigned char *name, int channel)
       ownjoin (channel);
       return;
     } else ul_moveuser(name,channel);
+  rl_last_func = NULL;
 }
 
 user *
@@ -169,20 +184,39 @@ ul_matchuser( unsigned char *regex) {
   return tmpstr;
 }
 
+static void
+ul_usertofront( user *who ) {
+  user *tmp = nicks;
+
+  while( tmp->next && ( tmp->next != who ) )
+      tmp = tmp->next;
+
+  if( tmp->next == who ) {
+      tmp->next = tmp->next->next;      
+      who->next = nicks;
+      nicks     = who;
+  }
+  rl_last_func = NULL;
+}
+
 void
 ul_msgto (unsigned char *name) {
   user *tmp = ul_finduser(name);
 
-  if (tmp)
-     tmp->messaged |= 1;
+  if (tmp) {
+      tmp->messaged |= 1;
+      ul_usertofront( tmp );
+  }
 }
 
 void
 ul_msgfrom (unsigned char *name) {
   user *tmp = ul_finduser(name);
 
-  if (tmp)
-     tmp->messaged |= 2;
+  if (tmp) {
+      tmp->messaged |= 2;
+      ul_usertofront( tmp );
+  }
 }
 
 /* set channel of user */
@@ -195,6 +229,7 @@ ul_moveuser (unsigned char *name, int channel) {
      tmp->chan = channel;
      tmp->chan_valid = 1;
   }
+  rl_last_func = NULL;
 }
 
 /* let user leave a channel */
@@ -215,6 +250,7 @@ ul_leave (unsigned char *name, int channel)
       tmp->chan_valid = 0;
       return;
     }
+  rl_last_func = NULL;
 }
 
 /* let user change nick */
@@ -235,6 +271,7 @@ ul_nickchange (unsigned char *oldnick, unsigned char *newnick)
       tmp->nick = strdup (newnick);
       return;
     }
+  rl_last_func = NULL;
 }
 
 /* clear userlist */
@@ -254,6 +291,7 @@ ul_clear (void)
     }
   /* mark list empty */
   nicks = NULL;
+  rl_last_func = NULL;
 }
 
 int ulnc_casenick(user *tmp, const unsigned char *text, int len, int value) {
