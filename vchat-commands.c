@@ -118,6 +118,22 @@ translatecommand( unsigned char **cmd)
   return result;
 }
 
+/* handle thought */
+static void
+dothink( unsigned char *tail, char nice )
+{
+  while( *tail == ' ' ) tail++;
+  
+  /* send users message to server */
+  snprintf (tmpstr, TMPSTRSIZE, ".%c %s", nice, tail);
+  networkoutput (tmpstr);
+          
+  /* show action in channel window */
+  snprintf (tmpstr, TMPSTRSIZE, nice == 'O' ? getformatstr(FS_TXPUBNTHOUGHT) : getformatstr(FS_TXPUBTHOUGHT), tail);
+  writechan (tmpstr);
+}
+
+
 /* handle action */
 static void
 doaction( unsigned char *tail )
@@ -207,16 +223,8 @@ handleline (unsigned char *line)
           }
           break;
       case 'o':
-          /* We do think something, the ugly way :) */
-          snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_TXPUBTHOUGHT), line);
-          writechan (tmpstr);
-          networkoutput (line);
-          break;
       case 'O':
-          /* We do think something, the nice way :) */
-          snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_TXPUBNTHOUGHT), line);
-          writechan (tmpstr);
-          networkoutput (line);
+          dothink( line + 2, line[1] );
           break;
       default:
           /* generic server command, send to server, show to user */
