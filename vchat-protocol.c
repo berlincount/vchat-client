@@ -26,6 +26,10 @@
 #include <readline/readline.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
+#ifndef NO_LOCALE
+#include <locale.h>
+#include <langinfo.h>
+#endif
 
 /* local includes */
 #include "vchat.h"
@@ -62,6 +66,7 @@ static void anonlogin (unsigned char *message);
 static void topicinfo (unsigned char *message);
 static void pubaction (unsigned char *message);
 static void pubthoughts (unsigned char *message);
+static void serverlogin (unsigned char *message);
 static void idleprompt (unsigned char *message);
 static void topicchange (unsigned char *message);
 static void pmnotsent (unsigned char *message);
@@ -408,6 +413,16 @@ pubthoughts (unsigned char *message)
   writechan (tmpstr);
 }
 
+/* parse and handle server logon */
+static void
+serverlogin (unsigned char *message)
+{
+#ifndef NO_LOCALE
+  int utf8=!strcmp(nl_langinfo(CODESET), "UTF-8");
+  if (utf8)
+    networkoutput(".e utf8");
+#endif
+}
 /* parse and handle an idle message
  *  format: 305
  *    vars: %s message */

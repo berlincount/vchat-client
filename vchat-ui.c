@@ -1539,14 +1539,14 @@ clearfilters( char colour ) {
 void
 removefilter( unsigned char *tail ) {
   int rmv = 0, val;
-  unsigned char* end;
+  char* end;
 
   flushout( );
 
   rmv = removefromfilterlist( test_simplerm, (void *)tail, 0 );
   if(!rmv) {
-      val = strtol((char*)tail, (char **)&end, 10);
-      if( (tail != end) && (!*end) )
+      val = strtol((char*)tail, &end, 10);
+      if( (tail != (unsigned char*)end) && (!*end) )
       rmv = removefromfilterlist( test_numericrm, (void *)val, 0);
   }
 

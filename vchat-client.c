@@ -26,6 +26,10 @@
 #include <signal.h>
 #include <readline/readline.h>
 #include <openssl/ssl.h>
+#ifndef NO_LOCALE
+#include <locale.h>
+#include <langinfo.h>
+#endif
 #include "vchat.h"
 
 /* version of this module */
@@ -278,8 +282,8 @@ setstroption (confopt option, unsigned char *string)
          configoptions[i].value = strdup(string);
        else
          configoptions[i].value = NULL;
-      if (configoptions[i].localvar)
-         *configoptions[i].localvar = configoptions[i].value;
+      if (configoptions[i].localvar.pstr)
+         *configoptions[i].localvar.pstr = configoptions[i].value;
     }
 }
 
@@ -294,17 +298,19 @@ setnoption (unsigned char *name, unsigned char *string)
   for (i = 0; configoptions[i].type != CO_NIL; i++)
     if (!strcmp(configoptions[i].varname,name)) {
       if (configoptions[i].type == CO_STR) {
-         if (configoptions[i].value)
-           free(configoptions[i].value);
-         if (string)
-           configoptions[i].value = strdup(string);
-         else
-           configoptions[i].value = NULL;
-       } else if (configoptions[i].type == CO_INT) {
-         configoptions[i].value = (char *) atoi(string);
-       }
-      if (configoptions[i].localvar)
-         *configoptions[i].localvar = configoptions[i].value;
+        if (configoptions[i].value)
+          free(configoptions[i].value);
+        if (string)
+          configoptions[i].value = strdup(string);
+        else
+          configoptions[i].value = NULL;
+        if (configoptions[i].localvar.pstr)
+           *configoptions[i].localvar.pstr = configoptions[i].value;
+      } else if (configoptions[i].type == CO_INT) {
+        configoptions[i].value = (char *) atoi(string);
+        if (configoptions[i].localvar.pint)
+           *configoptions[i].localvar.pint = (int)configoptions[i].value;
+      }
     }
 }
 
@@ -337,8 +343,8 @@ setintoption (confopt option, int value)
   for (i = 0; configoptions[i].type != CO_NIL; i++)
     if ((configoptions[i].id == option) && (configoptions[i].type == CO_INT)) {
        configoptions[i].value = (char *) value;
-       if (configoptions[i].localvar)
-         *configoptions[i].localvar = configoptions[i].value;
+       if (configoptions[i].localvar.pint)
+          *configoptions[i].localvar.pint = (int)configoptions[i].value;
     }
 }
 
@@ -471,6 +477,10 @@ main (int argc, char **argv)
 {
   int pchar;
   int cmdsunparsed = 1;
+
+#ifndef NO_LOCALE
+  setlocale(LC_ALL,"");
+#endif
 
   loadconfig (GLOBAL_CONFIG_FILE);
   loadconfig (getstroption (CF_CONFIGFILE));

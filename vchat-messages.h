@@ -64,7 +64,7 @@ servermessage servermessages[] = {
   {"169", SM_INFO, NULL, NULL},
 /* 201 <protocol> <server-name>
    Server signon */
-  {"201", SM_IGNORE, NULL, NULL},
+  {"201", SM_IGNORE, serverlogin, NULL},
 /* 211 <nickname>
    User signon */
   {"211", SM_USERINFO, usersignon, NULL},
@@ -83,6 +83,9 @@ servermessage servermessages[] = {
 /* 241 <oldnick> <newnick>
    Nickname change */
   {"241", SM_USERINFO, usernickchange, NULL},
+/* 269 Encoding set to <encoding>
+   answer to .e */
+  {"269", SM_INFO, NULL, NULL},
 /* 120 <registered nick> */
   {"120", SM_INFO, login, NULL},
 /* 121 You're not logged in */
@@ -117,6 +120,8 @@ servermessage servermessages[] = {
   {"414", SM_ERROR, NULL, NULL},
 /* 415 Nickname reserved */
   {"415", SM_ERROR, nickerr, NULL},
+/* 469 I'm very sorry, FNORD is not know to this system, try .E for a * list */
+  {"469", SM_ERROR, NULL, NULL},
 /* 501 Disconnected by own request */
   {"501", SM_INFO, NULL, NULL},
 /* 502 Disconnected by operator */

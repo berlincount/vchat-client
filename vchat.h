@@ -59,7 +59,10 @@ struct configoption
   unsigned char *varname;
   unsigned char *defaultvalue;
   unsigned char *value;
-  unsigned char **localvar;
+  union {
+    unsigned char **pstr;
+    int            *pint;
+  } localvar;
 };
 
 typedef struct configoption configoption;
