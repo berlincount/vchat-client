@@ -1196,17 +1196,17 @@ initui (void)
               char   date[16];
               time_t now; struct tm now_tm;
               int    dst, lenstr;
-              char  *str;
               while( !feof( vchat_logfile)) {
                   if( (fread( date, 14, 1, vchat_logfile) == 1) &&
                       (strptime( date, "%Y%m%d%H%M%S", &now_tm)) &&
-                      (((dst = fgetc( vchat_logfile )) == '0') || (dst == '1')) &&
-                      (str = fgetln(vchat_logfile, &lenstr))&&
-                      (str[lenstr-1] == '\n'))
+                      (((dst = fgetc( vchat_logfile )) == '0') || (dst == '1')))
                   {
-                      str[lenstr-1] = 0;
-                      now = mktime( &now_tm );
-                      sb_add( dst == '0' ? sb_pub : sb_priv, str, now);
+                      if(fgets(tmpstr, TMPSTRSIZE, vchat_logfile)) {
+                          lenstr = strlen( tmpstr );
+                          tmpstr[lenstr-1] = '\0';
+                          now = mktime( &now_tm );
+                          sb_add( dst == '0' ? sb_pub : sb_priv, tmpstr, now);
+                      }
                   } else {
                       fseek( vchat_logfile, 0, SEEK_END);
                       fgetc( vchat_logfile );
