@@ -1089,18 +1089,16 @@ initui (void)
 
   /* set colors for windows */
   if (has_colors()) {
-//     wattrset (console, COLOR_PAIR (9));
+     wattrset (console, COLOR_PAIR (9));
      wattrset (input, COLOR_PAIR (0));
-//     wattrset (topic, COLOR_PAIR (9));
+     wattrset (topic, COLOR_PAIR (9));
      wbkgd (output, COLOR_PAIR(8));
-//     wbkgd (console, COLOR_PAIR (9));
+     wbkgd (console, COLOR_PAIR (9));
      wbkgd (channel, COLOR_PAIR (0));
      wbkgd (input, COLOR_PAIR (0));
-     wattron (console, A_REVERSE);
-     wattron (topic, A_REVERSE);
      if (private)
         wbkgd (private, COLOR_PAIR (0));
-//     wbkgd (topic, COLOR_PAIR (9));
+     wbkgd (topic, COLOR_PAIR (9));
   } else {
      wattron (console, A_REVERSE);
      wattron (topic, A_REVERSE);
