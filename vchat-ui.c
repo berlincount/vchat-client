@@ -1150,6 +1150,7 @@ initui (void)
   rl_readline_name = "vchat-client";
 
   /* set up nick completion functions .. */
+  rl_ignore_completion_duplicates = 0;
 #ifdef OLDREADLINE
   rl_completion_entry_function = (Function *) ul_nickcomp;
   rl_attempted_completion_function = vcccomplete;
@@ -1322,10 +1323,8 @@ nickprompt (void)
   lastlen = 23;
 
   /* wipe input line and reset cursor */
-  wmove (input, 0, 0);
-  for (i = 0; i < input->_maxx; i++)
-  waddch(input, ' ');
-  wmove(input, 0, 0);
+  rl_kill_full_line(0,0);
+  wclear(input);
 
   /* reset consoleline */
   consoleline(NULL);
