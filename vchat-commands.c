@@ -238,8 +238,6 @@ handleline (unsigned char *line)
       line++;
       commandtable[translatecommand(&line)].handler(line);
       break;
-  case '0':
-      break;
   default:
       output_default( line );
       break;   
