@@ -341,7 +341,7 @@ int writepriv (unsigned char *str, int maybeep) {
           i = writescr(private, tmp);
       }
       if( privwinhidden ) {
-          if( maybeep && getintoption( CF_BELLPRIV ))
+          if( (maybeep != 0) && (getintoption( CF_BELLPRIV ) != 0 ))
             putchar( 7 );
           privheight_desired = privwinhidden;
           privwinhidden      = 0;
