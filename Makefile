@@ -12,7 +12,7 @@ CFLAGS = -Wall -Os
 ## use this line when you've got an readline before 4.(x|2)
 #CFLAGS += -DOLDREADLINE
 
-CFLAGS += $(OLDREADLINE) $(EXPERIMENTAL_IPV6)
+CFLAGS += $(OLDREADLINE)
 
 ## you might need one or more of these:
 #CFLAGS += -I/usr/local/ssl/include -L/usr/local/ssl/lib

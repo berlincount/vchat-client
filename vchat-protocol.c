@@ -70,6 +70,7 @@ static void serverlogin (unsigned char *message);
 static void idleprompt (unsigned char *message);
 static void topicchange (unsigned char *message);
 static void pmnotsent (unsigned char *message);
+static int  getportnum(unsigned char *port);
 
 /* declaration of server message array */
 #include "vchat-messages.h"
@@ -98,16 +99,8 @@ vcconnect (unsigned char *server, unsigned char *port)
   EVP_PKEY *certpubkey = NULL;
   /* temporary result */
   int result;
-#ifndef EXPERIMENTAL_IPV6
-  /* servers hostentry */
-  struct hostent *serverhe;
-  /* servers sockaddr */
-  struct sockaddr_in serversi;
-  int portnr = strtoul(port,NULL,10);
-#else
   /* protocol independent server addresses */
   struct addrinfo hints, *addr, *tmpaddr;
-#endif
   /* SSL-context */
   SSL_CTX *sslctx = NULL;
   /* SSL server certificate */
@@ -121,25 +114,6 @@ vcconnect (unsigned char *server, unsigned char *port)
   /* variable for verify return */
   long verify;
 
-#ifndef EXPERIMENTAL_IPV6
-  /* get host-entry for server */
-  if ((serverhe = gethostbyname (server)) == NULL)
-    return 0;
-
-  /* get socket */
-  if ((serverfd = socket (AF_INET, SOCK_STREAM, 0)) == -1)
-    return 0;
-
-  /* initialize datastructure for connect */
-  serversi.sin_family = AF_INET;
-  serversi.sin_port = htons(portnr);
-  serversi.sin_addr = *((struct in_addr *) serverhe->h_addr);
-  memset (&(serversi.sin_zero), 0, 8);
-
-  /* attempt connect */
-  if (connect (serverfd, (struct sockaddr *) &serversi, sizeof (struct sockaddr)) == -1)
-    return 0;
-#else
   memset( &hints, 0, sizeof(hints));
   /* Expect v4 and v6 */
   hints.ai_family   = PF_UNSPEC;
@@ -160,10 +134,9 @@ vcconnect (unsigned char *server, unsigned char *port)
   if( serverfd < 0 )
     return 0;
   freeaddrinfo( tmpaddr );
-#endif
 
   /* inform user */
-  snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_CONNECTED), server, strtoul(port,NULL,10));
+  snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_CONNECTED), server, getportnum(port));
   writechan (tmpstr);
 
   usessl = getintoption(CF_USESSL);
@@ -391,6 +364,20 @@ vcdisconnect ()
   serverfd = -1;
 }
 
+/* lookup a port number by service string */
+static int getportnum (unsigned char *port)
+{
+  char *endpt = NULL;
+  struct servent *service = getservbyname(port, "tcp");
+  int dport = strtoul( port, &endpt, 10);
+
+  if( service )
+    return htons( service->s_port );
+  if( (*endpt == 0) && ((char *)port != endpt) )
+    return dport;
+  return -1;
+}
+
 /* handle a pm not sent error
  *  format: 412 %s */
 static void
@@ -566,7 +553,7 @@ justloggedin (unsigned char *message)
      setstroption(CF_NICK,str1);
 
   /* show change in console window */
-  snprintf (consolestr, CONSOLESTRSIZE, getformatstr(FS_CONSOLE), nick, getstroption (CF_SERVERHOST), strtoul(getstroption (CF_SERVERPORT),NULL,10));
+  snprintf (consolestr, CONSOLESTRSIZE, getformatstr(FS_CONSOLE), nick, getstroption (CF_SERVERHOST), getportnum(getstroption (CF_SERVERPORT)));
   consoleline (NULL);
 
   /* announce login as servermessage */
@@ -608,7 +595,7 @@ ownnickchange (unsigned char *newnick)
   setstroption(CF_NICK,newnick);
 
   /* show change in console window */
-  snprintf (consolestr, CONSOLESTRSIZE, getformatstr(FS_CONSOLE), nick, getstroption (CF_SERVERHOST), strtoul(getstroption (CF_SERVERPORT),NULL,10));
+  snprintf (consolestr, CONSOLESTRSIZE, getformatstr(FS_CONSOLE), nick, getstroption (CF_SERVERHOST), getportnum(getstroption (CF_SERVERPORT)));
   consoleline (NULL);
 }
 

@@ -27,10 +27,6 @@ If that fails due to some readline fuckups, try again with:
 
 $ make OLDREADLINE=-DOLDREADLINE
 
-You may also try to enable the experimental ipv6 support
-
-$ make EXPERIMENTAL_IPV6=-DEXPERIMENTAL_IPV6
-
 If you are administrator of your computer and want to install
 vchat-client permanently, type:
 
