@@ -6,8 +6,8 @@
 # configuration                              #
 ##############################################
 
-CFLAGS = -Wall -Os
-#CFLAGS = -Wall -g -ggdb
+#CFLAGS = -Wall -Os
+CFLAGS = -Wall -g -ggdb
 
 ## use this line when you've got an readline before 4.(x|2)
 #CFLAGS += -DOLDREADLINE

@@ -386,15 +386,24 @@ cleanup (int signal)
   exit (0);
 }
 
+static int oldseconds = 0;
+
 void calleverysecond( void ) {
   /* timetriggered execution, don't rely on being called every 1000us */
   /* rather see it as a chance for being called 9 times in 10 seconds */
   /* so check time() */
+  time_t now        = time( NULL );
+  struct tm *mytime = localtime( &now );
+  if( mytime->tm_sec < oldseconds ) {
+      consoleline( NULL );
+  }
+  oldseconds = mytime->tm_sec;
 
   if(quitrequest)
       quitrequest--;
   if(outputcountdown && !--outputcountdown)
       hideout( );
+
 }
 
 /* this function is called in the master loop */
@@ -437,19 +446,23 @@ eventloop (void)
 }
 
 void usage(unsigned char *name) {
-    printf   ("usage: %s [-C config-file] [-l] [-z] [-s host] [-p port] [-c channel] [-n nickname]\n",name);
-    puts     ("   -C   load a second config-file, overriding the first one\n");
-    puts     ("   -l   local connect (no SSL + connects localhost:2323)\n");
-    puts     ("   -z   don't use certificate files\n");
+    printf   ("usage: %s [-C config-file] [-F formats] [-l] [-z] [-s host] [-p port] [-c channel] [-n nickname] [-k] [-K] [-L logfile]\n",name);
+    puts     ("   -C   load a second config-file, overriding the first one");
+    puts     ("   -F   load format strings (skins) from this file");
+    puts     ("   -l   local connect (no SSL + connects localhost:2323)");
+    puts     ("   -z   don't use certificate files");
     printf   ("   -s   set server (default \"%s\")\n",getstroption(CF_SERVERHOST));
     printf   ("   -p   set port (default %d)\n",getintoption(CF_SERVERPORT));
     printf   ("   -c   set channel (default %d)\n",getintoption(CF_CHANNEL));
     if (nick)
        printf("   -n   set nickname (default \"%s\")\n",nick);
     else
-       puts  ("   -n   set nickname\n");
+       puts  ("   -n   set nickname");
     printf   ("   -f   set from (default \"%s\")\n",getstroption(CF_FROM));
-    puts     ("   -h   gives this help\n");
+    puts     ("   -k   keep autolog");
+    puts     ("   -K   don't keep autolog");
+    printf   ("   -L   use this file as logfile (default \"%s\")\n",getstroption(CF_LOGFILE));
+    puts     ("   -h   gives this help");
 }
 
 /* main - d'oh */
@@ -461,12 +474,10 @@ main (int argc, char **argv)
 
   loadconfig (GLOBAL_CONFIG_FILE);
   loadconfig (getstroption (CF_CONFIGFILE));
-  loadformats(GLOBAL_FORMAT_FILE);
-  loadformats(getstroption (CF_FORMFILE));
 
   /* parse commandline */
   while (cmdsunparsed) {
-      pchar = getopt(argc,argv,"C:lzs:p:c:n:f:h");
+      pchar = getopt(argc,argv,"C:F:lzs:p:c:n:f:kKL:h");
 #ifdef DEBUG
       fprintf(stderr,"parse commandline: %d ('%c'): %s\n",pchar,pchar,optarg);
 #endif
@@ -474,6 +485,7 @@ main (int argc, char **argv)
       switch (pchar) {
 	  case -1 : cmdsunparsed = 0; break;
           case 'C': loadconfig(optarg); break;
+          case 'F': setstroption(CF_FORMFILE,optarg); break;
           case 'l': setintoption(CF_USESSL,0); break;
           case 'z': setintoption(CF_USECERT,0); break;
           case 's': setstroption(CF_SERVERHOST,optarg); break;
@@ -481,12 +493,18 @@ main (int argc, char **argv)
           case 'c': setintoption(CF_CHANNEL,strtol(optarg,NULL,10)); break;
           case 'n': setstroption(CF_NICK,optarg); break;
           case 'f': setstroption(CF_FROM,optarg); break;
+          case 'k': setintoption(CF_KEEPLOG,1); break;
+          case 'K': setintoption(CF_KEEPLOG,0); break;
+          case 'L': setstroption(CF_LOGFILE,optarg); break;
           case 'h': usage(argv[0]); exit(0); break;
           default : usage(argv[0]); exit(1);
       }
   }
 
   if (optind < argc) { usage(argv[0]); exit(1); }
+
+  loadformats(GLOBAL_FORMAT_FILE);
+  loadformats(getstroption (CF_FORMFILE));
 
   if (!getintoption(CF_USESSL)) {
       setstroption(CF_SERVERHOST,"localhost");

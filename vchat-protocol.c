@@ -73,6 +73,7 @@ static void pmnotsent (unsigned char *message);
 extern int status;
 
 int usessl = 1;
+unsigned char *encoding;
 
 /* connects to server */
 int

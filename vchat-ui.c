@@ -317,7 +317,7 @@ int writecf (formtstr id,unsigned char *str) {
   if( getintoption( CF_KEEPLOG ) && vchat_logfile ) {
       char date[16];
       strftime( date, sizeof(date), "%Y%m%d%H%M%S", localtime(&now));
-      fprintf( vchat_logfile, "%s0%s\n", date, str);
+      fprintf( vchat_logfile, "%s0%s\n", date, tmpstr);
   }
 
   if ( (sb_pub->scroll == sb_pub->count) &&
@@ -1185,16 +1185,38 @@ initui (void)
   writeout (vchat_cm_version);
   showout( );
 */
-  resize(0);  
 
   if( getintoption( CF_KEEPLOG ) ) {
       unsigned char *logfile = getstroption( CF_LOGFILE );
       if( logfile && *logfile ) {
           if( *logfile == '~' )
               logfile = tilde_expand( logfile );
-          vchat_logfile = fopen( logfile, "a+" );
+          vchat_logfile = fopen( logfile, "r+" );
+          if( vchat_logfile ) {
+              char   date[16];
+              time_t now; struct tm now_tm;
+              int    dst, lenstr;
+              char  *str;
+              while( !feof( vchat_logfile)) {
+                  if( (fread( date, 14, 1, vchat_logfile) == 1) &&
+                      (strptime( date, "%Y%m%d%H%M%S", &now_tm)) &&
+                      (((dst = fgetc( vchat_logfile )) == '0') || (dst == '1')) &&
+                      (str = fgetln(vchat_logfile, &lenstr))&&
+                      (str[lenstr-1] == '\n'))
+                  {
+                      str[lenstr-1] = 0;
+                      now = mktime( &now_tm );
+                      sb_add( dst == '0' ? sb_pub : sb_priv, str, now);
+                  } else {
+                      fseek( vchat_logfile, 0, SEEK_END);
+                      fgetc( vchat_logfile );
+                  }
+              }
+          }
       }
   }
+
+  resize(0);  
 }
 
 /* render colorized line to window */
@@ -1236,7 +1258,18 @@ consoleline (unsigned char *message)
 
   for (i = 0; i < console->_maxx; i++)
      waddch (console, ' ');
-  mvwaddnstr (console, 0, 0, message ? message : consolestr, console->_maxx);
+
+  if( !message && usetime )
+  {
+      char date[10];
+      time_t now = time(NULL);
+      strftime( date, sizeof(date), getformatstr(FS_CONSOLETIME), localtime(&now));
+      snprintf( tmpstr, TMPSTRSIZE, "%s%s", date, consolestr);
+      mvwaddnstr (console, 0, 0, tmpstr, console->_maxx);
+  } else {
+      mvwaddnstr (console, 0, 0, message ? message : consolestr, console->_maxx);
+  }
+
   snprintf(tmpstr,TMPSTRSIZE,getformatstr(FS_SBINF),sb_pub->scroll,sb_pub->count);
   mvwaddstr (console, 0, console->_maxx - (strlen(tmpstr)-1),tmpstr);
   if (sb_win == 0) mvwaddch (console, 0, console->_maxx,'*');
