@@ -1,0 +1,16 @@
+vchat-client (0.15-2) unstable; urgency=low
+
+  * changed debian/rules using "make install"
+  * added manpage
+
+ -- Hans Freitag <macrotron@president.eu.org>  Wed, 30 Nov 2001 14:47:54 +0200
+
+vchat-client (0.15-1) unstable; urgency=low
+
+  * Current Version
+
+ -- Andreas Kotes <count@flatline.de>  Wed, 28 Nov 2001 23:28:54 +0200
+
+Local variables:
+mode: debian-changelog
+End:

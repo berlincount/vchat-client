@@ -1,0 +1,73 @@
+# !!! This file must be named ~/.vchat/formats  in order to work !!!
+
+# please be REALLY REALLY careful here
+# the following lines will be used as
+# format strings
+
+# ^ introduces a style change:
+# TODO: ^^ == '^'
+
+# 0 - default colorpair for window
+# 1 - colorpair 1 RED
+# 2 - colorpair 2 GREEN
+# 3 - colorpair 3 YELLOW
+# 4 - colorpair 4 BLUE
+# 5 - colorpair 5 MAGENTA
+# 6 - colorpair 6 CYAN
+# 7 - colorpair 7 WHITE
+# 8 - colorpair 8 WHITE on RED
+# 9 - colorpair 9 WHITE on BLUE
+# aA - alternate charset on/off
+# bB - bold on/off
+# dD - dim on/off
+# iI - invisible on/off
+# lL - blink on/off
+# nN - normal on/off
+# pP - protected on/off
+# rR - reverse on/off
+# sS - standout on/off
+# uU - underlined on/off
+
+
+# Counts defaults:
+
+FS_PLAIN =		"%s"
+FS_CHAN =		"%s"
+FS_PRIV =		"%s"
+FS_SERV =		"^2%s"
+FS_GLOB =		"^2%s"
+FS_DBG =		"^3%s"
+FS_ERR =		"^1%s"
+FS_IDLE =		"^8%s"
+FS_TIME =		"^5[%H:%M]-- ^0"
+FS_TOPICW =		"[ Channel %d: %s"  
+FS_NOTOPICW =		"[ Channel %d has no topic"
+FS_CONSOLE =		"[ %s@%s:%d, use .h to get help, send bugs reports and feature requests to vchat@pulse.flatline.de ..."
+FS_CONNECTED =		"^2# Connected to '^6%s^2', port ^6%d^2 ..."
+FS_TOPIC =		"^2# Channel ^6%d^2 topic is: '^0%s^2'"
+FS_NOTOPIC =		"^2# Channel ^6%d^2 has no topic"
+FS_CHGTOPIC =		"^2# ^6%s^2 changes topic to: '^0%s^2'"
+FS_USONLINE =		"^2# Users online: %s"
+FS_USMATCH =		"^2# Users matching \"%s\":%s"
+FS_SIGNON =		"^2# ^6%s^2 %s" 
+FS_SIGNOFF =		"^2# ^6%s^2 %s" 
+FS_JOIN =		"^2# ^6%s^2 %s ^6%d"
+FS_LEAVE =		"^2# ^6%s^2 %s ^6%d"
+FS_NICKCHANGE =		"^2# ^6%s^2 ^6%s^2 %s"
+FS_UNKNOWNMSG =		"?? unknown message: %s"
+FS_BOGUSMSG =		"?? bogus message: %s"  
+FS_RXPUBURL =		"^5[^6%s^5]^0 %s"
+FS_MYPUBURL =		"^5[^6^u%s^U^5]^0 %s"
+FS_RXPUBMSG =		"^5<^6%s^5>^0 %s"
+FS_MYPUBMSG =		"^5<^6^u%s^U^5>^0 %s"
+FS_TXPUBMSG =		"^5<^6^b%s^B^5>^0 %s"
+FS_RXPRIVMSG =		"^5*^6%s^5*^0 %s"
+FS_TXPRIVMSG =		"^5-> *^6%s^5*^0 %s"
+FS_BGPRIVMSG =		"^1! Bogus message, not sent."
+FS_PUBACTION =		"^5*^0 ^6%s^0 %s"
+FS_TXPUBACTION =	"^5*^0 ^6^b%s^B^0 %s"
+FS_BGTXPUBACTION =	"^1! No action taken."
+FS_COMMAND =		"^2## command: %s"
+FS_LOCALCOMMAND =	"^2## local command (not executed yet): %s"
+FS_BOGUSCOMMAND =	"^2## bogus command (not executed or sent): %s"
+FS_SBINF =		" [%d/%d] "

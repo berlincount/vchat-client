@@ -1,0 +1,73 @@
+# !!! This file must be named ~/.vchat/formats  in order to work !!!
+
+# please be REALLY REALLY careful here
+# the following lines will be used as
+# format strings
+
+# ^ introduces a style change:
+# TODO: ^^ == '^'
+
+# 0 - default colorpair for window
+# 1 - colorpair 1 RED
+# 2 - colorpair 2 GREEN
+# 3 - colorpair 3 YELLOW
+# 4 - colorpair 4 BLUE
+# 5 - colorpair 5 MAGENTA
+# 6 - colorpair 6 CYAN
+# 7 - colorpair 7 WHITE
+# 8 - colorpair 8 WHITE on RED
+# 9 - colorpair 9 WHITE on BLUE
+# aA - alternate charset on/off
+# bB - bold on/off
+# dD - dim on/off
+# iI - invisible on/off
+# lL - blink on/off
+# nN - normal on/off
+# pP - protected on/off
+# rR - reverse on/off
+# sS - standout on/off
+# uU - underlined on/off
+
+
+# Counts defaults:
+
+FS_PLAIN =		"^0%s"
+FS_CHAN =		"^0%s"
+FS_PRIV =		"^0%s"
+FS_SERV =		"^0%s"
+FS_GLOB =		"^0%s"
+FS_DBG =		"^0%s"
+FS_ERR =		"^0^b%s^B"
+FS_IDLE =		"^0^r%s^R"
+FS_TIME =		"^0%H:%M "
+FS_TOPICW =		"Channel %d: %s" 
+FS_NOTOPICW =		"Channel %d has no topic"
+FS_CONSOLE =		"-=- VChat V0.1 -=- type .h for help -=-"
+FS_CONNECTED =		"^0* Connected to '%s', port %d ..."
+FS_TOPIC =		"^0* Channel %d topic is: '%s'"
+FS_NOTOPIC =		"^0* Channel %d has no topic"
+FS_CHGTOPIC =		"^0* %s changed the channel topic to '%s'"
+FS_USONLINE =		"^0* Users online: %s"
+FS_USMATCH =		"^0* Users matching \"%s\":%s"
+FS_SIGNON =		"^0* %s %s" 
+FS_SIGNOFF =		"^0* %s %s" 
+FS_JOIN =		"^0* %s %s %d"
+FS_LEAVE =		"^0* %s %s %d"
+FS_NICKCHANGE =		"^0* %s changed h** nick to %s"
+FS_UNKNOWNMSG =		"^0* unknown message: %s"
+FS_BOGUSMSG =		"^0* bogus message: %s"  
+FS_RXPUBURL =		"^0[%s] %s"
+FS_MYPUBURL =		"^0[%s] %s"
+FS_RXPUBMSG =		"^0<%s> %s"
+FS_MYPUBMSG =		"^0<^u%s^U> %s"
+FS_TXPUBMSG =		"^0<%s> ^b%s^B"
+FS_RXPRIVMSG =		"^0*%s* %s"
+FS_TXPRIVMSG =		"^0^b.m %s %s^B"
+FS_BGPRIVMSG =		"^0* Bogus message, not sent."
+FS_PUBACTION =		"^0%s %s"
+FS_TXPUBACTION =	"^0^b.a %s %s^B"
+FS_BGTXPUBACTION =	"^1! No action taken."
+FS_COMMAND =		"^0* command: %s"
+FS_LOCALCOMMAND =	"^0* local command (not executed yet): %s"
+FS_BOGUSCOMMAND =	"^0* bogus command (not executed or sent): %s"
+FS_SBINF =		" %d/%d "

@@ -1,0 +1,12 @@
+Source: vchat-client
+Section: unknown
+Priority: optional
+Maintainer: Andreas Kotes <count@flatline.de>
+Build-Depends: debhelper (>> 3.0.0), libreadline4-dev, libncurses-dev, libssl-dev, docbook-to-man
+Standards-Version: 3.5.2
+
+Package: vchat-client
+Architecture: any
+Depends: ${shlibs:Depends}
+Description: client for the vchat
+ This client uses ssl

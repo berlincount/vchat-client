@@ -1,0 +1,12 @@
+This package was debianized by Sebastian Klemke <cBP@gmx.de> on
+Thu, 23 Aug 2001 18:41:57 +0200.
+
+It was downloaded from berlin.ccc.de
+
+Upstream Author(s): Andreas Kotes <count@flatline.de>
+
+Copyright:
+
+The client is copyright (c) 2001 Andreas Kotes, it is distributed under the
+terms of the GNU General Public License, the GPL should be in
+/usr/share/common-licenses/GPL on a debian system.

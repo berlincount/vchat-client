@@ -1,0 +1,20 @@
+vchat-client now offers a new model of shaping your messages:
+Filters.
+
+Filters can have different colours, where [0-9] stand for
+colour pairs, certain letters of [a-zA-Z] mean character
+attributes. The two "special colours" [+-] are used for
+black/whitelisting your messages, from now on called
+ignore/zoom.
+
+While the alphanumeric colours are used to highlight the
+regex associated with them, the latter case may be used
+to select some of the messages from your scrollback buffer.
+
+This may mean - regex "all but those messages containing
+the regex" or + regex "only those messages containing the
+regex".
+
+When you have ignore regexes, zooming always supersedes
+ignorance, i.e. a message that once is declared as white-
+listed wont be ignored.

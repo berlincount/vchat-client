@@ -1,0 +1,78 @@
+Hi!
+
+this is vchat-client, a GPLed (SSL) client for the vchat protocol.
+
+You can get the most recent version of vchat-client via CVS, e.g:
+
+cvs -d:pserver:anonymous@pulse.flatline.de:/home/cvsroot login
+cvs -z3 -d:pserver:anonymous@pulse.flatline.de:/home/cvsroot co vchat-client
+
+(press return at password prompt)
+
+no autoconf yet, sorry. required libs:
+
+openssl (0.9.6+ preferred)
+readline (4.2+ preferred)
+ncurses (5.2 preferred)
+
+please adjust the Makefile according to your need, then run 'make' to compile,
+./vchat-client to start the binary. nope, I don't have any intention to use
+autoconf for this hack.
+
+run 'fakeroot make -f debian/rules binary' to build a debian package from the
+source.
+
+Keyboard commands:
+
+^J  - clear private window
+^O  - clear channel window
+^L  - redraw screen
+^F  - scroll window up
+^B  - scroll window down
+^R  - change active scrolling window
+      (see rightmost character of topic/console lines)
+^T  - shrink private window size
+^G  - grow private window size
+^X  - toggle private window
+      (pops up on private messages)
+TAB - nick completion
+
+We also do provide a set of IRC like / - commands, there are:
+
+/CONFIG              - not implemented yet, but will be used for configuration
+/QUIT       reason   - issue .x reason
+/USER       regex    - list users matching regex
+/FLT    C   regex    - add regex to filter list... read ./filters for details
+/RMFLT      regex|id - remove filter regex or id from filter list
+/LSFLT (C)           - list all filter rules (matching C)
+/CLFLT (C)           - remove all filter rules (matching C)
+/M(SG) user msg      - issue .m user msg
+/LH                  - print hilitelist
+/ME action           - issue .a action
+
+if you want to use an own window for messages set "messages" to a value in
+~./vchat/config ..
+
+if you want to use an SSL certificate with the default configuration you need
+to put the key in ~/.vchat/key and the certificate in ~/.vchat/cert, both in
+PEM format. You can generate a key and a certificate by calling vchat-keygen,
+but the server you connect needs to know the anon CA provided by vchat-keygen,
+which currently isn't the case anywhere.
+
+FILES:
+
+ README            - you're reading it.
+ TODO              - list of things to do
+ vchat-client.c    - main() and utility functions
+ vchat-config.h    - configuration defaults
+ vchat-keygen      - key generator with anon CA - server support required
+ vchat-messages.h  - server messages <-> function correlation
+ vchat-protocol.c  - handling of server connection & messages
+ vchat-ui.c        - user-interface and readline handling
+ vchat-user.c      - userlist handling
+ vchat.h           - global structures and functions
+
+everything should be self-explantory, but please don't refrain to ask and/or
+give bug reports, feature requests, hints and tricks, etc etc ..
+
+   Andreas Kotes <count@flatline.de>

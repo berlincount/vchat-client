@@ -1,0 +1,26 @@
+- more documentation
+
+- .i with nickchanges
+
+-  autologon
+-  message-window
+-  clock
+-  config-file load/safe
+-  saveable ignore list
+-  known_hosts
+-  bell
+-  signon / no longer idle notify
+
+- better .u parsing
+
+- non-blocking sends
+
+- url-catcher
+- expire of old messages in scrollbuffer
+- signon/signoff colors
+- don't quit when disconnected externally
+
+- quitmessage (output + config)
+- last line from server sometimes isn't parsed realtime
+- optionally quit when idled out
+
