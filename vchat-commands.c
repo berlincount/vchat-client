@@ -189,7 +189,7 @@ handleline (unsigned char *line)
       case 'm': /* sending a private message? */
           privatemessagetx( line+2 );
           break;
-      case 'a':
+      case 'a': /* Do an action */
           doaction( line+2 );
           break;
       case '.':
@@ -206,11 +206,23 @@ handleline (unsigned char *line)
               showout( );
           }
           break;
+      case 'o':
+          /* We do think something, the ugly way :) */
+          snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_TXPUBTHOUGHT), line);
+          writechan (tmpstr);
+          networkoutput (line);
+          break;
+      case 'O':
+          /* We do think something, the nice way :) */
+          snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_TXPUBNTHOUGHT), line);
+          writechan (tmpstr);
+          networkoutput (line);
+          break;
       default:
           /* generic server command, send to server, show to user */
           snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_COMMAND), line);
-          networkoutput (line);
           writechan (tmpstr);
+          networkoutput (line);
           break;
       }
       break;

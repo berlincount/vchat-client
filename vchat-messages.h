@@ -56,6 +56,9 @@ servermessage servermessages[] = {
 /* 123 <user login [user logout]>
    User Login / Logout Information */
   {"123", SM_USERINFO, NULL, NULL},
+/* 124 <nick> <thoughts>
+   User thoughts information */
+  {"124", SM_CHANNEL, pubthoughts, NULL},
 /* 169 <encoding>
    List of known encodings */
   {"169", SM_INFO, NULL, NULL},

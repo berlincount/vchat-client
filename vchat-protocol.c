@@ -61,6 +61,7 @@ static void login (unsigned char *message);
 static void anonlogin (unsigned char *message);
 static void topicinfo (unsigned char *message);
 static void pubaction (unsigned char *message);
+static void pubthoughts (unsigned char *message);
 static void idleprompt (unsigned char *message);
 static void topicchange (unsigned char *message);
 static void pmnotsent (unsigned char *message);
@@ -384,6 +385,26 @@ pubaction (unsigned char *message)
   action++;
 
   snprintf(tmpstr,TMPSTRSIZE,getformatstr(FS_PUBACTION),nick,action);
+  writechan (tmpstr);
+}
+
+/* parse and handle an thought string
+ *  format: 124 %s %s
+ *    vars: %s nick
+ *          %s thought */
+static void
+pubthoughts (unsigned char *message)
+{
+  unsigned char *nick = NULL, *thoughts = NULL;
+  nick = strchr (message, ' ');
+  nick[0] = '\0';
+  nick++;
+
+  thoughts = strchr (nick, ' ');
+  thoughts[0] = '\0';
+  thoughts++;
+ 
+  snprintf(tmpstr,TMPSTRSIZE,getformatstr(FS_PUBTHOUGHT),nick,thoughts);
   writechan (tmpstr);
 }
 
