@@ -1300,8 +1300,6 @@ exitui (void)
 void
 nickprompt (void)
 {
-  int i;
-
   if (nick)
     return;
 
