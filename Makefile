@@ -29,7 +29,7 @@ CFLAGS += $(OLDREADLINE) $(EXPERIMENTAL_IPV6)
 ## the install prefix best is /usr/local
 PREFIX=/usr/local
 
-LIBS   = -lncurses -lreadline -lssl -lcrypto
+LIBS   = -lreadline -lncurses -lssl -lcrypto
 OBJS   = vchat-client.o vchat-ui.o vchat-protocol.o vchat-user.o vchat-commands.o
 
 
