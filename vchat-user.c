@@ -52,8 +52,10 @@ ul_add (unsigned char *name, int ignored)
   user *tmp = NULL;
 
   /* is it this client? return */
+  /* Why
   if (nick && !strcasecmp (nick, name))
     return;
+  */
 
   /* no list? create one */
   if (!nicks)
