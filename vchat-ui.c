@@ -22,6 +22,7 @@
 #include <errno.h>
 #include <termios.h>
 #include <sys/ioctl.h>
+#include <time.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <openssl/pem.h>
