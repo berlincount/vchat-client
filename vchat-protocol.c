@@ -127,6 +127,7 @@ vcconnect (unsigned char *server, unsigned char *port)
     if( connect( serverfd, addr->ai_addr, addr->ai_addrlen ) < 0)
     {
       close( serverfd );
+      serverfd = -1;
       continue;
     }
     break;
