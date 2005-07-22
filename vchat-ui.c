@@ -1232,8 +1232,8 @@ initui (void)
   rl_bind_key ('G'-'@', (rl_command_func_t *) growprivwin);
   rl_bind_key ('X'-'@', (rl_command_func_t *) toggleprivwin);
 
-  rl_generic_bind (ISFUNC, "\\M-[5~", scrollup, keymap);
-  rl_generic_bind (ISFUNC, "\\M-[6~", scrolldown, keymap);
+  rl_generic_bind (ISFUNC, "\\M-[5~", (void *)scrollup, keymap);
+  rl_generic_bind (ISFUNC, "\\M-[6~", (void *)scrolldown, keymap);
 
 //  rl_bind_keyseq( "\\M-[5~", (rl_command_func_t *)scrollup );
 //  rl_bind_keyseq( "\\M-[6~", (rl_command_func_t *)scrolldown );
