@@ -26,20 +26,20 @@
 
 struct user
 {
-  unsigned char *nick; /* nick of user */
-  int chan;            /* channel user is on */
-  int chan_valid;      /* are we sure he is? */
-  int client_pv;       /* client protocol version */
-  int messaged;        /* did we message with this user? */
-  struct user *next;   /* next user in linked list */
+  char *nick;       /* nick of user */
+  int chan;         /* channel user is on */
+  int chan_valid;   /* are we sure he is? */
+  int client_pv;    /* client protocol version */
+  int messaged;     /* did we message with this user? */
+  struct user *next;/* next user in linked list */
 };
 
 /* version of this module */
-unsigned char *vchat_us_version = "$Id$";
+char *vchat_us_version = "$Id$";
 
 /* externally used variables */
 /*   current nick */
-unsigned char *nick = NULL;
+char *nick = NULL;
 /*   current channel */
 int chan = 0;
 /*   userlist */
@@ -47,7 +47,7 @@ user *nicks = NULL;
 
 /* add user to userlist */
 void
-ul_add (unsigned char *name, int ignored)
+ul_add (char *name, int ignored)
 {
   user *tmp = NULL;
 
@@ -100,7 +100,7 @@ ul_add (unsigned char *name, int ignored)
 
 /* delete user from userlist */
 void
-ul_del (unsigned char *name, int ignored)
+ul_del (char *name, int ignored)
 {
   user *tmp = NULL, *ltmp = NULL;
 
@@ -143,7 +143,7 @@ ul_del (unsigned char *name, int ignored)
 
 /* let user join a channel */
 void
-ul_join (unsigned char *name, int channel)
+ul_join (char *name, int channel)
 {
   /* is it this client? handle and return */
   if (nick && !strcmp (nick, name))
@@ -157,7 +157,7 @@ ul_join (unsigned char *name, int channel)
 }
 
 user *
-ul_finduser (unsigned char *name) {
+ul_finduser (char *name) {
   user *tmp = nicks;
   snprintf( tmpstr, TMPSTRSIZE, "%s:", name);
 
@@ -175,11 +175,11 @@ ul_finduser (unsigned char *name) {
   return NULL;
 }
 
-unsigned char *
-ul_matchuser( unsigned char *regex) {
-  user          *tmp = nicks;
-  unsigned char *dest = tmpstr;
-  regex_t        preg;
+char *
+ul_matchuser( char *regex) {
+  user    *tmp = nicks;
+  char    *dest = tmpstr;
+  regex_t  preg;
 
   *dest = 0;
   if( !regcomp( &preg, regex,  REG_ICASE | REG_EXTENDED | REG_NEWLINE)) {
@@ -212,7 +212,7 @@ ul_usertofront( user *who ) {
 }
 
 void
-ul_msgto (unsigned char *name) {
+ul_msgto (char *name) {
   user *tmp = ul_finduser(name);
 
   if (tmp) {
@@ -222,7 +222,7 @@ ul_msgto (unsigned char *name) {
 }
 
 void
-ul_msgfrom (unsigned char *name) {
+ul_msgfrom (char *name) {
   user *tmp = ul_finduser(name);
 
   if (tmp) {
@@ -233,7 +233,7 @@ ul_msgfrom (unsigned char *name) {
 
 /* set channel of user */
 void
-ul_moveuser (unsigned char *name, int channel) {
+ul_moveuser (char *name, int channel) {
   user *tmp = ul_finduser(name);
 
   if (tmp) {
@@ -248,7 +248,7 @@ ul_moveuser (unsigned char *name, int channel) {
 
 /* let user leave a channel */
 void
-ul_leave (unsigned char *name, int channel)
+ul_leave (char *name, int channel)
 {
   user *tmp = ul_finduser(name);
   /* is it this client? handle and return */
@@ -271,7 +271,7 @@ ul_leave (unsigned char *name, int channel)
 
 /* let user change nick */
 void
-ul_nickchange (unsigned char *oldnick, unsigned char *newnick)
+ul_nickchange (char *oldnick, char *newnick)
 {
   user *tmp = ul_finduser(oldnick);
   /* is it this client? handle and return */
@@ -314,19 +314,19 @@ ul_clear (void)
 #endif
 }
 
-int ulnc_casenick(user *tmp, const unsigned char *text, int len, int value) {
+int ulnc_casenick(user *tmp, const char *text, int len, int value) {
    return (!strncmp(tmp->nick, text, len));
 }
 
-int ulnc_ncasenick(user *tmp, const unsigned char *text, int len, int value) {
+int ulnc_ncasenick(user *tmp, const char *text, int len, int value) {
    return (!strncasecmp(tmp->nick, text, len));
 }
 
-unsigned char *
-ulnc_complete (const unsigned char *text, int state, int value, int (*checkfn)(user *,const unsigned char *,int,int)) {
-  static int len;
+char *
+ulnc_complete (const char *text, int state, int value, int (*checkfn)(user *,const char *,int,int)) {
+  static int  len;
   static user *tmp;
-  unsigned char *name;
+  char        *name;
 
   /* first round? reset pointers! */
   if (!state)
@@ -355,11 +355,11 @@ ulnc_complete (const unsigned char *text, int state, int value, int (*checkfn)(u
 }
 
 /* nick completion functions for readline in vchat-ui.c */
-unsigned char *
-ul_nickcomp (const unsigned char *text, int state)
+char *
+ul_nickcomp (const char *text, int state)
 {
   int ncasemode = 1;
-  unsigned char *name = NULL;
+  char *name = NULL;
   if (!state) ncasemode = 0;
   if (!ncasemode) {
      name = ulnc_complete(text,state,0,ulnc_casenick);
@@ -373,20 +373,20 @@ ul_nickcomp (const unsigned char *text, int state)
       return NULL;
 }
 
-int ulnc_casenickc(user *tmp, const unsigned char *text, int len, int value) {
+int ulnc_casenickc(user *tmp, const char *text, int len, int value) {
    return (!strncmp(tmp->nick, text, len) && (tmp->chan_valid) && (tmp->chan == value));
 }
 
-int ulnc_ncasenickc(user *tmp, const unsigned char *text, int len, int value) {
+int ulnc_ncasenickc(user *tmp, const char *text, int len, int value) {
    return (!strncasecmp(tmp->nick, text, len) && (tmp->chan_valid) && (tmp->chan == value));
 }
 
 /* nick completion for channel, used by vchat-ui.c */
-unsigned char *
-ul_cnickcomp (const unsigned char *text, int state)
+char *
+ul_cnickcomp (const char *text, int state)
 {
   int ncasemode = 1;
-  static unsigned char *name = NULL;
+  static char *name = NULL;
 
   if (!state) ncasemode = 0;
   if (!ncasemode) {
@@ -402,20 +402,20 @@ ul_cnickcomp (const unsigned char *text, int state)
      return NULL;
 }
 
-int ulnc_casenickm(user *tmp, const unsigned char *text, int len, int value) {
+int ulnc_casenickm(user *tmp, const char *text, int len, int value) {
    return (!strncmp(tmp->nick, text, len) && (tmp->messaged));
 }
 
-int ulnc_ncasenickm(user *tmp, const unsigned char *text, int len, int value) {
+int ulnc_ncasenickm(user *tmp, const char *text, int len, int value) {
    return (!strncasecmp(tmp->nick, text, len) && (tmp->messaged));
 }
 
 /* nick completion for channel, used by vchat-ui.c */
-unsigned char *
-ul_mnickcomp (const unsigned char *text, int state)
+char *
+ul_mnickcomp (const char *text, int state)
 {
   int ncasemode = 1;
-  static unsigned char *name = NULL;
+  static char *name = NULL;
 
   if (!state) ncasemode = 0;
   if (!ncasemode) {

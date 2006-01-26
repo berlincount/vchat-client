@@ -25,7 +25,7 @@
 #include "vchat-help.h"
 
 /* version of this module */
-unsigned char *vchat_cm_version = "$Id$";
+char *vchat_cm_version = "$Id$";
 
 /* our "/command " table */
 enum {
@@ -38,29 +38,30 @@ COMMAND_HELP,
 COMMAND_KEYS,
 COMMAND_QUIT,
 COMMAND_USER,
-COMMAND_LOG,
 COMMAND_FLT,
 COMMAND_PM,
 COMMAND_ACTION,
 COMMAND_PMSHORT,
+COMMAND_QUERY,
+COMMAND_QUITSHORT,
 COMMAND_PLAIN,
 COMMAND_NONE
 };
 
-static void command_quit    ( unsigned char *tail);
-static void command_user    ( unsigned char *tail);
-static void command_pm      ( unsigned char *tail);
-static void command_action  ( unsigned char *tail);
-static void command_help    ( unsigned char *tail);
-static void command_flt     ( unsigned char *tail);
-static void command_lsflt   ( unsigned char *tail);
-static void command_clflt   ( unsigned char *tail);
-static void command_rmflt   ( unsigned char *tail);
-       void command_version ( unsigned char *tail);
-static void command_none    ( unsigned char *line);
-static void command_log     ( unsigned char *tail);
+static void command_quit    ( char *tail);
+static void command_user    ( char *tail);
+static void command_pm      ( char *tail);
+static void command_action  ( char *tail);
+static void command_help    ( char *tail);
+static void command_flt     ( char *tail);
+static void command_lsflt   ( char *tail);
+static void command_clflt   ( char *tail);
+static void command_rmflt   ( char *tail);
+       void command_version ( char *tail);
+static void command_none    ( char *line);
+static void command_query   ( char *tail);
 
-static void output_default  ( unsigned char *tail);
+static void output_default  ( char *tail);
 
 /* commandentry defined in vchat.h */
 
@@ -73,20 +74,21 @@ commandtable[] = {
 { COMMAND_HELP,    "HELP",      4, command_help,    SHORT_HELPTEXT_HELP,    LONG_HELPTEXT_HELP    },
 { COMMAND_FILTERS, "FILTERS",   7, command_help,    SHORT_HELPTEXT_FILTERS, LONG_HELPTEXT_FILTERS },
 { COMMAND_KEYS,    "KEYS",      4, command_help,    SHORT_HELPTEXT_KEYS,    LONG_HELPTEXT_KEYS    },
+{ COMMAND_QUERY,   "QUERY",     5, command_query,   NULL,                   NULL                  },
 { COMMAND_QUIT,    "QUIT",      4, command_quit,    SHORT_HELPTEXT_QUIT,    LONG_HELPTEXT_QUIT    },
 { COMMAND_USER,    "USER",      4, command_user,    SHORT_HELPTEXT_USER,    LONG_HELPTEXT_USER    },
 { COMMAND_FLT,     "FLT",       3, command_flt,     NULL,                   LONG_HELPTEXT_FLT     },
-{ COMMAND_LOG,     "LOG",       3, command_log,     NULL,                   NULL                  },
 { COMMAND_PM,      "MSG",       3, command_pm,      SHORT_HELPTEXT_MSG,     LONG_HELPTEXT_MSG     },
 { COMMAND_ACTION,  "ME",        2, command_action,  SHORT_HELPTEXT_ME,      LONG_HELPTEXT_ME      },
 { COMMAND_PMSHORT, "M",         1, command_pm,      NULL,                   SHORT_HELPTEXT_MSG    },
+{ COMMAND_QUITSHORT,"Q",        1, command_quit,    SHORT_HELPTEXT_QUIT,    LONG_HELPTEXT_QUIT    },
 { COMMAND_PLAIN,   "/",         1, output_default,  NULL,                   NULL                  },
 { COMMAND_NONE,    "",          0, command_none,    NULL,                   NULL                  }
 };
 
 /* parse "/command" */
 static int
-translatecommand( unsigned char **cmd)
+translatecommand( char **cmd)
 {
   int result;
   int cut = 0;
@@ -120,7 +122,7 @@ translatecommand( unsigned char **cmd)
 
 /* handle thought */
 static void
-dothink( unsigned char *tail, char nice )
+dothink( char *tail, char nice )
 {
   while( *tail == ' ' ) tail++;
   
@@ -136,7 +138,7 @@ dothink( unsigned char *tail, char nice )
 
 /* handle action */
 static void
-doaction( unsigned char *tail )
+doaction( char *tail )
 {
   while( *tail == ' ' ) tail++;
   
@@ -156,8 +158,8 @@ doaction( unsigned char *tail )
 
 /* handle private message outgoing */
 static void
-privatemessagetx ( unsigned char *tail ) {
-  unsigned char *mesg;
+privatemessagetx ( char *tail ) {
+  char *mesg;
    
   /* find nick */
   while( *tail==' ') tail++;
@@ -191,7 +193,7 @@ privatemessagetx ( unsigned char *tail ) {
 
 /* handle line entered by user */
 void
-handleline (unsigned char *line)
+handleline (char *line)
 {
 #ifdef DEBUG
   /* debugging? log users input! */
@@ -245,7 +247,7 @@ handleline (unsigned char *line)
 }
 
 static void
-output_default( unsigned char *line ) {
+output_default(char *line ) {
       /* prepare for output on display */
       snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_TXPUBMSG), nick, line);
       
@@ -258,11 +260,11 @@ output_default( unsigned char *line ) {
  
 /* handle a "/user " request */
 static void
-command_user( unsigned char *tail)
+command_user(char *tail)
 {
   while( *tail == ' ') tail++;
   if( *tail ) {
-      unsigned char * out = ul_matchuser( tail);
+      char * out = ul_matchuser( tail);
       if( *out ) {
           snprintf( tmpstr, TMPSTRSIZE, getformatstr(FS_USMATCH), tail, out);
       } else {
@@ -276,14 +278,14 @@ command_user( unsigned char *tail)
 
 /* handle a "/msg " request */
 static void
-command_pm (unsigned char *tail)
+command_pm (char *tail)
 {
   privatemessagetx( tail );
 }
  
 /* handle a help request */
 static void
-command_help (unsigned char *line) {
+command_help (char *line) {
   flushout( );
   while( *line==' ') line++;
   if( *line ) { /* Get help on command */
@@ -297,7 +299,7 @@ command_help (unsigned char *line) {
           line = commandtable[i].help;
           if( line ) {
             while( *line ) {
-              unsigned char *tmp = tmpstr;
+              char *tmp = tmpstr;
               while( *line && (*line != '\n') )
                   *tmp++ = *line++;
               *tmp = '\0'; if( *line == '\n') line++;
@@ -319,15 +321,15 @@ command_help (unsigned char *line) {
 
 /* handle an unknown command */
 static void
-command_none( unsigned char *line) {
+command_none(char *line) {
     snprintf(tmpstr, TMPSTRSIZE, "  Unknown client command: %s ", line);
     msgout(tmpstr);
 }
  
 /* handle a "/flt " request */
 static void
-command_flt( unsigned char *tail){
-  unsigned char colour;
+command_flt(char *tail){
+  char colour;
   while(*tail==' ') tail++;
   colour = *tail++;
   while( colour && *tail == ' ') tail++;
@@ -338,34 +340,34 @@ command_flt( unsigned char *tail){
 
 /* handle a "/clflt " request */
 static void
-command_clflt ( unsigned char *tail) {
+command_clflt (char *tail) {
   while( *tail == ' ') tail++;
   clearfilters( *tail );
 }
    
 /* handle a "/rmflt " request */
 static void
-command_rmflt ( unsigned char *tail) {
+command_rmflt (char *tail) {
   while( *tail == ' ') tail++;
   removefilter( tail );
 }
  
 /* list filters */
 static void
-command_lsflt ( unsigned char *tail) {
+command_lsflt (char *tail) {
   listfilters();
 }
  
 /* handle a "/me " action */
 static void
-command_action( unsigned char *tail)
+command_action(char *tail)
 {
   doaction( tail);
 }
 
 /* handle a "/quit " exit */
 static void
-command_quit  ( unsigned char *tail)
+command_quit(char *tail)
 {
   /* send users message to server */
   snprintf (tmpstr, TMPSTRSIZE, ".x %s", tail);
@@ -377,7 +379,7 @@ command_quit  ( unsigned char *tail)
 
 /* print out version */
 void
-command_version( unsigned char *tail)
+command_version(char *tail)
 {
   /* output internal versions of all modules */
   flushout();
@@ -389,24 +391,20 @@ command_version( unsigned char *tail)
   showout();
 }
 
-/* Undocumented feature */
+/* start or end a query */
 void
-command_log ( unsigned char *tail)
+command_query(char *tail)
 {
-  /* log to file */
-  FILE *logfile = NULL;
-  while( *tail == ' ' )
-      tail++;
-  if( (logfile = fopen( tail, "w")) ) {
-    if( *tail == '_' ) {
-        writelog_i(logfile);
-    } else {
-        writelog(logfile);
-    }
-    fclose( logfile );
-    msgout("  Log written. ");
-  } else {
-    snprintf(tmpstr, TMPSTRSIZE, "  Can't open file: %s ", tail);
-    msgout(tmpstr);
+  char *msg;
+  while( *tail == ' ') tail++;
+
+  // Check, if a message is to be sent in first query
+  // Note: this is safe, since readline chops trailing spaces
+  if((msg = strchr(tail, ' '))) {
+    privatemessagetx( tail );
+    *msg = 0;
   }
+
+  // Do the ui stuff for query
+  handlequery( tail );
 }

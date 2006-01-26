@@ -14,6 +14,8 @@ CFLAGS = -Wall -Os
 
 CFLAGS += $(OLDREADLINE)
 
+CFLAGS += -I../readline-5.0 -I../ncurses-5.4/include/
+
 ## you might need one or more of these:
 #CFLAGS += -I/usr/local/ssl/include -L/usr/local/ssl/lib
 #CFLAGS += -I/usr/local/include -L/usr/local/lib
@@ -29,7 +31,7 @@ CFLAGS += $(OLDREADLINE)
 ## the install prefix best is /usr/local
 PREFIX=/usr/local
 
-LIBS   = -lreadline -lncurses -lssl -lcrypto
+LIBS   = ../readline-5.0/libreadline.a ../ncurses-5.4/lib/libncurses.a -lssl -lcrypto
 OBJS   = vchat-client.o vchat-ui.o vchat-protocol.o vchat-user.o vchat-commands.o
 
 

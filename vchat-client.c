@@ -32,7 +32,7 @@
 #include "vchat.h"
 
 /* version of this module */
-unsigned char *vchat_cl_version = "$Id$";
+char *vchat_cl_version = "$Id$";
 
 /* externally used variables */
 /*   we're logged in */
@@ -40,7 +40,7 @@ unsigned int loggedin = 0;
 /*   we run as long as this is true */
 unsigned int status = 1;
 /*   error string to show after exit */
-unsigned char errstr[ERRSTRSIZE] = "\0";
+char errstr[ERRSTRSIZE] = "\0";
 
 /* locally global variables */
 /* our list of filedescriptors */
@@ -52,12 +52,12 @@ static fd_set masterfds;
 /* servers filedescriptor from vchat-protocol.c */
 extern int serverfd;
 
-void setnoption (unsigned char *, unsigned char *);
+void setnoption (char *, char *);
 
-static void parsecfg(unsigned char *line) {
+static void parsecfg(char *line) {
   int bytes;
-  unsigned char *param=line;
-  unsigned char *value=NULL;
+  char *param=line;
+  char *value=NULL;
   
   /* handle quotes value is empty, so wecan use it */
   value = strchr(line,'#');
@@ -101,9 +101,9 @@ static void parsecfg(unsigned char *line) {
   setnoption(param,value);
 }
 
-static void parseformats(unsigned char *line) {
+static void parseformats(char *line) {
   int i;
-  unsigned char *tmp = NULL;  
+  char *tmp = NULL;  
 
   /* read a format line from file, syntax is
      FS_XXX = "formatstring"
@@ -117,7 +117,7 @@ static void parseformats(unsigned char *line) {
       for (i = 0; formatstrings[i].formatstr; i++)
           if (!strncasecmp(formatstrings[i].idstring, line, strlen( formatstrings[i].idstring) ))
           {
-              unsigned char *tail = line + strlen( formatstrings[i].idstring);
+              char *tail = line + strlen( formatstrings[i].idstring);
               while( *tail==' ' || *tail=='\t') tail++; /* and skip whitespaces */
 
               if( *tail++ == '=' )
@@ -145,7 +145,7 @@ static void parseformats(unsigned char *line) {
                           }
                       }
 
-                      if ( stringends && ( (tmp = (unsigned char *)malloc( 1 + j )) != NULL ) )
+                      if ( stringends && ( (tmp = (char *)malloc( 1 + j )) != NULL ) )
                       {
                           memcpy( tmp, tmpstr, k);
                           tmp[k-1]=0;
@@ -158,21 +158,21 @@ static void parseformats(unsigned char *line) {
 }
 
 /* UNUSED uncomment if needed 
-static void parseknownhosts(unsigned char *line) {
+static void parseknownhosts(char *line) {
 }
 */
 
 /* load config file */
 static void
-loadcfg (unsigned char *file,void (*lineparser) (unsigned char *))
+loadcfg (char *file,void (*lineparser) (char *))
 {
   int fd;
   int bytes,bufoff=0;
-  unsigned char *tmp = NULL;
+  char *tmp = NULL;
 #define BUFSIZE 4096
-  unsigned char buf[BUFSIZE];     /* data buffer */
-  unsigned char *ltmp = buf;
-  unsigned char *tildex = NULL;
+  char buf[BUFSIZE];     /* data buffer */
+  char *ltmp = buf;
+  char *tildex = NULL;
   buf[BUFSIZE-1] = '\0'; /* sanity stop */
   
   if (!file) return;
@@ -226,19 +226,19 @@ loadcfg (unsigned char *file,void (*lineparser) (unsigned char *))
 }
 
 void
-loadconfig (unsigned char *file)
+loadconfig (char *file)
 {
   loadcfg(file,parsecfg);
 }
 
 void
-loadformats (unsigned char *file)
+loadformats (char *file)
 {
   loadcfg(file,parseformats);
 }
 
 /* get-format-string */
-unsigned char *
+char *
 getformatstr (formtstr id)
 {
   int i;
@@ -248,7 +248,7 @@ getformatstr (formtstr id)
 }
 
 /* get-string-option, fetches *char-value of variable named by option */
-unsigned char *
+char *
 getstroption (confopt option)
 {
   int i;
@@ -267,7 +267,7 @@ getstroption (confopt option)
 
 /* set-string-option, puts *char-value to variable named by option */
 void
-setstroption (confopt option, unsigned char *string)
+setstroption (confopt option, char *string)
 {
   int i;
 #ifdef DEBUG
@@ -288,7 +288,7 @@ setstroption (confopt option, unsigned char *string)
 
 /* set-named-option, puts string to variable named by name */
 void
-setnoption (unsigned char *name, unsigned char *string)
+setnoption (char *name, char *string)
 {
   int i;
 #ifdef DEBUG
@@ -450,8 +450,8 @@ eventloop (void)
   }
 }
 
-void usage(unsigned char *name) {
-    printf   ("usage: %s [-C config-file] [-F formats] [-l] [-z] [-s host] [-p port] [-c channel] [-n nickname] [-k] [-K] [-L logfile]\n",name);
+void usage( char *name) {
+    printf   ("usage: %s [-C config-file] [-F formats] [-l] [-z] [-s host] [-p port] [-c channel] [-n nickname]\n",name);
     puts     ("   -C   load a second config-file, overriding the first one");
     puts     ("   -F   load format strings (skins) from this file");
     puts     ("   -l   local connect (no SSL + connects localhost:2323)");
@@ -464,9 +464,6 @@ void usage(unsigned char *name) {
     else
        puts  ("   -n   set nickname");
     printf   ("   -f   set from (default \"%s\")\n",getstroption(CF_FROM));
-    puts     ("   -k   keep autolog");
-    puts     ("   -K   don't keep autolog");
-    printf   ("   -L   use this file as logfile (default \"%s\")\n",getstroption(CF_LOGFILE));
     puts     ("   -h   gives this help");
 }
 
@@ -502,9 +499,6 @@ main (int argc, char **argv)
           case 'c': setintoption(CF_CHANNEL,strtol(optarg,NULL,10)); break;
           case 'n': setstroption(CF_NICK,optarg); break;
           case 'f': setstroption(CF_FROM,optarg); break;
-          case 'k': setintoption(CF_KEEPLOG,1); break;
-          case 'K': setintoption(CF_KEEPLOG,0); break;
-          case 'L': setstroption(CF_LOGFILE,optarg); break;
           case 'h': usage(argv[0]); exit(0); break;
           default : usage(argv[0]); exit(1);
       }

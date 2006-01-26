@@ -26,20 +26,20 @@ typedef enum { SM_IGNORE, SM_INFO, SM_USERINFO, SM_CHANNEL, SM_ERROR } smtype;
 /* servermessage structure */
 struct servermessage
 {
-  unsigned char id[4]; /* three-character message id */
-  smtype type;         /* message type */
-  void (*funct) (unsigned char *); /* function used by client */
-  void (*hook) (unsigned char *);  /* function hook for scripting */
+  char id[4];             /* three-character message id */
+  smtype type;            /* message type */
+  void (*funct) (char *); /* function used by client */
+  void (*hook) (char *);  /* function hook for scripting */
 };
 typedef struct servermessage servermessage;
 
 /* configuration types and variable numbers */
 typedef enum { CO_NIL, CO_STR, CO_INT } conftype;
 typedef enum { CF_NIL, CF_NICK, CF_FROM, CF_SERVERHOST, CF_SERVERPORT,
-CF_CIPHERSUITE, CF_CONFIGFILE, CF_CERTFILE, CF_KEYFILE, CF_FORMFILE, CF_LOGFILE,
+CF_CIPHERSUITE, CF_CONFIGFILE, CF_CERTFILE, CF_KEYFILE, CF_FORMFILE,
 CF_USESSL, CF_USECERT, CF_PRIVHEIGHT, CF_HSCROLL, CF_CHANNEL, CF_USETIME,
 CF_USETOPIC, CF_SCROLLBPRIV, CF_SCROLLBACK, CF_SCROLLBPRIVT, CF_SCROLLBACKT,
-CF_KEEPLOG, CF_ENCODING, CF_BELLPRIV } confopt;
+CF_ENCODING, CF_BELLPRIV } confopt;
 
 /* format strings */
 typedef enum { FS_PLAIN, FS_CHAN, FS_PRIV, FS_SERV, FS_GLOB, FS_DBG, FS_ERR,
@@ -54,14 +54,14 @@ FS_SBINF, FS_MISSTYPED, FS_UNKNCMD, FS_BADREGEX, FS_ERR_STRING } formtstr;
 /* configoption structure */
 struct configoption
 {
-  confopt id;
+  confopt  id;
   conftype type;
-  unsigned char *varname;
-  unsigned char *defaultvalue;
-  unsigned char *value;
+  char    *varname;
+  char    *defaultvalue;
+  char    *value;
   union {
-    unsigned char **pstr;
-    int            *pint;
+    char **pstr;
+    unsigned int   *pint;
   } localvar;
 };
 
@@ -71,74 +71,74 @@ typedef struct configoption configoption;
 struct formatstring
 {
   formtstr id;
-  unsigned char *idstring;
-  unsigned char *formatstr;
+  char    *idstring;
+  char    *formatstr;
 };
 typedef struct formatstring formatstring;
 
 /* static tmpstr in all modules */
 #define TMPSTRSIZE 1024
-static unsigned char tmpstr[TMPSTRSIZE];
+static char tmpstr[TMPSTRSIZE];
 
-extern unsigned char *nick;
-extern int chan;
+extern char *nick;
+extern int   chan;
 
 extern unsigned int loggedin;
 
 /* vchat-client.c */
 #define ERRSTRSIZE 1024
-extern unsigned char errstr[];
-extern unsigned char *vchat_cl_version;
+extern char errstr[];
+extern char *vchat_cl_version;
 void cleanup(int signal);
 
 /*   configuration helper funktions from vchat-client.c */
-unsigned char *getformatstr (formtstr id);
-unsigned char *getstroption (confopt option);
-void setstroption (confopt option, unsigned char *string);
+char *getformatstr (formtstr id);
+char *getstroption (confopt option);
+void setstroption (confopt option, char *string);
 int getintoption (confopt option);
 void setintoption (confopt option, int value);
 
 /* vchat-user.c */
-extern unsigned char *vchat_us_version;
+extern char *vchat_us_version;
 
 /*   add / delete user */
-void ul_add (unsigned char *nick, int ignored);
-void ul_del (unsigned char *nick, int ignored);
+void ul_add (char *nick, int ignored);
+void ul_del (char *nick, int ignored);
 
 /*   clear userlist */
 void ul_clear ();
 
 /*   channel join / leave */
-void ul_join (unsigned char *nick, int channel);
-void ul_leave (unsigned char *nick, int channel);
+void ul_join (char *nick, int channel);
+void ul_leave (char *nick, int channel);
 
 /*   nickchange */
-void ul_nickchange (unsigned char *oldnick, unsigned char *newnick);
+void ul_nickchange (char *oldnick, char *newnick);
 
 /*   place user in channel */
-void ul_moveuser (unsigned char *nick, int channel);
+void ul_moveuser (char *nick, int channel);
 
 /*   message nick completion */
-void ul_msgto (unsigned char *nick);
-void ul_msgfrom (unsigned char *nick);
+void ul_msgto (char *nick);
+void ul_msgfrom (char *nick);
 
 /*   nick-completion for vchat-ui.c */
-unsigned char *ul_nickcomp (const unsigned char *text, int state);
-unsigned char *ul_cnickcomp (const unsigned char *text, int state);
-unsigned char *ul_mnickcomp (const unsigned char *text, int state);
+char *ul_nickcomp (const char *text, int state);
+char *ul_cnickcomp (const char *text, int state);
+char *ul_mnickcomp (const char *text, int state);
 
 /*   try to find user by substring */
-unsigned char *ul_matchuser ( unsigned char *substr);
+char *ul_matchuser (char *substr);
 
 /* vchat-ui.c */
-extern unsigned char *vchat_ui_version;
+extern char *vchat_ui_version;
 
 /*   topic and console strings */
 #define TOPICSTRSIZE 1024
 #define CONSOLESTRSIZE 1024
-extern unsigned char topicstr[];
-extern unsigned char consolestr[];
-extern unsigned char *encoding;
+extern char topicstr[];
+extern char consolestr[];
+extern char *encoding;
 
 /*   init / exit functions */
 void initui (void);
@@ -148,22 +148,20 @@ void exitui (void);
 void userinput (void);
 
 /*   display various messages */
-int   writechan (unsigned char *str);
-int   writepriv (unsigned char *str, int maybeep );
-void  writeout  (unsigned char *str);
+int   writechan (char *str);
+int   writepriv (char *str, int maybeep );
+void  writeout  (char *str);
 void  showout   (void);
 void  flushout  (void);
 #define  msgout(STR) {flushout();writeout(STR);showout();}
 void  hideout   (void);
-int   writecf   (formtstr id, unsigned char *str);
-void  writelog  (FILE *file);
-void  writelog_i(FILE *file);
+int   writecf   (formtstr id, char *str);
 
 extern int outputcountdown;
 
 /*   update console / topic window */
-void consoleline (unsigned char *);
-void topicline (unsigned char *);
+void consoleline (char *);
+void topicline (char *);
 
 /*   prompt for nick or password */
 void nickprompt (void);
@@ -172,40 +170,42 @@ int passprompt (char *buf, int size, int rwflag, void *userdata);
 /*   filter functions */
 void         refilterscrollback( void);
 
-unsigned int addfilter        ( char colour, unsigned char *regex );
-void         removefilter     ( unsigned char *line );
+unsigned int addfilter        ( char colour, char *regex );
+void         removefilter     ( char *line );
 void         listfilters      ( void );
 void         clearfilters     ( char colour );
 
+void         handlequery      ( char *line );
+
 /* vchat-protocol.c */
-extern unsigned char *vchat_io_version;
+extern char *vchat_io_version;
 
 /*   connect/disconnect */
-int  vcconnect    (unsigned char *server, unsigned char *port);
+int  vcconnect    (char *server, char *port);
 void vcdisconnect ();
 
 /*   network I/O */
 void networkinput (void);
-void networkoutput (unsigned char *);
+void networkoutput (char *);
 
 /*   helpers for vchat-user.c */
 void ownjoin (int channel);
 void ownleave (int channel);
-void ownnickchange (unsigned char *newnick);
+void ownnickchange (char *newnick);
 
 /* vchat-commands.c */
-extern unsigned char *vchat_cm_version;
-void   command_version ( unsigned char *tail);
+extern char *vchat_cm_version;
+void   command_version ( char *tail);
 
 /*   user input */
-void handleline (unsigned char *);
+void handleline (char *);
 
 /* struct for defining "/command" handlers */
 typedef struct {
-  int            number;
-  unsigned char  name[8];
-  int            len;
-  void         (*handler)(unsigned char *);
-  unsigned char *short_help;
-  unsigned char *help;
+  int     number;
+  char   name[8];
+  int    len;
+  void (*handler)(char *);
+  char  *short_help;
+  char  *help;
 } commandentry;

@@ -35,7 +35,7 @@
 #include "vchat.h"
 
 /* version of this module */
-unsigned char *vchat_io_version = "$Id$";
+char *vchat_io_version = "$Id$";
 
 /* externally used variables */
 int serverfd = -1;
@@ -49,28 +49,28 @@ static SSL *sslconn = NULL;
  * but by the library. we use it to set the accepted list of ciphers */
 STACK_OF(SSL_CIPHER) * ssl_create_cipher_list (const SSL_METHOD * meth, STACK_OF (SSL_CIPHER) ** pref, STACK_OF (SSL_CIPHER) ** sorted, const unsigned char *rule_str);
 
-static unsigned char *sslpubkey = NULL; /* servers public key extracted from X.509 certificate */
+static char *sslpubkey = NULL; /* servers public key extracted from X.509 certificate */
 static int sslpubkeybits = 0;  /* length of server public key */
 
 /* declaration of local helper functions */
-static void usersignon (unsigned char *);
-static void usersignoff (unsigned char *);
-static void usernickchange (unsigned char *);
-static void userjoin (unsigned char *);
-static void userleave (unsigned char *);                                                                                                                                                                         
-static void receivenicks (unsigned char *message);
-static void justloggedin (unsigned char *message);
-static void nickerr (unsigned char *message);
-static void login (unsigned char *message);
-static void anonlogin (unsigned char *message);
-static void topicinfo (unsigned char *message);
-static void pubaction (unsigned char *message);
-static void pubthoughts (unsigned char *message);
-static void serverlogin (unsigned char *message);
-static void idleprompt (unsigned char *message);
-static void topicchange (unsigned char *message);
-static void pmnotsent (unsigned char *message);
-static int  getportnum(unsigned char *port);
+static void usersignon (char *);
+static void usersignoff (char *);
+static void usernickchange (char *);
+static void userjoin (char *);
+static void userleave (char *);                                                                                                                                                                         
+static void receivenicks (char *message);
+static void justloggedin (char *message);
+static void nickerr (char *message);
+static void login (char *message);
+static void anonlogin (char *message);
+static void topicinfo (char *message);
+static void pubaction (char *message);
+static void pubthoughts (char *message);
+static void serverlogin (char *message);
+static void idleprompt (char *message);
+static void topicchange (char *message);
+static void pmnotsent (char *message);
+static int  getportnum (char *port);
 
 /* declaration of server message array */
 #include "vchat-messages.h"
@@ -80,21 +80,21 @@ static int  getportnum(unsigned char *port);
 extern int status;
 
 int usessl = 1;
-unsigned char *encoding;
+char *encoding;
 
 /* connects to server */
 int
-vcconnect (unsigned char *server, unsigned char *port)
+vcconnect (char *server, char *port)
 {
   /* used for tilde expansion of cert & key filenames */
-  unsigned char *tildex = NULL;
+  char *tildex = NULL;
   /* buffer for X.509 subject of server certificate */
-  unsigned char subjbuf[256];
+  char subjbuf[256];
   /* variables used to split the subject */
-  unsigned char *subjv = NULL;
-  unsigned char *subjn = NULL;
-  unsigned char *subjc = NULL;
-  unsigned char *subjh = NULL;
+  char *subjv = NULL;
+  char *subjn = NULL;
+  char *subjc = NULL;
+  char *subjh = NULL;
   /* pointer to key in certificate */
   EVP_PKEY *certpubkey = NULL;
   /* temporary result */
@@ -109,7 +109,7 @@ vcconnect (unsigned char *server, unsigned char *port)
   SSL_METHOD *sslmeth = NULL;
 
   /* pointer to tilde-expanded certificate/keyfile-names */
-  unsigned char *certfile = NULL, *keyfile = NULL;
+  char *certfile = NULL, *keyfile = NULL;
 
   /* variable for verify return */
   long verify;
@@ -154,7 +154,7 @@ vcconnect (unsigned char *server, unsigned char *port)
       SSL_CTX_set_default_passwd_cb (sslctx, passprompt);
 
       /* set our list of accepted ciphers */
-      ssl_create_cipher_list (sslctx->method, &(sslctx->cipher_list), &(sslctx->cipher_list_by_id), getstroption (CF_CIPHERSUITE));
+      ssl_create_cipher_list (sslctx->method, &(sslctx->cipher_list), &(sslctx->cipher_list_by_id), (unsigned char*)getstroption (CF_CIPHERSUITE));
 
       /* get name of certificate file */
       certfile = getstroption (CF_CERTFILE);
@@ -366,7 +366,7 @@ vcdisconnect ()
 }
 
 /* lookup a port number by service string */
-static int getportnum (unsigned char *port)
+static int getportnum (char *port)
 {
   char *endpt = NULL;
   struct servent *service = getservbyname(port, "tcp");
@@ -382,7 +382,7 @@ static int getportnum (unsigned char *port)
 /* handle a pm not sent error
  *  format: 412 %s */
 static void
-pmnotsent (unsigned char *message)
+pmnotsent (char *message)
 {
   while(*message && *message!=' ') message++;
   snprintf(tmpstr,TMPSTRSIZE,getformatstr(FS_ERR),message+1);
@@ -395,9 +395,9 @@ pmnotsent (unsigned char *message)
  *    vars: %s nick
  *          %s action */
 static void
-pubaction (unsigned char *message)
+pubaction (char *message)
 {
-  unsigned char *nick = NULL, *action = NULL;
+  char *nick = NULL, *action = NULL;
   nick = strchr (message, ' ');
   nick[0] = '\0';
   nick++;
@@ -415,9 +415,9 @@ pubaction (unsigned char *message)
  *    vars: %s nick
  *          %s thought */
 static void
-pubthoughts (unsigned char *message)
+pubthoughts (char *message)
 {
-  unsigned char *nick = NULL, *thoughts = NULL;
+  char *nick = NULL, *thoughts = NULL;
   nick = strchr (message, ' ');
   nick[0] = '\0';
   nick++;
@@ -432,7 +432,7 @@ pubthoughts (unsigned char *message)
 
 /* parse and handle server logon */
 static void
-serverlogin (unsigned char *message)
+serverlogin (char *message)
 {
 #ifndef NO_LOCALE
   int utf8=!strcmp(nl_langinfo(CODESET), "UTF-8");
@@ -444,9 +444,9 @@ serverlogin (unsigned char *message)
  *  format: 305
  *    vars: %s message */
 static void
-idleprompt (unsigned char *message)
+idleprompt (char *message)
 {
-  unsigned char *msg = NULL;
+  char *msg = NULL;
   msg = strchr (message, ' ');
   msg[0] = '\0';
   msg++;
@@ -460,9 +460,9 @@ idleprompt (unsigned char *message)
  *    vars: %d chan  - channel number
  *          %s topic - topic  */
 static void
-topicinfo (unsigned char *message)
+topicinfo (char *message)
 {
-  unsigned char *channel = NULL, *topic = NULL;
+  char *channel = NULL, *topic = NULL;
   int tmpchan = 0;
   
   /* search start of channel number */
@@ -499,9 +499,9 @@ topicinfo (unsigned char *message)
  *    vars: %s nick
  *          %s topic */
 static void
-topicchange (unsigned char *message)
+topicchange (char *message)
 {
-  unsigned char *nick = NULL, *topic = NULL;
+  char *nick = NULL, *topic = NULL;
   int len;
 
   /* search start of nickname */
@@ -537,9 +537,9 @@ topicchange (unsigned char *message)
  *    vars: %s str1 - nick used to login
  *          %s str2 - servers message */
 static void
-justloggedin (unsigned char *message)
+justloggedin (char *message)
 {
-  unsigned char *str1 = NULL, *str2 = NULL;
+  char *str1 = NULL, *str2 = NULL;
   /* search start of nickname */
   str1 = strchr (message, ' ');
   str1++;
@@ -590,7 +590,7 @@ ownleave (int channel)
 
 /* this user changes his nick */
 void
-ownnickchange (unsigned char *newnick)
+ownnickchange (char *newnick)
 {
   /* free old nick, store copy of new nick */
   setstroption(CF_NICK,newnick);
@@ -606,9 +606,9 @@ ownnickchange (unsigned char *newnick)
  *          415 %s
  *    vars: %s - server message */
 static void
-nickerr (unsigned char *message)
+nickerr (char *message)
 {
-  unsigned char *helpkiller = NULL;
+  char *helpkiller = NULL;
   /* mutate message for output */
   message[2] = '!';
   /* help information found? remove it. */
@@ -639,9 +639,9 @@ nickerr (unsigned char *message)
  *    vars: %s      - this users registered nick
  *          %s msg  - server message */
 static void
-login (unsigned char *message)
+login (char *message)
 {
-  unsigned char *msg = NULL;
+  char *msg = NULL;
 
   /* mutate message for output */
   message[2] = '*';
@@ -675,7 +675,7 @@ login (unsigned char *message)
  *  format: 121 %s
  *    vars: %s - server message */
 static void
-anonlogin (unsigned char *message)
+anonlogin (char *message)
 {
   /* mutate message for output */
   message[2] = '*';
@@ -695,11 +695,11 @@ anonlogin (unsigned char *message)
  *  format: 119 %s ..
  *    vars: %s nick - a users nick */
 static void
-receivenicks (unsigned char *message)
+receivenicks (char *message)
 {
-  unsigned char *str1 = NULL, *str2 = NULL;
+  char *str1 = NULL, *str2 = NULL;
   int mychan = 0;
-  void (*ul_myfunc)(unsigned char*,int);
+  void (*ul_myfunc)(char*,int);
 
   /* show message to user */
   snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_USONLINE), &message[4]);
@@ -745,9 +745,9 @@ receivenicks (unsigned char *message)
  *    vars: %s nick - who logged on
  *          %s msg  - servers message */
 static void
-usersignon (unsigned char *message)
+usersignon (char *message)
 {
-  unsigned char *nick = NULL, *msg = NULL;
+  char *nick = NULL, *msg = NULL;
   /* search start of nickname */
   nick = strchr (message, ' ');
   nick++;
@@ -770,9 +770,9 @@ usersignon (unsigned char *message)
  *    vars: %s nick - who logged off
  *          %s msg  - servers message */
 static void
-usersignoff (unsigned char *message)
+usersignoff (char *message)
 {
-  unsigned char *nick = NULL, *msg = NULL;
+  char *nick = NULL, *msg = NULL;
   /* search start of nickname */
   nick = strchr (message, ' ');
   nick++;
@@ -796,9 +796,9 @@ usersignoff (unsigned char *message)
  *          %s msg  - servers message
  *          %d chan - channel joined */
 static void
-userjoin (unsigned char *message)
+userjoin (char *message)
 {
-  unsigned char *nick = NULL, *msg = NULL, *channel = NULL;
+  char *nick = NULL, *msg = NULL, *channel = NULL;
   int chan = 0;
 
   /* search start of nickname */
@@ -832,9 +832,9 @@ userjoin (unsigned char *message)
  *          %s msg  - servers message
  *          %d chan - channel joined */
 static void
-userleave (unsigned char *message)
+userleave (char *message)
 {
-  unsigned char *nick = NULL, *msg = NULL, *channel = NULL;
+  char *nick = NULL, *msg = NULL, *channel = NULL;
   int chan = 0;
 
   /* search start of nickname */
@@ -868,9 +868,9 @@ userleave (unsigned char *message)
  *          %s newnick - users new nick
  *          %s msg     - server message */
 static void
-usernickchange (unsigned char *message)
+usernickchange (char *message)
 {
-  unsigned char *oldnick = NULL, *newnick = NULL, *msg = NULL;
+  char *oldnick = NULL, *newnick = NULL, *msg = NULL;
 
   /* search start of old nickname */
   oldnick = strchr (message, ' ');
@@ -896,9 +896,9 @@ usernickchange (unsigned char *message)
 
 /* handle received message from server */
 static void
-parsemsg (unsigned char *message)
+parsemsg (char *message)
 {
-  unsigned char *str1, *str2;
+  char *str1, *str2;
   int i;
   /* message to short or starts with '<'? must be channel */
   if (message[0] == '<')
@@ -1014,10 +1014,10 @@ void
 networkinput (void)
 {
   int bytes;
-  unsigned char *tmp = NULL;
+  char *tmp = NULL;
 #define BUFSIZE 4096
-  unsigned char buf[BUFSIZE];     /* data buffer */
-  unsigned char *ltmp = buf;
+  char buf[BUFSIZE];     /* data buffer */
+  char *ltmp = buf;
   buf[BUFSIZE-1] = '\0'; /* sanity stop */
 
   /* check if we use ssl or if we don't and receive data at offset */
@@ -1085,7 +1085,7 @@ networkinput (void)
 }
 
 void
-networkoutput (unsigned char *msg)
+networkoutput (char *msg)
 {
 #ifdef DEBUG
   /* debugging? log network output! */

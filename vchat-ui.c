@@ -30,13 +30,13 @@
 #include "vchat.h"
 
 /* version of this module */
-unsigned char *vchat_ui_version = "$Id$";
+char *vchat_ui_version = "$Id$";
 
 /* externally used variables */
 /*   current string in topic window */
-unsigned char topicstr[TOPICSTRSIZE] = "[] VChat 0.16";
+char topicstr[TOPICSTRSIZE] = "[] VChat 0.16";
 /*   current string in console window */
-unsigned char consolestr[CONSOLESTRSIZE] = "[ Get help: .h for server /h for client commands";
+char consolestr[CONSOLESTRSIZE] = "[ Get help: .h for server /h for client commands";
 
 static unsigned int    ui_init          = 0;
 
@@ -47,8 +47,6 @@ static WINDOW         *topic            = NULL;
 static WINDOW         *channel          = NULL;
 static WINDOW         *private          = NULL;
 static WINDOW         *output           = NULL;
-
-static FILE           *vchat_logfile    = NULL;
 
 /* our screen dimensions */
 static int             screensx         = 0;
@@ -68,12 +66,13 @@ static int             privheight_desired = 0;
 static int             privwinhidden    = 0;
 int                    usetime          = 1;
 int                    outputcountdown  = 0;
+char                  *querypartner     = NULL;
 
 struct sb_entry {
   int                id;
   time_t             when;
   int                stamp;
-  unsigned char     *what;
+  char              *what;
   struct sb_entry   *link;
 };
 
@@ -93,9 +92,9 @@ static int             sb_win          = 0; /* 0 for pub, 1 for priv */
 
 /*   struct to keep filter list */
 struct filt {
-  unsigned char        colour;
+  char                 colour;
   unsigned int         id;
-  unsigned char       *text;
+  char                *text;
   regex_t              regex;
   struct   filt       *next;
 };
@@ -119,7 +118,7 @@ static void resize_output    (void);
 static int  getsbeheight     (struct sb_entry *entry, const int xwidth, int needstime );
 static int  getsbdataheight  (struct sb_data *data, const int xwidth, int needstime );
 /* CURRENTLY UNUSED
-static void writecolorized   (WINDOW *win, unsigned char *string);
+static void writecolorized   (WINDOW *win, char *string);
 */
 
 enum {
@@ -129,10 +128,20 @@ enum {
   RMFILTER_KEEPANDSTOP
 };
 
+/* */
+static void
+togglequery() {
+  if( querypartner && private ) {
+    { struct sb_data *tmp = sb_pub; sb_pub = sb_priv; sb_priv = tmp; }
+    { WINDOW *tmp= private; private = channel; channel = tmp; }
+  }
+}
+
 /* readlines callback when a line is completed */
 static void
-linecomplete (unsigned char *line)
+linecomplete (char *line)
 {
+  char *c;
   int i;
 
   /* send linefeed, return pointer, reset cursors */
@@ -156,6 +165,10 @@ linecomplete (unsigned char *line)
       add_history (line);
       handleline (line);
       free (line);
+
+      /* If in query mode, feed query prefix */
+      if (( c = querypartner ))
+        while( *c ) rl_stuff_char( *c++ );
 
       /* wipe input line and reset cursor */
       wmove (input, 0, 0);
@@ -212,8 +225,8 @@ userinput (void)
 }
 
 static int
-calcdrawcus (unsigned char * const str) {
-  unsigned char *tmp = str;
+calcdrawcus (char * const str) {
+  char *tmp = str;
   int zero = 0;
   while( *tmp && (*tmp!=' ') && (*tmp!='\n')) { if(*tmp==1) zero+=2; tmp++; }
   return (tmp - str) - zero;
@@ -240,7 +253,7 @@ sb_clear ( struct sb_data **sb ) {
 }*/
 
 static struct sb_entry*
-sb_add (struct sb_data *sb, unsigned char *line, time_t when) {
+sb_add (struct sb_data *sb, char *line, time_t when) {
   struct sb_entry *newone = malloc (sizeof(struct sb_entry));
   if( newone ) {
       if( sb->count == sb->scroll ) sb->scroll++;
@@ -282,7 +295,7 @@ void showout (void)
   resize(0);
 }
 
-void writeout (unsigned char *str)
+void writeout (char *str)
 {
   int i;
   sb_add(sb_out,str,time(NULL));
@@ -290,53 +303,53 @@ void writeout (unsigned char *str)
   if( i > outputwidth_desired ) outputwidth_desired = i;
 }
 
-int writechan (unsigned char *str) {
+int writechan (char *str) {
   struct sb_entry *tmp;
   int i = 0;
   time_t now = time(NULL);
   tmp = sb_add(sb_pub,str,now);
 
-  if( getintoption( CF_KEEPLOG ) && vchat_logfile )
-      fprintf( vchat_logfile, "%016llX0%s\n", (signed long long)now, str);
-
   if ( (sb_pub->scroll == sb_pub->count) && ((filtertype == 0) || ( testfilter(tmp)))) {
      i = writescr(channel, tmp);
      wnoutrefresh(channel);
   }
-  consoleline(NULL);
+
+  if( querypartner && private )
+    topicline(NULL);
+  else
+    consoleline(NULL);
+
   return i;
 }
 
-int writecf (formtstr id,unsigned char *str) {
+int writecf (formtstr id, char *str) {
   struct sb_entry *tmp;
   int i = 0;
   time_t now = time(NULL);
   snprintf(tmpstr,TMPSTRSIZE,getformatstr(id),str);
   tmp = sb_add(sb_pub,tmpstr,now);
 
-  if( getintoption( CF_KEEPLOG ) && vchat_logfile )
-      fprintf( vchat_logfile, "%016llX0%s\n", (unsigned long long)now, tmpstr);
-
   if ( (sb_pub->scroll == sb_pub->count) &&
        ((filtertype == 0) || ( testfilter(tmp)))) {
       i = writescr(channel, tmp);
       wnoutrefresh(channel);
   }
-  consoleline(NULL);
+
+  if( querypartner && private )
+    topicline(NULL);
+  else
+    consoleline(NULL);
+
   return i;
 }
 
-int writepriv (unsigned char *str, int maybeep) {
+int writepriv (char *str, int maybeep) {
   int i = 0;
   if (private) {
 
       time_t now = time (NULL);
       struct sb_entry *tmp;
       tmp = sb_add(sb_priv,str,now);
-
-      if( getintoption( CF_KEEPLOG ) && vchat_logfile ) {
-          fprintf( vchat_logfile, "%016llX1%s\n", (unsigned long long)now, str);
-      }
 
       if ( !privwinhidden && (sb_priv->scroll == sb_priv->count) &&
            ((filtertype == 0) || ( testfilter(tmp)))) {
@@ -350,7 +363,12 @@ int writepriv (unsigned char *str, int maybeep) {
           resize(0);
       }
       wnoutrefresh(private);
-      topicline(NULL);
+
+      if( querypartner && private )
+        consoleline(NULL);
+      else
+        topicline(NULL);
+
   } else
       i = writechan( str );
 
@@ -388,13 +406,13 @@ static int attributes[] = { A_ALTCHARSET, A_BOLD, 0, A_DIM, 0, 0, 0, 0, A_INVIS,
                      0, 0, 1, 0, 0 };
 
 static void
-docolorize (unsigned char colour, ncurs_attr *attr, ncurs_attr orgattr) {
+docolorize (char colour, ncurs_attr *attr, ncurs_attr orgattr) {
   if( colour== '0') {
       *attr = orgattr;
   } else if( ( colour > '0') && ( colour <= '9')) {
       BCOLR_SET( attr, colour - '0' );
   } else {
-      unsigned char upc = colour & ( 0x20 ^ 0xff ); /* colour AND NOT 0x20 */
+      char upc = colour & ( 0x20 ^ 0xff ); /* colour AND NOT 0x20 */
       attr_t        newattr;
       if( ( upc >= 'A') && ( upc<='Z' ) && ( newattr = attributes[upc - 'A']) )
           attr->attr = ( colour & 0x20 ) ? attr->attr | newattr : attr->attr & ~newattr;
@@ -404,13 +422,13 @@ docolorize (unsigned char colour, ncurs_attr *attr, ncurs_attr orgattr) {
 /* draw arbitrary strings */
 static int
 writescr ( WINDOW *win, struct sb_entry *entry ) {
-  unsigned char tmp [64];
+  char tmp [64];
   int charcount = 0;
   int i;
   int textlen   = strlen( entry->what );
   int timelen   = ((win == channel)||(win == private)) && usetime ?
       (int)strftime(tmp,64,getformatstr(FS_TIME),localtime(&entry->when)) : 0;
-  unsigned char textbuffer[ textlen+timelen+1 ];
+  char          textbuffer[ textlen+timelen+1 ];
   ncurs_attr    attrbuffer[ textlen+timelen+1 ];
   ncurs_attr    orgattr;
 
@@ -446,9 +464,9 @@ writescr ( WINDOW *win, struct sb_entry *entry ) {
 
   /* hilite */
   if((win == channel)||(win == private)) { /* do not higlight bars */
-      filt          *flt   = filterlist;
-      unsigned char *instr = textbuffer;
-      regmatch_t    match;
+      filt       *flt   = filterlist;
+      char       *instr = textbuffer;
+      regmatch_t  match;
       int           j;
 
       while( flt ) {
@@ -494,87 +512,6 @@ writescr ( WINDOW *win, struct sb_entry *entry ) {
 }
 
 static void
-writelog_processentry ( FILE *file, struct sb_entry* entry )
-{
-  char *outtmp;
-  int  outoff = 0;
-  if( usetime ) {
-      outtmp = tmpstr+64;
-      strftime(outtmp,64,getformatstr(FS_TIME),localtime(&entry->when));
-      while(*outtmp)
-          if( *outtmp > 1 )
-              tmpstr[outoff++] = *(outtmp++);
-          else 
-              if( *(++outtmp))
-                  outtmp++;
-  }
-
-  outtmp = entry->what;
-  while(*outtmp)
-      while(*outtmp && ( outoff < TMPSTRSIZE-1) ) {
-         if( *outtmp > 1 )
-             tmpstr[outoff++] = *(outtmp++);
-         else
-             if( *(++outtmp))
-                 outtmp++;
-      tmpstr[outoff]=0; outoff = 0;
-      fputs( tmpstr, file );
-  }
-
-  fputc( '\n', file);
-}
-
-void
-writelog_i ( FILE *file)
-{
-  if( !private ) {
-      writelog( file);
-  } else {
-      struct sb_entry *now1= sb_pub->last, *prev1 = NULL, *tmp;
-      struct sb_entry *now2= sb_priv->last, *prev2 = NULL;
-      fputs( "Interleaved messages:\n\n", file);
-      while( now1 || now2 ) {
-          int process;
-          if( now1 && now2 ) {
-              process = ( now1->when < now2->when ) ? 1 : 2;
-          } else {
-              process = now1 ? 1 : 2;
-          }
-
-          if( process == 1 ) {
-              writelog_processentry( file, now1 );
-              tmp = now1; now1 = (struct sb_entry*)((unsigned long)now1->link ^ (unsigned long)prev1); prev1 = tmp;
-          } else {
-              writelog_processentry( file, now2 );
-              tmp = now2; now2 = (struct sb_entry*)((unsigned long)now2->link ^ (unsigned long)prev2); prev2 = tmp;
-          }
-      }
-  }
-}
-
-void
-writelog ( FILE *file )
-{
-  if( sb_pub->last ) {
-      struct sb_entry *now = sb_pub->last, *prev = NULL, *tmp;
-      fputs( "Public messages:\n\n", file);
-      while( now ) {
-          writelog_processentry( file, now );
-          tmp = now; now = (struct sb_entry*)((unsigned long)now->link ^ (unsigned long)prev); prev = tmp;
-      }
-      putc( '\n', file );
-  }
-  if( private && sb_priv->last ) {
-      struct sb_entry *now = sb_priv->last, *prev = NULL, *tmp;
-      fputs( "Private messages:\n\n", file);
-      while( now ) {
-          writelog_processentry( file, now );
-          tmp = now; now = (struct sb_entry*)((unsigned long)now->link ^ (unsigned long)prev); prev = tmp;
-      }
-  }
-}
-
-static void
 resize_output ( )
 {
   int outputwidth  = (outputwidth_desired + 7 > screensx) ? screensx - 7 : outputwidth_desired;
@@ -587,7 +524,9 @@ resize_output ( )
 }
 
 static void
-doscroll( int up ) {
+doscroll ( int up ) {
+  togglequery();
+  {
   WINDOW *destwin = (sb_win && private) ? private : channel;
   struct sb_data *sb = (sb_win && private) ? sb_priv : sb_pub;
   struct sb_entry *now = sb->entries, *prev = NULL, *tmp;
@@ -617,7 +556,14 @@ doscroll( int up ) {
 
   drawwin(destwin, sb);
   wnoutrefresh(destwin);
-  if( sb_win && private ) topicline(NULL); else consoleline(NULL);
+
+  togglequery();
+
+  if( private && (destwin == channel) )
+    topicline( NULL);
+  else
+    consoleline( NULL);
+  }
 }
 
 
@@ -634,7 +580,7 @@ scrolldown (void)
 }
 
 void
-scrollwin (vod)
+scrollwin (void)
 {
     if (!sb_win && private && !privwinhidden) sb_win = 1;
     else sb_win = 0;
@@ -643,7 +589,7 @@ scrollwin (vod)
 }
 
 void
-growprivwin (vod) {
+growprivwin (void) {
     if( private ) {
       if( privwinhidden)
           privwinhidden = 0;
@@ -653,7 +599,7 @@ growprivwin (vod) {
     }
 }
 
-void toggleprivwin (vod) {
+void toggleprivwin (void) {
   if( outputshown ) {
       outputshown = 0;
       resize(0);
@@ -674,7 +620,7 @@ void toggleprivwin (vod) {
 }
 
 void
-shrinkprivwin (vod) {
+shrinkprivwin (void) {
     if( private && !privwinhidden ) {
       if( --privheight_desired < 1) privheight_desired = 1;
       if(   privheight_desired > screensy - 5)  privheight_desired = screensy - 5;
@@ -778,7 +724,7 @@ forceredraw (void)
   if(console) wclear(console);
   if(topic)   wclear(topic);
   if(private) wclear(private);
-  if(channel) wclear( channel );  
+  if(channel) wclear(channel );  
   if(output)  wclear(output);
   if(input)   wclear(input);
   resize(0);
@@ -827,6 +773,8 @@ resize (int signal)
   /*****
    * Arrange windows on screen
    *****/
+
+  togglequery();
 
   /* console and input are always there and always 1 line tall */
   wresize(console,1,screensx);
@@ -881,6 +829,8 @@ resize (int signal)
                   wnoutrefresh(channel);
   if(private && !privwinhidden )
                   wnoutrefresh(private);
+
+  togglequery();
 
   /* Resize and draw our message window, render topic and
      console line */
@@ -1277,34 +1227,6 @@ initui (void)
   showout( );
 */
 
-  if( getintoption( CF_KEEPLOG ) ) {
-      unsigned char *logfile = getstroption( CF_LOGFILE );
-      if( logfile && *logfile ) {
-          if( *logfile == '~' )
-              logfile = tilde_expand( logfile );
-          vchat_logfile = fopen( logfile, "r+" );
-          if( vchat_logfile ) {
-              time_t    now;
-              long long now_;
-              char      dst;
-              int       lenstr;
-              while( !feof( vchat_logfile)) {
-                  if( (fscanf( vchat_logfile, "%016llX%c", (unsigned long long*)&now_, &dst)) &&
-                      ((dst == '0') || (dst == '1')))
-                  {
-                      now = (time_t)now_;
-                      if(fgets(tmpstr, TMPSTRSIZE, vchat_logfile)) {
-                          lenstr = strlen( tmpstr );
-                          tmpstr[lenstr-1] = '\0';
-                          sb_add( dst == '0' ? sb_pub : sb_priv, tmpstr, now);
-                      }
-                  } else
-                      while( !feof( vchat_logfile) && ( fgetc( vchat_logfile ) != '\n'));
-              }
-          }
-      }
-  }
-
   resize(0);  
 }
 
@@ -1314,7 +1236,7 @@ initui (void)
    Enable, when needed
 
 static void
-writecolorized( WINDOW *win, unsigned char *string) {
+writecolorized( WINDOW *win, char *string) {
   ncurs_attr old_att, new_att;
   int        i;
 
@@ -1333,11 +1255,13 @@ writecolorized( WINDOW *win, unsigned char *string) {
 
 /* render consoleline to screen */
 void
-consoleline (unsigned char *message)
+consoleline (char *message)
 {
   /* clear console, set string (or default), redraw display */
   int i;
   ncurs_attr old_att, new_att;
+
+  togglequery();
 
   memset( &new_att, 0, sizeof(new_att));
   BCOLR_SET( (&new_att), 8 );
@@ -1370,19 +1294,23 @@ consoleline (unsigned char *message)
       redrawwin(output);
       wnoutrefresh(output);
   }
+
+  togglequery();
   wnoutrefresh(input);
   doupdate();
 }
 
 /* render topicline to screen */
 void
-topicline (unsigned char *message)
+topicline (char *message)
 {
   int i;
   ncurs_attr old_att, new_att;
 
   if( !topic )
       return;
+
+  togglequery();
 
   memset( &new_att, 0, sizeof(new_att));
   BCOLR_SET( (&new_att), 8 );
@@ -1409,6 +1337,8 @@ topicline (unsigned char *message)
       redrawwin(output);
       wnoutrefresh(output);
   }
+
+  togglequery();
   wnoutrefresh(input);
   doupdate();
 }
@@ -1421,8 +1351,6 @@ exitui (void)
      rl_callback_handler_remove ();
      endwin ();
      ui_init = 0;
-     if( vchat_logfile )
-         fclose( vchat_logfile );
   }
 }
 
@@ -1465,7 +1393,7 @@ static void
 vcnredraw (void)
 {
   int i;
-  unsigned char *passbof="-*-*-*-*-*-*-";
+  char *passbof="-*-*-*-*-*-*-";
 
   /* wipe input line and reset cursor */
   wmove(input, 0, 0);
@@ -1486,7 +1414,7 @@ int
 passprompt (char *buf, int size, int rwflag, void *userdata)
 {
   int i;
-  unsigned char *passphrase = NULL;
+  char *passphrase = NULL;
   
   /* use special non-revealing redraw function */
   /* FIXME: passphrase isn't protected against e.g. swapping */
@@ -1619,7 +1547,7 @@ clearfilters( char colour ) {
 
 /* removes filter pattern */
 void
-removefilter( unsigned char *tail ) {
+removefilter( char *tail ) {
   int rmv = 0, val;
   char* end;
 
@@ -1627,8 +1555,8 @@ removefilter( unsigned char *tail ) {
 
   rmv = removefromfilterlist( test_simplerm, (void *)tail, 0 );
   if(!rmv) {
-      val = strtol((char*)tail, &end, 10);
-      if( (tail != (unsigned char*)end) && (!*end) )
+      val = strtol(tail, &end, 10);
+      if( (tail != end) && (!*end) )
       rmv = removefromfilterlist( test_numericrm, (void *)val, 0);
   }
 
@@ -1646,7 +1574,7 @@ static unsigned int uniqueidpool = 1;
 
 /* returns unique id for filter pattern or 0 for failure */
 unsigned int
-addfilter( char colour, unsigned char *regex ) {
+addfilter( char colour, char *regex ) {
   filt *newflt = malloc( sizeof(filt)), **flt = &filterlist;
 
   if( !newflt ) return 0;
@@ -1752,4 +1680,32 @@ listfilters( void ) {
       writeout("  No entries on your filter list. ");
   }
   showout();
+}
+
+void
+handlequery( char *tail ) {
+  if( *tail ) {
+    // ".m %s " -> string + 4
+    if( querypartner && private ) {
+      WINDOW *tmp= private; private = channel; channel = tmp;
+    }
+    querypartner = (char *)realloc( querypartner, 5 + strlen( tail ));
+    if( querypartner ) {
+      snprintf( querypartner, 5 + strlen( tail ), ".m %s ", tail );
+      if( private ) {
+        WINDOW *tmp= private; private = channel; channel = tmp;
+      }
+    }
+    resize( 0 );
+  } else {
+    // QUERY ends
+    if( querypartner ) {
+      free( querypartner );
+      querypartner = NULL;
+      if( private ) {
+        WINDOW *tmp= private; private = channel; channel = tmp;
+      }
+      resize( 0 );
+    }
+  }
 }
