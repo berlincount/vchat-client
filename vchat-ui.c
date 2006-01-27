@@ -355,7 +355,7 @@ int writepriv (char *str, int maybeep) {
            ((filtertype == 0) || ( testfilter(tmp)))) {
           i = writescr(private, tmp);
       }
-      if( privwinhidden ) {
+      if( privwinhidden & !querypartner ) {
           if( (maybeep != 0) && (getintoption( CF_BELLPRIV ) != 0 ))
             putchar( 7 );
           privheight_desired = privwinhidden;
@@ -601,31 +601,31 @@ growprivwin (void) {
 
 void toggleprivwin (void) {
   if( outputshown ) {
-      outputshown = 0;
-      resize(0);
+    outputshown = 0;
+    resize(0);
   } else {
-       if( private ) {
-           if( privwinhidden ) {
-               privheight_desired = privwinhidden;
-               privwinhidden      = 0;
-           } else {
-               privwinhidden      = privheight_desired;
-               privheight_desired = 1;
-               sb_win             = 0;
-               sb_priv->scroll    = sb_priv->count;
-           }
-        resize(0);
+     if( private ) {
+       if( privwinhidden ) {
+         privheight_desired = privwinhidden;
+         privwinhidden      = 0;
+       } else {
+         privwinhidden      = privheight_desired;
+         privheight_desired = 1;
+         sb_win             = 0;
+         sb_priv->scroll    = sb_priv->count;
        }
+       resize(0);
+    }
   }
 }
 
 void
 shrinkprivwin (void) {
-    if( private && !privwinhidden ) {
-      if( --privheight_desired < 1) privheight_desired = 1;
-      if(   privheight_desired > screensy - 5)  privheight_desired = screensy - 5;
-      resize(0);
-    }
+  if( private && !privwinhidden ) {
+    if( --privheight_desired < 1) privheight_desired = 1;
+    if(   privheight_desired > screensy - 5)  privheight_desired = screensy - 5;
+    resize(0);
+  }
 }
 
 /* nick completion callback for readline */
