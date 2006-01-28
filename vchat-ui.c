@@ -502,7 +502,7 @@ writescr ( WINDOW *win, struct sb_entry *entry ) {
           }
       }
       /* plot character */
-      waddch( win, textbuffer[ i ]);
+      waddch( win, (unsigned char)textbuffer[ i ]);
   }
 
   /* restore old attributes */
