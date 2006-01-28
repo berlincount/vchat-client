@@ -355,7 +355,7 @@ int writepriv (char *str, int maybeep) {
            ((filtertype == 0) || ( testfilter(tmp)))) {
           i = writescr(private, tmp);
       }
-      if( privwinhidden & !querypartner ) {
+      if( privwinhidden && !querypartner ) {
           if( (maybeep != 0) && (getintoption( CF_BELLPRIV ) != 0 ))
             putchar( 7 );
           privheight_desired = privwinhidden;
