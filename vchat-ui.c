@@ -560,9 +560,9 @@ doscroll ( int up ) {
   togglequery();
 
   if( private && (destwin == channel) )
-    topicline( NULL);
-  else
     consoleline( NULL);
+  else
+    topicline( NULL);
   }
 }
 
