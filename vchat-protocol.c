@@ -564,7 +564,7 @@ justloggedin (char *message)
   /* we're not logged in, change status and request nicks */
   if (!loggedin)
     {
-      networkoutput (".S");
+      loadcfg(getstroption(CF_LOGINSCRIPT),handleline);
       loggedin = 1;
     }
 }
