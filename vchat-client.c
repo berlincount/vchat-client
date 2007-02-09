@@ -163,7 +163,7 @@ static void parseknownhosts(char *line) {
 */
 
 /* load config file */
-static void
+void
 loadcfg (char *file,void (*lineparser) (char *))
 {
   int fd;

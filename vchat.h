@@ -89,6 +89,7 @@ extern unsigned int loggedin;
 #define ERRSTRSIZE 1024
 extern char errstr[];
 extern char *vchat_cl_version;
+void loadcfg (char *file,void (*lineparser) (char *));
 void cleanup(int signal);
 
 /*   configuration helper funktions from vchat-client.c */
