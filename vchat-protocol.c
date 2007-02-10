@@ -565,6 +565,7 @@ justloggedin (char *message)
   if (!loggedin)
     {
       loadcfg(getstroption(CF_LOGINSCRIPT),handleline);
+      handleline(".S");
       loggedin = 1;
     }
 }
