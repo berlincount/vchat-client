@@ -788,7 +788,7 @@ resize (int signal)
   if( topic )
       wresize(topic,1,screensx);
 
-  /* public channel is always their and its height depends on:
+  /* public channel is always there and its height depends on:
      * existence and visibility of priv window
      * existence of a topic line (oldschool vchat style)
   */
@@ -1210,6 +1210,10 @@ initui (void)
 #else
   rl_callback_handler_install ("", (rl_vcpfunc_t *) linecomplete);
 #endif
+
+
+  if( getintoption(CF_PRIVCOLLAPS) )
+    toggleprivwin();
 
 /*
   writeout( ">> Ctrl-X <<");
