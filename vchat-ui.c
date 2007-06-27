@@ -24,6 +24,7 @@
 #include <termios.h>
 #include <sys/ioctl.h>
 #include <time.h>
+#include <string.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <openssl/pem.h>
@@ -35,7 +36,7 @@ char *vchat_ui_version = "$Id$";
 
 /* externally used variables */
 /*   current string in topic window */
-char topicstr[TOPICSTRSIZE] = "[] VChat 0.16";
+char topicstr[TOPICSTRSIZE] = "[] VChat 0.17";
 /*   current string in console window */
 char consolestr[CONSOLESTRSIZE] = "[ Get help: .h for server /h for client commands";
 

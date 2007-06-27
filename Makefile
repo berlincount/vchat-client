@@ -30,7 +30,7 @@ CFLAGS += $(OLDREADLINE)
 PREFIX=/usr/local
 
 LIBS   = -lreadline -lncurses -lssl -lcrypto
-OBJS   = vchat-client.o vchat-ui.o vchat-protocol.o vchat-user.o vchat-commands.o
+OBJS   = vchat-client.o vchat-ui.o vchat-protocol.o vchat-user.o vchat-commands.o vchat-ssl.o
 
 
 ##############################################
@@ -82,6 +82,9 @@ vchat-user.o: vchat-user.c vchat.h
 
 vchat-commands.o: vchat-commands.c vchat.h vchat-config.h
 	$(CC) $(CFLAGS) -o vchat-commands.o -c vchat-commands.c
+
+vchat-ssl.o: vchat-ssl.c vchat-ssl.h
+	$(CC) $(CFLAGS) -o vchat-ssl.o -c vchat-ssl.c
 
 #vchat-client.1: vchat-client.sgml
 #	docbook2man vchat-client.sgml

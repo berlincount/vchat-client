@@ -24,14 +24,15 @@
 
 /* configuration array with structure as defined in vchat.h */
 extern unsigned int usessl;
+extern unsigned int ignssl;
 extern unsigned int usetime;
 extern unsigned int hscroll;
 
 static volatile configoption configoptions[] = {
 /* config-option   type    name in file  default value           value       localvar  */
   {CF_NICK,        CO_STR, "nick",       NULL,                   NULL,       { .pstr = &nick }   },
-  {CF_FROM,        CO_STR, "from",       "vc-alpha-0.16",        NULL,       { NULL }  },
-  {CF_SERVERHOST,  CO_STR, "host",       "pulse.flatline.de",    NULL,       { NULL }  },
+  {CF_FROM,        CO_STR, "from",       "vc-alpha-0.17",        NULL,       { NULL }  },
+  {CF_SERVERHOST,  CO_STR, "host",       "localhost",            NULL,       { NULL }  },
   {CF_SERVERPORT,  CO_STR, "port",       "2325",                 NULL,       { NULL }  },
   {CF_CIPHERSUITE, CO_STR, "ciphers",    "HIGH:MEDIUM",          NULL,       { NULL }  },
   {CF_CONFIGFILE,  CO_STR, "conffile",   "~/.vchat/config",      NULL,       { NULL }  },
@@ -41,6 +42,7 @@ static volatile configoption configoptions[] = {
   {CF_LOGINSCRIPT, CO_STR, "loginscript","~/.vchat/loginscript", NULL,       { NULL }  },
   {CF_ENCODING,    CO_STR, "encoding",   NULL,                   NULL,       { .pstr = &encoding }},
   {CF_USESSL,      CO_INT, "usessl",     (char *) 1,             (char *)-1, { .pint = &usessl }  },
+  {CF_IGNSSL,      CO_INT, "ignssl",     (char *) 0,             (char *)-1, { .pint = &ignssl }  },
   {CF_USECERT,     CO_INT, "usecert",    (char *) 1,             (char *)-1, { NULL }  },
   {CF_USETIME,     CO_INT, "usetime",    (char *) 1,             (char *)-1, { .pint = &usetime } },
   {CF_USETOPIC,    CO_INT, "usetopicbar",(char *) 1,             (char *)-1, { NULL }  },

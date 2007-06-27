@@ -70,6 +70,29 @@ type:
 
 $ echo host=vchat.berlin.ccc.de >> ~/.vchat/config
 
+If you want to ignore SSL-warnings due to missing CA-files, type:
+
+$ echo ignssl=1 >> ~/.vchat/config
+
+If you don't want to ignore SSL-warnings, get the root-certificates from:
+
+   http://www.cacert.org/certs/class3.txt
+   and
+   http://www.cacert.org/certs/root.txt
+
+and copy them into your openssl-certs directory. For example:
+   
+   # cp root.txt /etc/ssl/certs/
+   # cp class3.txt /etc/ssl/certs/
+   # cd /etc/ssl/certs
+   # ln -s root.txt `openssl x509 -in root.txt -hash | head -n 1`.0
+   # ln -s class3.txt `openssl x509 -in class3.txt -hash | head -n 1`.0
+
+Now you can type:
+   
+   $ echo ignssl=0 >> ~/.vchat/config
+   
+
 If you want a seperate private message window, type:
 
 $ echo messages=10 >> ~/.vchat/config

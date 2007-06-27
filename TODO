@@ -1,3 +1,7 @@
+
+- SSL: print SSL fingerprint and let the user decide wether it's authentic
+  and store it to a fingerprint cache or not.
+
 - more documentation
 
 - .i with nickchanges

@@ -33,6 +33,7 @@
 
 /* local includes */
 #include "vchat.h"
+#include "vchat-ssl.h"
 
 /* version of this module */
 char *vchat_io_version = "$Id$";
@@ -43,14 +44,7 @@ unsigned int usingcert = 1;
 
 /* locally global variables */
 /* SSL-connection */
-static SSL *sslconn = NULL;
-
-/* declaration of an OpenSSL function which isn't exported by the includes,
- * but by the library. we use it to set the accepted list of ciphers */
-STACK_OF(SSL_CIPHER) * ssl_create_cipher_list (const SSL_METHOD * meth, STACK_OF (SSL_CIPHER) ** pref, STACK_OF (SSL_CIPHER) ** sorted, const unsigned char *rule_str);
-
-static char *sslpubkey = NULL; /* servers public key extracted from X.509 certificate */
-static int sslpubkeybits = 0;  /* length of server public key */
+static BIO *sslconn = NULL;
 
 /* declaration of local helper functions */
 static void usersignon (char *);
@@ -80,281 +74,90 @@ static int  getportnum (char *port);
 extern int status;
 
 int usessl = 1;
+int ignssl = 0;
 char *encoding;
 
 /* connects to server */
 int
 vcconnect (char *server, char *port)
 {
-  /* used for tilde expansion of cert & key filenames */
-  char *tildex = NULL;
-  /* buffer for X.509 subject of server certificate */
-  char subjbuf[256];
-  /* variables used to split the subject */
-  char *subjv = NULL;
-  char *subjn = NULL;
-  char *subjc = NULL;
-  char *subjh = NULL;
-  /* pointer to key in certificate */
-  EVP_PKEY *certpubkey = NULL;
-  /* temporary result */
-  int result;
-  /* protocol independent server addresses */
-  struct addrinfo hints, *addr, *tmpaddr;
-  /* SSL-context */
-  SSL_CTX *sslctx = NULL;
-  /* SSL server certificate */
-  X509 *sslserv = NULL;
-  /* SSL method function    */
-  SSL_METHOD *sslmeth = NULL;
+   /* used for tilde expansion of cert & key filenames */
+   char *tildex = NULL;
 
-  /* pointer to tilde-expanded certificate/keyfile-names */
-  char *certfile = NULL, *keyfile = NULL;
+   /* vchat connection x509 store */
+   vc_x509store_t vc_store;
 
-  /* variable for verify return */
-  long verify;
+   /* SSL-context */
+   SSL_CTX *sslctx = NULL;
 
-  memset( &hints, 0, sizeof(hints));
-  /* Expect v4 and v6 */
-  hints.ai_family   = PF_UNSPEC;
-  hints.ai_socktype = SOCK_STREAM;
-  if( getaddrinfo( server, port, &hints, &addr ))
-    return 0;
-  for( tmpaddr = addr; addr; addr = addr->ai_next )
-  {
-    if( (serverfd = socket( addr->ai_family, addr->ai_socktype, addr->ai_protocol)) < 0)
-      continue;
-    if( connect( serverfd, addr->ai_addr, addr->ai_addrlen ) < 0)
-    {
-      close( serverfd );
-      serverfd = -1;
-      continue;
-    }
-    break;
-  }
-  if( serverfd < 0 )
-    return 0;
-  freeaddrinfo( tmpaddr );
+   /* pointer to tilde-expanded certificate/keyfile-names */
+   char *certfile = NULL, *keyfile = NULL;
 
-  /* inform user */
-  snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_CONNECTED), server, getportnum(port));
-  writechan (tmpstr);
+   SSL_library_init ();
+   SSL_load_error_strings();
 
-  usessl = getintoption(CF_USESSL);
+   vc_init_x509store(&vc_store);
 
-  /* do we want to use SSL? */
-  if (usessl)
-    {
-      /* set ssl method -> SSLv2, SSLv3 & TLSv1 client */
-      sslmeth = SSLv23_client_method ();
-      /* generate new SSL context */
-      sslctx = SSL_CTX_new (sslmeth);
+   vc_x509store_setflags(&vc_store, VC_X509S_SSL_VERIFY_PEER);
+   /* get name of certificate file */
+   certfile = getstroption (CF_CERTFILE);
 
-      /* set passphrase-callback to own function from vchat-ui.c */
-      SSL_CTX_set_default_passwd_cb (sslctx, passprompt);
-
-      /* set our list of accepted ciphers */
-      ssl_create_cipher_list (sslctx->method, &(sslctx->cipher_list), &(sslctx->cipher_list_by_id), (unsigned char*)getstroption (CF_CIPHERSUITE));
-
-      /* get name of certificate file */
-      certfile = getstroption (CF_CERTFILE);
-
-      /* do we have a certificate file? */
-      if (certfile)
-        {
-          /* does the filename start with a tilde? expand it! */
-          if (certfile[0] == '~')
-	    tildex = tilde_expand (certfile);
-          else
-	    tildex = certfile;
-
-          if (usingcert) {
-             /* try to load certificate */
-             result = SSL_CTX_use_certificate_file (sslctx, tildex, SSL_FILETYPE_PEM);
-             if (!result)
-	       {
-                 /* failed, inform user */
-	         snprintf (tmpstr, TMPSTRSIZE, "!! Loading user certificate fails: %s", ERR_error_string (ERR_get_error (), NULL));
-	         writecf (FS_ERR,tmpstr);
-	       }
-             else
-	       {
-                 /* get name of key file */
-	         keyfile = getstroption (CF_KEYFILE);
-
-                 /* if we don't have a key file, the key may be in the cert file */
-	         if (!keyfile)
-	            keyfile = certfile;
-
-                 /* does the filename start with a tilde? expand it! */
-	         if (keyfile[0] == '~')
-	            tildex = tilde_expand (keyfile);
-	         else
-	            tildex = keyfile;
-
-                 /* try to load key (automatically asks for passphrase, if encrypted */
-                 result = SSL_CTX_use_PrivateKey_file (sslctx, tildex, SSL_FILETYPE_PEM);
-	         if (!result)
-	           {
-                     /* failed, inform user */
-	             snprintf (tmpstr, TMPSTRSIZE, "!! Loading private key fails: %s", ERR_error_string (ERR_get_error (), NULL));
-	             writecf (FS_ERR,tmpstr);
-	           }
-	          else
-	           {
-                     /* check if OpenSSL thinks key & cert belong together */
-	             result = SSL_CTX_check_private_key (sslctx);
-	             if (!result)
-		       {
-                         /* they don't, inform user */
-		         snprintf (tmpstr, TMPSTRSIZE, "!! Verifying key and certificate fails: %s", ERR_error_string (ERR_get_error (), NULL));
-		         writecf (FS_ERR,tmpstr);
-		       }
-	           }
-	       }
-          }
-        }
-
-      /* don't worry to much about servers X.509 certificate chain */
-      SSL_CTX_set_verify_depth (sslctx, 0);
-
-      /* debug massage about verify mode */
-      snprintf (tmpstr, TMPSTRSIZE, "# Connecting with verify depth %d in mode %d", SSL_CTX_get_verify_depth (sslctx), SSL_CTX_get_verify_mode (sslctx));
-      writecf (FS_DBG,tmpstr);
-
-      /* generate new SSL connection object and associate
-       * filedescriptor of server connection */
-      sslconn = SSL_new (sslctx);
-      SSL_set_fd (sslconn, serverfd);
-
-      /* try SSL handshake */
-      if (SSL_connect (sslconn) <= 0)
-	{
-          /* no SSL connection possible */
-	  snprintf (tmpstr, TMPSTRSIZE, "!! SSL Connect fails: %s", ERR_error_string (ERR_get_error (), NULL));
-	  writecf (FS_ERR,tmpstr);
-	  return 0;
-	}
-
-      /* debug message about used symmetric cipher */
-      snprintf (tmpstr, TMPSTRSIZE, "# SSL connection uses %s cipher (%d bits)", SSL_get_cipher_name (sslconn), SSL_get_cipher_bits (sslconn, NULL));
-      writecf (FS_DBG,tmpstr);
-
-      /* if we can't get the servers certificate something is damn wrong */
-      if (!(sslserv = SSL_get_peer_certificate (sslconn)))
-	return 0;
-
-      /* ugly dump of server certificate */
-      /* TODO: make this happen elsewhere, and preferably only when user wants
-       * or a new key needs to be added to the known_hosts */
-      writecf (FS_DBG,"# SSL Server information:");
-      /* copy X.509 to local buffer */
-      strncpy (subjbuf, sslserv->name, 256);
-      /* split a subject line and print the fullname/value pairs */
-      subjv = &subjbuf[1];
-      while (subjv)
-	{
-	  subjc = strchr (subjv, '=');
-	  subjc[0] = '\0';
-	  subjc++;
-          /* yeah, ugly */
-	  if (!strcasecmp ("C", subjv))
-	    {
-	      subjn = "Country     ";
-	    }
-	  else if (!strcasecmp ("ST", subjv))
-	    {
-	      subjn = "State       ";
-	    }
-	  else if (!strcasecmp ("L", subjv))
-	    {
-	      subjn = "Location    ";
-	    }
-	  else if (!strcasecmp ("O", subjv))
-	    {
-	      subjn = "Organization";
-	    }
-	  else if (!strcasecmp ("OU", subjv))
-	    {
-	      subjn = "Organiz.unit";
-	    }
-	  else if (!strcasecmp ("CN", subjv))
-	    {
-	      subjn = "Common name ";
-	      subjh = subjc;
-	    }
-	  else if (!strcasecmp ("Email", subjv))
-	    {
-	      subjn = "Emailaddress";
-	    }
-	  else
-	    {
-	      subjn = "UNKNOWN     ";
-	    }
-	  subjv = strchr (subjc, '/');
-	  if (subjv)
-	    {
-	      subjv[0] = '\0';
-	      subjv++;
-	    }
-          /* print value pair */
-	  snprintf (tmpstr, TMPSTRSIZE, "#   %s: %s", subjn, subjc);
-	  writecf (FS_DBG,tmpstr);
-	}
-
-      /* check if verifying the server's certificate yields any errors */
-      verify = SSL_get_verify_result (sslconn);
-      if (verify)
-	{
-          /* it does - yield a warning to the user */
-	  snprintf (tmpstr, TMPSTRSIZE, "!! Certificate verification fails: %s", X509_verify_cert_error_string (verify));
-	  writecf (FS_ERR,tmpstr);
-	}
-
-      /* check if servers name in certificate matches the hostname we connected to */
-      if (subjh)
-	if (strcasecmp (server, subjh))
-	  {
-            /* it doesn't - yield a warning and show difference */
-	    writecf (FS_ERR,"!! Server name does not match name in presented certificate!");
-	    snprintf (tmpstr, TMPSTRSIZE, "!! '%s' != '%s'", server, subjh);
-	    writecf (FS_ERR,tmpstr);
-	  }
-
-      /* try to get the servers public key */
-      certpubkey = X509_get_pubkey (sslserv);
-      if (certpubkey == NULL)
-	{
-          /* huh, we can't? */
-	  writecf (FS_ERR,"!! Can't get the public key associated to the certificate");
-	}
-      /* check what type of key we've got here */
-      else if (certpubkey->type == EVP_PKEY_RSA)
-	{
-          /* RSA key, convert bignum values from OpenSSL's structures to
-           * something readable */
-	  sslpubkey = BN_bn2hex (certpubkey->pkey.rsa->n);
-	  sslpubkeybits = BN_num_bits (certpubkey->pkey.rsa->n);
-          /* dump keylength and hexstring of servers key to user */
-	  snprintf (tmpstr, TMPSTRSIZE, "# RSA public key%s: %d %s", (certpubkey->pkey.rsa-> d) ? " (private key available)" : "", sslpubkeybits, sslpubkey);
-	  writecf (FS_DBG,tmpstr);
-          /* TODO: known_hosts check here ... */
-	}
-      else if (certpubkey->type == EVP_PKEY_DSA)
-	{
-          /* Can't handle (and didn't encounter) DSA keys */
-	  writecf (FS_ERR,"# DSA Public Key (output currently not supported)");
-          /* TODO: known_hosts check here ... */
-	}
+   /* do we have a certificate file? */
+   if (certfile) {
+      /* does the filename start with a tilde? expand it! */
+      if (certfile[0] == '~')
+         tildex = tilde_expand (certfile);
       else
-	{
-	  writecf (FS_ERR,"# Public Key type not supported");
-          /* TODO: fail known_hosts check ... */
-	}
-    }
+         tildex = certfile;
 
-  /* if we didn't fail until now, we've got a connection. */
-  return 1;
+      if (usingcert) {
+
+         vc_x509store_setflags(&vc_store, VC_X509S_USE_CERTIFICATE);
+         vc_x509store_setcertfile(&vc_store, tildex);
+
+         /* get name of key file */
+         keyfile = getstroption (CF_KEYFILE);
+
+         /* if we don't have a key file, the key may be in the cert file */
+         if (!keyfile)
+            keyfile = certfile;
+
+         /* does the filename start with a tilde? expand it! */
+         if (keyfile[0] == '~')
+            tildex = tilde_expand (keyfile);
+         else
+            tildex = keyfile;
+
+         vc_x509store_set_pkeycb(&vc_store, (vc_askpass_cb_t)passprompt);
+         vc_x509store_setkeyfile(&vc_store, tildex);
+
+         /* check if OpenSSL thinks key & cert belong together */
+         /* result = SSL_CTX_check_private_key (sslctx); THS TODO (->
+          * vchat-ssl.c) */
+      }
+   }
+   
+   usessl = getintoption(CF_USESSL);
+   vc_x509store_setignssl(&vc_store, getintoption(CF_IGNSSL));
+
+   sslconn = vc_connect(server, getportnum(port), usessl, &vc_store, &sslctx);
+
+   if(sslconn == NULL) {
+      exitui();
+      exit(-1);
+   }
+
+   serverfd = BIO_get_fd(sslconn, 0);
+
+   /* inform user */
+   snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_CONNECTED), server, getportnum(port));
+   writechan (tmpstr);
+
+   /* dump x509 details here... TODO */
+   writecf (FS_DBG,"# SSL Server information: TODO :)");
+
+   /* if we didn't fail until now, we've got a connection. */
+   return 1;
 }
 
 /* disconnect from server */
@@ -1021,11 +824,8 @@ networkinput (void)
   char *ltmp = buf;
   buf[BUFSIZE-1] = '\0'; /* sanity stop */
 
-  /* check if we use ssl or if we don't and receive data at offset */
-  if (!usessl)
-    bytes = recv (serverfd, &buf[bufoff], BUFSIZE-1 - bufoff, 0);
-  else
-    bytes = SSL_read (sslconn, &buf[bufoff], BUFSIZE-1 - bufoff);
+  /* receive data at offset */
+  bytes = BIO_read (sslconn, &buf[bufoff], BUFSIZE-1 - bufoff);
 
   /* no bytes transferred? raise error message, bail out */
   if (bytes < 0)
@@ -1093,23 +893,11 @@ networkoutput (char *msg)
   fprintf (stderr, ">| %s\n", msg);
 #endif
 
-  /* TODO: err .. rework this (blocking) code */
+  /* send data to server */
+  if (BIO_write (sslconn, msg, strlen (msg)) != strlen (msg))
+    writecf (FS_ERR,"Message sending fuzzy.");
 
-  /* check if we use ssl or if we don't and send data to server */
-  if (!usessl) {
-      if (send (serverfd, msg, strlen (msg), 0) != strlen (msg)) {
-	  writecf (FS_ERR,"Message sending fuzzy.");
-	}
-    } else if (SSL_write (sslconn, msg, strlen (msg)) != strlen (msg)) {
-      writecf (FS_ERR,"Message sending fuzzy.");
-    }
-
-  /* check if we use ssl or if we don't and send line termination to server */
-  if (!usessl) {
-      if (send (serverfd, "\r\n", 2, 0) != 2) {
-	  writecf (FS_ERR,"Message sending fuzzy!");
-	}
-    } else if (SSL_write (sslconn, "\r\n", 2) != 2) {
-      writecf (FS_ERR,"Message sending fuzzy.");
-    }
+  /* send line termination to server */
+  if (BIO_write (sslconn, "\r\n", 2) != 2)
+    writecf (FS_ERR,"Message sending fuzzy.");
 }

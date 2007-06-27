@@ -25,7 +25,6 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <readline/readline.h>
-#include <openssl/ssl.h>
 #ifndef NO_LOCALE
 #include <locale.h>
 #endif
@@ -509,15 +508,11 @@ main (int argc, char **argv)
   loadformats(GLOBAL_FORMAT_FILE);
   loadformats(getstroption (CF_FORMFILE));
 
-  if (!getintoption(CF_USESSL)) {
-      setstroption(CF_SERVERHOST,"localhost");
-      setstroption(CF_SERVERPORT,"2323");
-  } else {
-      SSL_library_init ();
-      SSL_load_error_strings ();
-    }
+  if (!getintoption(CF_USESSL))
+    setstroption(CF_SERVERPORT,"2323");
+  else
+    setstroption(CF_SERVERPORT,"2325");
 
-  
   /* install signal handler */
   signal (SIGINT, cleanup);
   signal (SIGHUP, cleanup);
