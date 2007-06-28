@@ -243,6 +243,7 @@ serverlogin (char *message)
     networkoutput(".e utf8");
 #endif
 }
+
 /* parse and handle an idle message
  *  format: 305
  *    vars: %s message */

@@ -55,6 +55,7 @@ static volatile configoption configoptions[] = {
   {CF_SCROLLBPRIVT,CO_INT, "privscrollt",(char *) 0,             (char *)-1, { NULL }  },
   {CF_SCROLLBACKT, CO_INT, "scrolltime", (char *) 86400,         (char *)-1, { NULL }  },
   {CF_BELLPRIV,    CO_INT, "bellonpm",   (char *) 0,             (char *)-1, { NULL }  },
+  {CF_AUTORECONN,  CO_INT, "autoreconn", (char *) 0,             (char *)-1, { NULL }  },
   {CF_NIL,         CO_NIL, NULL,         NULL,                   NULL,       { NULL }  },
 };
 

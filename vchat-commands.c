@@ -27,6 +27,9 @@
 /* version of this module */
 char *vchat_cm_version = "$Id$";
 
+/* from vchat-client.c */
+extern int ownquit;
+
 /* our "/command " table */
 enum {
 COMMAND_VERSION,
@@ -228,6 +231,10 @@ handleline (char *line)
       case 'O':
           dothink( line + 2, line[1] );
           break;
+      case 'x':
+          /* inform vchat-client, that the following connection
+             drop was intentional */
+          ownquit = 1; /* fallthrough intended */
       default:
           /* generic server command, send to server, show to user */
           snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_COMMAND), line);
@@ -375,6 +382,10 @@ command_quit(char *tail)
   
   /* show action in channel window */
   writechan (tmpstr);
+
+  /* Inform vchat-client, that the closing connection
+     following is intended */
+  ownquit = 1;
 }
 
 /* print out version */

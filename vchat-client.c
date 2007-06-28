@@ -37,7 +37,10 @@ char *vchat_cl_version = "$Id$";
 /*   we're logged in */
 unsigned int loggedin = 0;
 /*   we run as long as this is true */
-unsigned int status = 1;
+int status = 1;
+/*   we set this, we WANT to quit */
+int ownquit = 0;
+
 /*   error string to show after exit */
 char errstr[ERRSTRSIZE] = "\0";
 
@@ -522,9 +525,9 @@ main (int argc, char **argv)
   /* initialize userinterface */
   initui ();
 
-  /* attempt connection */
-  if (!vcconnect (getstroption(CF_SERVERHOST), getstroption(CF_SERVERPORT)))
-    {
+  while( status ) {
+    /* attempt connection */
+    if (!vcconnect (getstroption(CF_SERVERHOST), getstroption(CF_SERVERPORT))) {
       snprintf (tmpstr, TMPSTRSIZE, "Could not connect to server, %s.",
 		sys_errlist[errno]);
       strncpy(errstr,tmpstr,TMPSTRSIZE-2);
@@ -533,20 +536,22 @@ main (int argc, char **argv)
       writecf (FS_ERR,tmpstr);
       /* exit condition */
       status = 0;
-    }
-  else
-    {
+    } else {
       /* add stdin & server to masterdfs */
       FD_ZERO (&masterfds);
       FD_SET (0, &masterfds);
       FD_SET (serverfd, &masterfds);
     }
 
-  while (status)
-    eventloop ();
+    while (status)
+      eventloop ();
 
-  /* sanely close connection to server */
-  vcdisconnect ();
+    /* sanely close connection to server */
+    vcdisconnect ();
+
+    if( !ownquit && getintoption( CF_AUTORECONN ) )
+      status = 1;
+  }
 
   /* call cleanup-hook without signal */
   cleanup (0);
