@@ -40,6 +40,8 @@ unsigned int loggedin = 0;
 int status = 1;
 /*   we set this, we WANT to quit */
 int ownquit = 0;
+/*   we set this, we DONT want to quit */
+int wantreconnect = 0;
 
 /*   error string to show after exit */
 char errstr[ERRSTRSIZE] = "\0";
@@ -549,8 +551,10 @@ main (int argc, char **argv)
     /* sanely close connection to server */
     vcdisconnect ();
 
-    if( !ownquit && getintoption( CF_AUTORECONN ) )
+    if( !ownquit && ( getintoption( CF_AUTORECONN ) || wantreconnect ) )
       status = 1;
+
+    wantreconnect = 0;
   }
 
   /* call cleanup-hook without signal */

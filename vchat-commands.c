@@ -29,6 +29,8 @@ char *vchat_cm_version = "$Id$";
 
 /* from vchat-client.c */
 extern int ownquit;
+extern int wantreconnect;
+extern int status;
 
 /* our "/command " table */
 enum {
@@ -48,21 +50,23 @@ COMMAND_PMSHORT,
 COMMAND_QUERY,
 COMMAND_QUITSHORT,
 COMMAND_PLAIN,
+COMMAND_RECONNECT,
 COMMAND_NONE
 };
 
-static void command_quit    ( char *tail);
-static void command_user    ( char *tail);
-static void command_pm      ( char *tail);
-static void command_action  ( char *tail);
-static void command_help    ( char *tail);
-static void command_flt     ( char *tail);
-static void command_lsflt   ( char *tail);
-static void command_clflt   ( char *tail);
-static void command_rmflt   ( char *tail);
-       void command_version ( char *tail);
-static void command_none    ( char *line);
-static void command_query   ( char *tail);
+static void command_quit      ( char *tail);
+static void command_user      ( char *tail);
+static void command_pm        ( char *tail);
+static void command_action    ( char *tail);
+static void command_help      ( char *tail);
+static void command_flt       ( char *tail);
+static void command_lsflt     ( char *tail);
+static void command_clflt     ( char *tail);
+static void command_rmflt     ( char *tail);
+       void command_version   ( char *tail);
+static void command_none      ( char *line);
+static void command_query     ( char *tail);
+static void command_reconnect ( char *tail);
 
 static void output_default  ( char *tail);
 
@@ -70,23 +74,24 @@ static void output_default  ( char *tail);
 
 static commandentry
 commandtable[] = {
-{ COMMAND_VERSION, "VERSION",   7, command_version, SHORT_HELPTEXT_VERSION, LONG_HELPTEXT_VERSION },
-{ COMMAND_LSFLT,   "LSFLT",     5, command_lsflt,   NULL,                   LONG_HELPTEXT_LSFLT   },
-{ COMMAND_RMFLT,   "RMFLT",     5, command_rmflt,   NULL,                   LONG_HELPTEXT_RMFLT   },
-{ COMMAND_CLFLT,   "CLFLT",     5, command_clflt,   NULL,                   LONG_HELPTEXT_CLFLT   },
-{ COMMAND_HELP,    "HELP",      4, command_help,    SHORT_HELPTEXT_HELP,    LONG_HELPTEXT_HELP    },
-{ COMMAND_FILTERS, "FILTERS",   7, command_help,    SHORT_HELPTEXT_FILTERS, LONG_HELPTEXT_FILTERS },
-{ COMMAND_KEYS,    "KEYS",      4, command_help,    SHORT_HELPTEXT_KEYS,    LONG_HELPTEXT_KEYS    },
-{ COMMAND_QUERY,   "QUERY",     5, command_query,   NULL,                   NULL                  },
-{ COMMAND_QUIT,    "QUIT",      4, command_quit,    SHORT_HELPTEXT_QUIT,    LONG_HELPTEXT_QUIT    },
-{ COMMAND_USER,    "USER",      4, command_user,    SHORT_HELPTEXT_USER,    LONG_HELPTEXT_USER    },
-{ COMMAND_FLT,     "FLT",       3, command_flt,     NULL,                   LONG_HELPTEXT_FLT     },
-{ COMMAND_PM,      "MSG",       3, command_pm,      SHORT_HELPTEXT_MSG,     LONG_HELPTEXT_MSG     },
-{ COMMAND_ACTION,  "ME",        2, command_action,  SHORT_HELPTEXT_ME,      LONG_HELPTEXT_ME      },
-{ COMMAND_PMSHORT, "M",         1, command_pm,      NULL,                   SHORT_HELPTEXT_MSG    },
-{ COMMAND_QUITSHORT,"Q",        1, command_quit,    SHORT_HELPTEXT_QUIT,    LONG_HELPTEXT_QUIT    },
-{ COMMAND_PLAIN,   "/",         1, output_default,  NULL,                   NULL                  },
-{ COMMAND_NONE,    "",          0, command_none,    NULL,                   NULL                  }
+{ COMMAND_VERSION,   "VERSION",   7, command_version,   SHORT_HELPTEXT_VERSION,   LONG_HELPTEXT_VERSION   },
+{ COMMAND_LSFLT,     "LSFLT",     5, command_lsflt,     NULL,                     LONG_HELPTEXT_LSFLT     },
+{ COMMAND_RMFLT,     "RMFLT",     5, command_rmflt,     NULL,                     LONG_HELPTEXT_RMFLT     },
+{ COMMAND_CLFLT,     "CLFLT",     5, command_clflt,     NULL,                     LONG_HELPTEXT_CLFLT     },
+{ COMMAND_HELP,      "HELP",      4, command_help,      SHORT_HELPTEXT_HELP,      LONG_HELPTEXT_HELP      },
+{ COMMAND_FILTERS,   "FILTERS",   7, command_help,      SHORT_HELPTEXT_FILTERS,   LONG_HELPTEXT_FILTERS   },
+{ COMMAND_RECONNECT, "RECONNECT", 9, command_reconnect, SHORT_HELPTEXT_RECONNECT, LONG_HELPTEXT_RECONNECT },
+{ COMMAND_KEYS,      "KEYS",      4, command_help,      SHORT_HELPTEXT_KEYS,      LONG_HELPTEXT_KEYS      },
+{ COMMAND_QUERY,     "QUERY",     5, command_query,     NULL,                     NULL                    },
+{ COMMAND_QUIT,      "QUIT",      4, command_quit,      SHORT_HELPTEXT_QUIT,      LONG_HELPTEXT_QUIT      },
+{ COMMAND_USER,      "USER",      4, command_user,      SHORT_HELPTEXT_USER,      LONG_HELPTEXT_USER      },
+{ COMMAND_FLT,       "FLT",       3, command_flt,       NULL,                     LONG_HELPTEXT_FLT       },
+{ COMMAND_PM,        "MSG",       3, command_pm,        SHORT_HELPTEXT_MSG,       LONG_HELPTEXT_MSG       },
+{ COMMAND_ACTION,    "ME",        2, command_action,    SHORT_HELPTEXT_ME,        LONG_HELPTEXT_ME        },
+{ COMMAND_PMSHORT,   "M",         1, command_pm,        NULL,                     SHORT_HELPTEXT_MSG      },
+{ COMMAND_QUITSHORT, "Q",         1, command_quit,      SHORT_HELPTEXT_QUIT,      LONG_HELPTEXT_QUIT      },
+{ COMMAND_PLAIN,     "/",         1, output_default,    NULL,                     NULL                    },
+{ COMMAND_NONE,      "",          0, command_none,      NULL,                     NULL                    }
 };
 
 /* parse "/command" */
@@ -370,6 +375,15 @@ static void
 command_action(char *tail)
 {
   doaction( tail);
+}
+
+/* handle a "/reconnect" request */
+static void
+command_reconnect(char *tail)
+{
+  status = 0;
+  wantreconnect = 1;
+  ownquit = 0;
 }
 
 /* handle a "/quit " exit */

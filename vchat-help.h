@@ -51,16 +51,18 @@
       ^X  - switch off message window or\n\
             toggle private window\n\
       TAB - nick completion"
-#define SHORT_HELPTEXT_QUIT    "/QUIT  [REASON]       Leave the chat for reason Reason"
-#define LONG_HELPTEXT_QUIT     NULL
-#define SHORT_HELPTEXT_USER    "/USER  REGEX          Lists all users matching regex REGEX"
-#define LONG_HELPTEXT_USER     NULL
-#define SHORT_HELPTEXT_MSG     "/M[SG] USER MESSAGE   Send private message to user USER"
-#define LONG_HELPTEXT_MSG      NULL
-#define SHORT_HELPTEXT_ME      "/ME    ACTION         Let the user do an action"
-#define LONG_HELPTEXT_ME       NULL
-#define SHORT_HELPTEXT_M       SHORT_HELPTEXT_MSG
-#define LONG_HELPTEXT_M        LONG_HELPTEXT_MSG
-#define SHORT_HELPTEXT_FILTERS "/HELP  FILTERS        Show summary of filter commands"
-#define LONG_HELPTEXT_FILTERS  SHORT_HELPTEXT_FLT "\n" SHORT_HELPTEXT_RMFLT "\n" SHORT_HELPTEXT_LSFLT "\n" SHORT_HELPTEXT_CLFLT
+#define SHORT_HELPTEXT_QUIT      "/QUIT  [REASON]       Leave the chat for reason Reason"
+#define LONG_HELPTEXT_QUIT       NULL
+#define SHORT_HELPTEXT_USER      "/USER  REGEX          Lists all users matching regex REGEX"
+#define LONG_HELPTEXT_USER       NULL
+#define SHORT_HELPTEXT_MSG       "/M[SG] USER MESSAGE   Send private message to user USER"
+#define LONG_HELPTEXT_MSG        NULL
+#define SHORT_HELPTEXT_ME        "/ME    ACTION         Let the user do an action"
+#define LONG_HELPTEXT_ME         NULL
+#define SHORT_HELPTEXT_M         SHORT_HELPTEXT_MSG
+#define LONG_HELPTEXT_M          LONG_HELPTEXT_MSG
+#define SHORT_HELPTEXT_FILTERS   "/HELP  FILTERS        Show summary of filter commands"
+#define LONG_HELPTEXT_FILTERS    SHORT_HELPTEXT_FLT "\n" SHORT_HELPTEXT_RMFLT "\n" SHORT_HELPTEXT_LSFLT "\n" SHORT_HELPTEXT_CLFLT
+#define LONG_HELPTEXT_RECONNECT  NULL
+#define SHORT_HELPTEXT_RECONNECT "/RECONNECT            Forces client to reconnect"
 

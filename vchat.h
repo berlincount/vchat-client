@@ -204,7 +204,7 @@ void handleline (char *);
 /* struct for defining "/command" handlers */
 typedef struct {
   int     number;
-  char   name[8];
+  char   name[10];
   int    len;
   void (*handler)(char *);
   char  *short_help;
