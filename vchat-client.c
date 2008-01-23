@@ -514,10 +514,8 @@ main (int argc, char **argv)
   loadformats(GLOBAL_FORMAT_FILE);
   loadformats(getstroption (CF_FORMFILE));
 
-  if (!getintoption(CF_USESSL))
+  if ( !getintoption(CF_USESSL) && !strcmp(getstroption(CF_SERVERPORT),"2325"))
     setstroption(CF_SERVERPORT,"2323");
-  else
-    setstroption(CF_SERVERPORT,"2325");
 
   /* install signal handler */
   signal (SIGINT, cleanup);
