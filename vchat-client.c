@@ -188,7 +188,7 @@ loadcfg (char *file,void (*lineparser) (char *))
     tildex = file;
   fd = open(tildex,O_RDONLY);
   if (fd == -1) {
-    snprintf (errstr, TMPSTRSIZE, "Can't open config-file \"%s\": %s.", tildex, sys_errlist[errno]);
+    snprintf (errstr, TMPSTRSIZE, "Can't open config-file \"%s\": %s.", tildex, strerror(errno));
   } else {
     while ((bytes = read(fd,&buf[bufoff],BUFSIZE-bufoff-1))) {
       if (bytes < 0) {
