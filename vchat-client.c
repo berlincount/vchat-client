@@ -430,7 +430,7 @@ eventloop (void)
       /* EINTR is most likely a SIGWINCH - ignore for now */
       if (errno != EINTR)
 	{
-	  snprintf (tmpstr, TMPSTRSIZE, "Select fails, %s.", sys_errlist[errno]);
+	  snprintf (tmpstr, TMPSTRSIZE, "Select fails, %s.", strerror(errno));
           strncpy(errstr,tmpstr,TMPSTRSIZE-2);
           errstr[TMPSTRSIZE-2] = '\0';
           strcat(errstr,"\n");
