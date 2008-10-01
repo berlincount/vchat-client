@@ -831,7 +831,7 @@ networkinput (void)
   /* no bytes transferred? raise error message, bail out */
   if (bytes < 0)
     {
-      snprintf (tmpstr, TMPSTRSIZE, "Receive fails, %s.", sys_errlist[errno]);
+      snprintf (tmpstr, TMPSTRSIZE, "Receive fails, %s.", strerror(errno));
       strncpy(errstr,tmpstr,TMPSTRSIZE-2);
       errstr[TMPSTRSIZE-2] = '\0';
       strcat(errstr,"\n");

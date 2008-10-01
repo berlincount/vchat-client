@@ -530,7 +530,7 @@ main (int argc, char **argv)
     /* attempt connection */
     if (!vcconnect (getstroption(CF_SERVERHOST), getstroption(CF_SERVERPORT))) {
       snprintf (tmpstr, TMPSTRSIZE, "Could not connect to server, %s.",
-		sys_errlist[errno]);
+		strerror(errno));
       strncpy(errstr,tmpstr,TMPSTRSIZE-2);
       errstr[TMPSTRSIZE-2] = '\0';
       strcat(errstr,"\n");
