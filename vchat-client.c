@@ -311,9 +311,9 @@ setnoption (char *name, char *string)
         if (configoptions[i].localvar.pstr)
            *configoptions[i].localvar.pstr = configoptions[i].value;
       } else if (configoptions[i].type == CO_INT) {
-        configoptions[i].value = (char *) atoi(string);
+        configoptions[i].value = (char *)(uintptr_t)atoi(string);
         if (configoptions[i].localvar.pint)
-           *configoptions[i].localvar.pint = (int)configoptions[i].value;
+           *configoptions[i].localvar.pint = (uintptr_t)configoptions[i].value;
       }
     }
 }
@@ -328,10 +328,10 @@ getintoption (confopt option)
 #endif
   for (i = 0; configoptions[i].type != CO_NIL; i++)
     if ((configoptions[i].id == option) && (configoptions[i].type == CO_INT)) {
-      if ((int)configoptions[i].value == -1)
-         return (int) configoptions[i].defaultvalue;   
+      if ((uintptr_t)configoptions[i].value == -1)
+         return (uintptr_t) configoptions[i].defaultvalue;   
        else
-         return (int) configoptions[i].value;
+         return (uintptr_t) configoptions[i].value;
     }
   return 0;
 }
@@ -346,9 +346,9 @@ setintoption (confopt option, int value)
 #endif
   for (i = 0; configoptions[i].type != CO_NIL; i++)
     if ((configoptions[i].id == option) && (configoptions[i].type == CO_INT)) {
-       configoptions[i].value = (char *) value;
+       configoptions[i].value = (char *)(uintptr_t)value;
        if (configoptions[i].localvar.pint)
-          *configoptions[i].localvar.pint = (int)configoptions[i].value;
+          *configoptions[i].localvar.pint = (uintptr_t)configoptions[i].value;
     }
 }
 
