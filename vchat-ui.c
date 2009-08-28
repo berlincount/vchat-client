@@ -174,7 +174,7 @@ linecomplete (char *line)
 
       /* wipe input line and reset cursor */
       wmove (input, 0, 0);
-      for (i = 0; i < getmaxx(input); i++)
+      for (i = 0; i < getmaxx(input) - 1; i++)
         waddch (input, ' ');
       wmove (input, 0, 0);
       wrefresh (input);
@@ -198,22 +198,22 @@ vciredraw (void)
   /* calculate horizontal scrolling offset */
   if (rl_point - scroff < 0)
     scroff = rl_point - 4;
-  if (rl_point - scroff > getmaxx(input))
-    scroff = rl_point - getmaxx(input) + 2;
-  if (rl_point - scroff > getmaxx(input) - (hscroll - 2))
+  if (rl_point - scroff > getmaxx(input) - 1 )
+    scroff = rl_point - getmaxx(input) + 1;
+  if (rl_point - scroff > getmaxx(input) - 1 - (hscroll - 2))
     scroff += hscroll;
-  else if (rl_point - scroff < getmaxx(input) - (hscroll + 2))
+  else if (rl_point - scroff < getmaxx(input) - 1 - (hscroll + 2))
     scroff -= hscroll;
   if (scroff < 0)
     scroff = 0;
 
   /* wipe input line */
   wmove (input, 0, 0);
-  for (i = 0; i < getmaxx(input); i++)
+  for (i = 0; i < getmaxx(input) - 1; i++)
   waddch (input, ' ');
 
   /* show current line, move cursor, redraw! */
-  mvwaddnstr (input, 0, 0, &rl_line_buffer[scroff], getmaxx(input));
+  mvwaddnstr (input, 0, 0, &rl_line_buffer[scroff], getmaxx(input) - 1 );
   wmove (input, 0, rl_point - scroff);
   wrefresh (input);
 }
@@ -495,8 +495,8 @@ writescr ( WINDOW *win, struct sb_entry *entry ) {
       if( !i || memcmp( attrbuffer+i, attrbuffer+i-1, sizeof(ncurs_attr)))
           WATTR_SET( win, attrbuffer[i]);
       if( textbuffer[ i ] == ' ') {
-          if ((calcdrawcus(textbuffer+i+1) + getcurx(win) > getmaxx(win) - 1)&&
-              (calcdrawcus(textbuffer+i+1) < getmaxx(win))) {
+          if ((calcdrawcus(textbuffer+i+1) + getcurx(win) > getmaxx(win) - 1 - 1)&&
+              (calcdrawcus(textbuffer+i+1) < getmaxx(win) - 1 )) {
               /* line wrap found */
               WATTR_SET( win, orgattr);
               waddstr( win, "\n   ");
@@ -532,7 +532,7 @@ doscroll ( int up ) {
   WINDOW *destwin = (sb_win && private) ? private : channel;
   struct sb_data *sb = (sb_win && private) ? sb_priv : sb_pub;
   struct sb_entry *now = sb->entries, *prev = NULL, *tmp;
-  int lines = getmaxy(destwin)>>1;
+  int lines = (getmaxy(destwin) - 1 ) >>1;
 
   if( sb->scroll != sb->count )
       while( now && (now->id != sb->scroll) ) {
@@ -547,7 +547,7 @@ doscroll ( int up ) {
   while( now && (lines > 0)) {
       if ( (!filtertype) || ( (now->stamp != currentstamp) && ( (now->stamp == (currentstamp | (1<<15))) || testfilter( now ) ) ) )
       {
-          lines -= getsbeheight( now, getmaxx(destwin), usetime );
+          lines -= getsbeheight( now, getmaxx(destwin) - 1, usetime );
       }
       tmp = now; now = (struct sb_entry*)((unsigned long)now->link ^ (unsigned long)prev); prev = tmp;
   }
@@ -674,7 +674,7 @@ clearpriv ()
 
   /* clear window, move cursor to bottom, redraw */
   wclear (dest);
-  wmove (dest, getmaxy(dest), getmaxx(dest));
+  wmove (dest, getmaxy(dest) - 1, getmaxx(dest) - 1);
   wrefresh (dest);
 
 }
@@ -685,7 +685,7 @@ clearchan ()
 {
   /* clear window, move cursor to bottom, redraw */
   wclear (channel);
-  wmove (channel, getmaxy(channel), getmaxx(channel));
+  wmove (channel, getmaxy(channel) - 1, getmaxx(channel) - 1);
   wrefresh (channel);
 }
 
@@ -972,7 +972,7 @@ drawwin (WINDOW *win, struct sb_data *sb )
 {
   if (win) {
       struct sb_entry *now = sb->entries, *prev = NULL, *tmp;
-      struct sb_entry *vis[getmaxy(win) + 1];
+      struct sb_entry *vis[getmaxy(win)];
       int sumlines = 0, sumbuffers = 0;
 
       /* public scrollback */
@@ -982,13 +982,13 @@ drawwin (WINDOW *win, struct sb_data *sb )
           }
 
       if( (win == output) || (filtertype == 0)) {
-          while( now && (sumlines <= getmaxy(win) )) {
-              sumlines += getsbeheight( now, getmaxx(win), ((win == channel)||(win == private)) && usetime );
+          while( now && (sumlines <= getmaxy(win) - 1 )) {
+              sumlines += getsbeheight( now, getmaxx(win) - 1, ((win == channel)||(win == private)) && usetime );
               vis[ sumbuffers++ ] = now;
               tmp = now; now = (struct sb_entry*)((unsigned long)now->link ^ (unsigned long)prev); prev = tmp;
           }
       } else {
-          while( now && (sumlines <= getmaxy(win) )) {
+          while( now && (sumlines <= getmaxy(win) - 1 )) {
 
               /* If stamp matches exactly, line has been filtered out, since top
                  bit off means hidden */
@@ -999,7 +999,7 @@ drawwin (WINDOW *win, struct sb_data *sb )
                      tested against filters, which updates stamp. */
                   if( (now->stamp == (currentstamp | 0x8000) ) || testfilter( now ))
                   {
-                      sumlines += getsbeheight( now, getmaxx(win), ((win == channel)||(win == private)) && usetime );
+                      sumlines += getsbeheight( now, getmaxx(win) - 1, ((win == channel)||(win == private)) && usetime );
                       vis[ sumbuffers++ ] = now;
                   }
 
@@ -1009,11 +1009,11 @@ drawwin (WINDOW *win, struct sb_data *sb )
       }
 
       /* If buffer is not completely filled, clear window */
-      if( sumlines < getmaxy(win) + 1 )
+      if( sumlines < getmaxy(win) )
           wclear(win);
 
       /* Move pointer to bottom to let curses scroll */
-      wmove(win, getmaxy(win), getmaxx(win));
+      wmove(win, getmaxy(win) - 1, getmaxx(win) - 1);
 
       /* Plot visible lines */
       while (sumbuffers--) writescr( win, vis[sumbuffers] );
@@ -1275,7 +1275,7 @@ consoleline (char *message)
   WATTR_GET( console, old_att);
   if(sb_pub->scroll!=sb_pub->count) WATTR_SET( console, new_att);
 
-  for (i = 0; i < getmaxx(console); i++)
+  for (i = 0; i < getmaxx(console) - 1; i++)
      waddch (console, ' ');
 
   if( !message && usetime )
@@ -1284,14 +1284,14 @@ consoleline (char *message)
       time_t now = time(NULL);
       strftime( date, sizeof(date), getformatstr(FS_CONSOLETIME), localtime(&now));
       snprintf( tmpstr, TMPSTRSIZE, "%s%s", date, consolestr);
-      mvwaddnstr (console, 0, 0, tmpstr, getmaxx(console));
+      mvwaddnstr (console, 0, 0, tmpstr, getmaxx(console) - 1);
   } else {
-      mvwaddnstr (console, 0, 0, message ? message : consolestr, getmaxx(console));
+      mvwaddnstr (console, 0, 0, message ? message : consolestr, getmaxx(console) - 1);
   }
 
   snprintf(tmpstr,TMPSTRSIZE,getformatstr(FS_SBINF),sb_pub->scroll,sb_pub->count);
-  mvwaddstr (console, 0, getmaxx(console) - (strlen(tmpstr)-1),tmpstr);
-  if (sb_win == 0) mvwaddch (console, 0, getmaxx(console),'*');
+  mvwaddstr (console, 0, getmaxx(console) - 1 - (strlen(tmpstr)-1),tmpstr);
+  if (sb_win == 0) mvwaddch (console, 0, getmaxx(console) - 1,'*');
 
   WATTR_SET( console, old_att);
 
@@ -1328,13 +1328,13 @@ topicline (char *message)
   if( private && (sb_priv->scroll!=sb_priv->count))
       WATTR_SET( topic, new_att);
 
-  for (i = 0; i < getmaxx(topic); i++)
+  for (i = 0; i < getmaxx(topic) - 1; i++)
      waddch (topic, ' ');
-  mvwaddnstr (topic, 0, 0, message ? message : topicstr, getmaxx(topic));
+  mvwaddnstr (topic, 0, 0, message ? message : topicstr, getmaxx(topic) - 1);
   if (private) {
      snprintf(tmpstr,TMPSTRSIZE,getformatstr(FS_SBINF),sb_priv->scroll,sb_priv->count);
-     mvwaddstr (topic, 0, getmaxx(topic) - (strlen(tmpstr)-1),tmpstr);
-     if (sb_win == 1) mvwaddch (topic, 0, getmaxx(topic),'*');
+     mvwaddstr (topic, 0, getmaxx(topic) - 1 - (strlen(tmpstr)-1),tmpstr);
+     if (sb_win == 1) mvwaddch (topic, 0, getmaxx(topic) - 1,'*');
   }
   WATTR_SET( topic, old_att);
 
@@ -1403,13 +1403,13 @@ vcnredraw (void)
 
   /* wipe input line and reset cursor */
   wmove(input, 0, 0);
-  for (i = 0; i < getmaxx(input); i++)
+  for (i = 0; i < getmaxx(input) - 1; i++)
   waddch(input, ' ');
   wmove(input, 0, 0);
 
   /* draw as many stars as there are characters */
   mvwaddnstr(input, 0, 0, &passbof[rl_point%2], 12);
-  wmove(input, 0, getmaxx(input));
+  wmove(input, 0, getmaxx(input) - 1);
   wrefresh(input);
 }
 
@@ -1451,7 +1451,7 @@ passprompt (char *buf, int size, int rwflag, void *userdata)
   
   /* wipe input line and reset cursor */
   wmove (input, 0, 0);
-  for (i = 0; i < getmaxx(input); i++)
+  for (i = 0; i < getmaxx(input) - 1; i++)
   waddch (input, ' ');
   wmove (input, 0, 0);
   wrefresh (input);
