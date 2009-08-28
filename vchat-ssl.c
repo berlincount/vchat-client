@@ -222,7 +222,7 @@ int vc_verify_cert_hostname(X509 *cert, char *host)
    X509_NAME            *subj    = NULL;
    const char           *extstr  = NULL;
    CONF_VALUE           *nval    = NULL;
-   unsigned char        *data    = NULL;
+   const unsigned char  *data    = NULL;
    X509_EXTENSION       *ext     = NULL;
    X509V3_EXT_METHOD    *meth    = NULL;
    STACK_OF(CONF_VALUE) *val     = NULL;
