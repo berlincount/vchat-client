@@ -16,6 +16,7 @@
 
 /* general includes */
 #include <unistd.h>
+#include <stdint.h>
 #include <ncurses.h>
 #include <signal.h>
 #include <stdlib.h>
