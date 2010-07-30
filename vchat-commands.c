@@ -393,12 +393,13 @@ command_quit(char *tail)
   /* send users message to server */
   snprintf (tmpstr, TMPSTRSIZE, ".x %s", tail);
   networkoutput (tmpstr);
-  
+
   /* show action in channel window */
   writechan (tmpstr);
 
   /* Inform vchat-client, that the closing connection
      following is intended */
+  status = 0;
   ownquit = 1;
 }
 

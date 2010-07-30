@@ -21,8 +21,7 @@ typedef struct {
 
 /* prototypes */
 
-BIO * vc_connect(char *, int , int, vc_x509store_t *, SSL_CTX **);
-BIO * vc_connect_ssl(char *, int, vc_x509store_t *, SSL_CTX **);
+int  vc_connect_ssl(BIO **conn, vc_x509store_t *, SSL_CTX **);
 SSL_CTX * vc_create_sslctx( vc_x509store_t *);
 void vc_init_x509store(vc_x509store_t *);
 void vc_cleanup_x509store(vc_x509store_t *);

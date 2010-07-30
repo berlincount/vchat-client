@@ -44,6 +44,8 @@ int status = 1;
 int ownquit = 0;
 /*   we set this, we DONT want to quit */
 int wantreconnect = 0;
+static int reconnect_delay = 6;
+static time_t reconnect_time = 0;
 
 /*   error string to show after exit */
 char errstr[ERRSTRSIZE] = "\0";
@@ -65,7 +67,7 @@ static void parsecfg(char *line) {
   char *param=line;
   char *value=NULL;
   
-  /* handle quotes value is empty, so wecan use it */
+  /* handle quotes value is empty, so we can use it */
   value = strchr(line,'#');
   if (value) { /* the line contains a cute little quote */
   	value[0]='\0'; /* ignore the rest of the line */
@@ -414,7 +416,8 @@ void calleverysecond( void ) {
       quitrequest--;
   if(outputcountdown && !--outputcountdown)
       hideout( );
-
+  if( reconnect_time && ( time( NULL ) > reconnect_time ) )
+      status = 0;
 }
 
 /* this function is called in the master loop */
@@ -425,33 +428,33 @@ eventloop (void)
   fd_set readfds = masterfds;
   struct timeval tv = { 1, 0};
 
-  switch (select (serverfd + 1, &readfds, NULL, NULL, &tv))
+  switch (select (serverfd + 2, &readfds, NULL, NULL, &tv))
   {
   case -1:
       /* EINTR is most likely a SIGWINCH - ignore for now */
       if (errno != EINTR)
-	{
-	  snprintf (tmpstr, TMPSTRSIZE, "Select fails, %s.", strerror(errno));
+      {
+          snprintf (tmpstr, TMPSTRSIZE, "Select fails, %s.", strerror(errno));
           strncpy(errstr,tmpstr,TMPSTRSIZE-2);
           errstr[TMPSTRSIZE-2] = '\0';
           strcat(errstr,"\n");
-	  writecf (FS_ERR,tmpstr);
+          writecf (FS_ERR,tmpstr);
           /* see this as an error condition and bail out */
-	  status = 0;
-	}
-        break;
+          status = 0;
+       }
+       break;
   case 0:
       /* time out reached */
       calleverysecond();
       break;
   default:
       /* something to read from user & we're logged in or have a cert? */
-      if (FD_ISSET (0, &readfds) && loggedin)
-	userinput ();
+      if (FD_ISSET (0, &readfds) )
+        userinput ();
 
       /* something to read from server? */
-      if (FD_ISSET (serverfd, &readfds))
-	networkinput ();
+      if (serverfd!=-1 && FD_ISSET (serverfd, &readfds))
+        networkinput ();
       break;
   }
 }
@@ -495,7 +498,7 @@ main (int argc, char **argv)
 #endif
 
       switch (pchar) {
-	  case -1 : cmdsunparsed = 0; break;
+          case -1 : cmdsunparsed = 0; break;
           case 'C': loadconfig(optarg); break;
           case 'F': setstroption(CF_FORMFILE,optarg); break;
           case 'l': setintoption(CF_USESSL,0); break;
@@ -528,21 +531,30 @@ main (int argc, char **argv)
   initui ();
 
   while( status ) {
+    /* add stdin to masterfds */
+    FD_ZERO (&masterfds);
+    FD_SET (0, &masterfds);
+
     /* attempt connection */
-    if (!vcconnect (getstroption(CF_SERVERHOST), getstroption(CF_SERVERPORT))) {
-      snprintf (tmpstr, TMPSTRSIZE, "Could not connect to server, %s.",
-		strerror(errno));
-      strncpy(errstr,tmpstr,TMPSTRSIZE-2);
-      errstr[TMPSTRSIZE-2] = '\0';
-      strcat(errstr,"\n");
-      writecf (FS_ERR,tmpstr);
-      /* exit condition */
-      status = 0;
+    if (vcconnect (getstroption(CF_SERVERHOST), getstroption(CF_SERVERPORT))) {
+       snprintf (tmpstr, TMPSTRSIZE, "Could not connect to server, %s.", strerror(errno));
+       strncpy(errstr,tmpstr,TMPSTRSIZE-2);
+       errstr[TMPSTRSIZE-2] = '\0';
+       strcat(errstr,"\n");
+       writecf (FS_ERR,tmpstr);
+
+      if( getintoption( CF_AUTORECONN ) ) {
+        snprintf (tmpstr, TMPSTRSIZE, "reconnecting in %d seconds", reconnect_delay );
+        writecf (FS_ERR, tmpstr);
+        reconnect_delay = ( reconnect_delay * 15 ) / 10;
+        reconnect_time = time( NULL ) + reconnect_delay;
+      } else
+        status = 0;
     } else {
-      /* add stdin & server to masterdfs */
-      FD_ZERO (&masterfds);
-      FD_SET (0, &masterfds);
+      /* add serverfd to masterfds, reset reconnect delay */
       FD_SET (serverfd, &masterfds);
+      reconnect_delay = 6;
+      reconnect_time  = 0;
     }
 
     while (status)

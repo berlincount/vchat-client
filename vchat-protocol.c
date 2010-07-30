@@ -40,18 +40,17 @@ char *vchat_io_version = "$Id$";
 
 /* externally used variables */
 int serverfd = -1;
-unsigned int usingcert = 1;
 
 /* locally global variables */
-/* SSL-connection */
-static BIO *sslconn = NULL;
+/* our connection BIO */
+static BIO *server_conn = NULL;
 
 /* declaration of local helper functions */
 static void usersignon (char *);
 static void usersignoff (char *);
 static void usernickchange (char *);
 static void userjoin (char *);
-static void userleave (char *);                                                                                                                                                                         
+static void userleave (char *);
 static void receivenicks (char *message);
 static void justloggedin (char *message);
 static void nickerr (char *message);
@@ -64,7 +63,6 @@ static void serverlogin (char *message);
 static void idleprompt (char *message);
 static void topicchange (char *message);
 static void pmnotsent (char *message);
-static int  getportnum (char *port);
 
 /* declaration of server message array */
 #include "vchat-messages.h"
@@ -72,114 +70,127 @@ static int  getportnum (char *port);
 /* status-variable from vchat-client.c
  * eventloop is done as long as this is true */
 extern int status;
-
-int usessl = 1;
 int ignssl = 0;
 char *encoding;
+
+static int connect_socket( char *server, char *port ) {
+  struct addrinfo hints, *res, *res0;
+  int s, error;
+
+  memset(&hints, 0, sizeof(hints));
+  hints.ai_family = PF_UNSPEC;
+  hints.ai_socktype = SOCK_STREAM;
+  error = getaddrinfo( server, port, &hints, &res0 );
+  if (error) return -1;
+  s = -1;
+  for (res = res0; res; res = res->ai_next) {
+    s = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+    if (s < 0) continue;
+    if (connect(s, res->ai_addr, res->ai_addrlen) < 0) {
+      close(s);
+      s = -1;
+      continue;
+    }
+    break;  /* okay we got one */
+  }
+  freeaddrinfo(res0);
+  return s;
+}
 
 /* connects to server */
 int
 vcconnect (char *server, char *port)
 {
-   /* used for tilde expansion of cert & key filenames */
-   char *tildex = NULL;
+  /* used for tilde expansion of cert & key filenames */
+  char *tildex = NULL;
 
-   /* vchat connection x509 store */
-   vc_x509store_t vc_store;
+  /* vchat connection x509 store */
+  vc_x509store_t vc_store;
 
-   /* SSL-context */
-   SSL_CTX *sslctx = NULL;
+  /* SSL-context */
+  SSL_CTX *sslctx = NULL;
 
-   /* pointer to tilde-expanded certificate/keyfile-names */
-   char *certfile = NULL, *keyfile = NULL;
+  /* pointer to tilde-expanded certificate/keyfile-names */
+  char *certfile = NULL, *keyfile = NULL;
 
-   SSL_library_init ();
-   SSL_load_error_strings();
+  /* Connect to the server */
+  serverfd = connect_socket( server, port );
+  if( serverfd < 0 ) {
+    /* inform user */
+    snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_CANTCONNECT), server, port );
+    writechan (tmpstr);
+    return -1;
+  }
+  /* Abstract server IO in openssls BIO */
+  server_conn = BIO_new_socket( serverfd, 1 );
 
-   vc_init_x509store(&vc_store);
+  /* If SSL is requested, get our ssl-BIO running */
+  if( server_conn && getintoption(CF_USESSL) ) {
+    static int sslinit;
+    if( !sslinit++ ) {
+      SSL_library_init ();
+      SSL_load_error_strings();
+    }
 
-   vc_x509store_setflags(&vc_store, VC_X509S_SSL_VERIFY_PEER);
-   /* get name of certificate file */
-   certfile = getstroption (CF_CERTFILE);
+    vc_init_x509store(&vc_store);
+    vc_x509store_setflags(&vc_store, VC_X509S_SSL_VERIFY_PEER);
 
-   /* do we have a certificate file? */
-   if (certfile) {
+    /* get name of certificate file */
+    certfile = getstroption (CF_CERTFILE);
+    /* do we have a certificate file? */
+    if (certfile) {
       /* does the filename start with a tilde? expand it! */
       if (certfile[0] == '~')
-         tildex = tilde_expand (certfile);
+        tildex = tilde_expand (certfile);
       else
-         tildex = certfile;
+        tildex = certfile;
 
-      if (usingcert) {
+      vc_x509store_setflags(&vc_store, VC_X509S_USE_CERTIFICATE);
+      vc_x509store_setcertfile(&vc_store, tildex);
 
-         vc_x509store_setflags(&vc_store, VC_X509S_USE_CERTIFICATE);
-         vc_x509store_setcertfile(&vc_store, tildex);
+      /* get name of key file */
+      keyfile = getstroption (CF_KEYFILE);
 
-         /* get name of key file */
-         keyfile = getstroption (CF_KEYFILE);
+      /* if we don't have a key file, the key may be in the cert file */
+      if (!keyfile)
+        keyfile = certfile;
 
-         /* if we don't have a key file, the key may be in the cert file */
-         if (!keyfile)
-            keyfile = certfile;
+      /* does the filename start with a tilde? expand it! */
+      if (keyfile[0] == '~')
+        tildex = tilde_expand (keyfile);
+      else
+        tildex = keyfile;
 
-         /* does the filename start with a tilde? expand it! */
-         if (keyfile[0] == '~')
-            tildex = tilde_expand (keyfile);
-         else
-            tildex = keyfile;
+      vc_x509store_set_pkeycb(&vc_store, (vc_askpass_cb_t)passprompt);
+      vc_x509store_setkeyfile(&vc_store, tildex);
+    }
+    vc_x509store_setignssl(&vc_store, getintoption(CF_IGNSSL));
 
-         vc_x509store_set_pkeycb(&vc_store, (vc_askpass_cb_t)passprompt);
-         vc_x509store_setkeyfile(&vc_store, tildex);
+    /* upgrade our plain BIO to ssl */
+    if( vc_connect_ssl( &server_conn, &vc_store, &sslctx ) )
+      BIO_free_all( server_conn );
+  }
 
-         /* check if OpenSSL thinks key & cert belong together */
-         /* result = SSL_CTX_check_private_key (sslctx); THS TODO (->
-          * vchat-ssl.c) */
-      }
-   }
-   
-   usessl = getintoption(CF_USESSL);
-   vc_x509store_setignssl(&vc_store, getintoption(CF_IGNSSL));
+  if( !server_conn ) {
+    /* inform user */
+    snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_CANTCONNECT), server, port );
+    writechan (tmpstr);
+    return -1;
+  }
 
-   sslconn = vc_connect(server, getportnum(port), usessl, &vc_store, &sslctx);
+  /* inform user */
+  snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_CONNECTED), server, port);
+  writechan (tmpstr);
 
-   if(sslconn == NULL) {
-      exitui();
-      exit(-1);
-   }
-
-   serverfd = BIO_get_fd(sslconn, 0);
-
-   /* inform user */
-   snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_CONNECTED), server, getportnum(port));
-   writechan (tmpstr);
-
-   /* dump x509 details here... TODO */
-   writecf (FS_DBG,"# SSL Server information: TODO :)");
-
-   /* if we didn't fail until now, we've got a connection. */
-   return 1;
+  /* if we didn't fail until now, we've got a connection. */
+  return 0;
 }
 
 /* disconnect from server */
 void
-vcdisconnect ()
-{
-  close (serverfd);
+vcdisconnect () {
+  BIO_free_all( server_conn );
   serverfd = -1;
-}
-
-/* lookup a port number by service string */
-static int getportnum (char *port)
-{
-  char *endpt = NULL;
-  struct servent *service = getservbyname(port, "tcp");
-  int dport = strtoul( port, &endpt, 10);
-
-  if( service )
-    return htons( service->s_port );
-  if( (*endpt == 0) && ((char *)port != endpt) )
-    return dport;
-  return -1;
 }
 
 /* handle a pm not sent error
@@ -358,7 +369,7 @@ justloggedin (char *message)
      setstroption(CF_NICK,str1);
 
   /* show change in console window */
-  snprintf (consolestr, CONSOLESTRSIZE, getformatstr(FS_CONSOLE), nick, getstroption (CF_SERVERHOST), getportnum(getstroption (CF_SERVERPORT)));
+  snprintf (consolestr, CONSOLESTRSIZE, getformatstr(FS_CONSOLE), nick, getstroption (CF_SERVERHOST), getstroption (CF_SERVERPORT));
   consoleline (NULL);
 
   /* announce login as servermessage */
@@ -401,7 +412,7 @@ ownnickchange (char *newnick)
   setstroption(CF_NICK,newnick);
 
   /* show change in console window */
-  snprintf (consolestr, CONSOLESTRSIZE, getformatstr(FS_CONSOLE), nick, getstroption (CF_SERVERHOST), getportnum(getstroption (CF_SERVERPORT)));
+  snprintf (consolestr, CONSOLESTRSIZE, getformatstr(FS_CONSOLE), nick, getstroption (CF_SERVERHOST), getstroption (CF_SERVERPORT));
   consoleline (NULL);
 }
 
@@ -533,7 +544,7 @@ receivenicks (char *message)
       str2 = strchr (str1, ' ');
       /* there is another user? terminate this one */
       if (str2) {
-	str2[0] = '\0';
+        str2[0] = '\0';
         str2++;
       }
 
@@ -826,7 +837,7 @@ networkinput (void)
   buf[BUFSIZE-1] = '\0'; /* sanity stop */
 
   /* receive data at offset */
-  bytes = BIO_read (sslconn, &buf[bufoff], BUFSIZE-1 - bufoff);
+  bytes = BIO_read (server_conn, &buf[bufoff], BUFSIZE-1 - bufoff);
 
   /* no bytes transferred? raise error message, bail out */
   if (bytes < 0)
@@ -875,8 +886,8 @@ networkinput (void)
             }
 
           /* move line along .. */
-	  ltmp = tmp;
-	}
+          ltmp = tmp;
+      }
       /* buffer exhausted, move partial line to start of buffer and go on .. */
       bufoff = (bytes+bufoff) - (ltmp-buf);
       if (bufoff > 0)
@@ -895,10 +906,10 @@ networkoutput (char *msg)
 #endif
 
   /* send data to server */
-  if (BIO_write (sslconn, msg, strlen (msg)) != strlen (msg))
+  if (BIO_write (server_conn, msg, strlen (msg)) != strlen (msg))
     writecf (FS_ERR,"Message sending fuzzy.");
 
   /* send line termination to server */
-  if (BIO_write (sslconn, "\r\n", 2) != 2)
+  if (BIO_write (server_conn, "\r\n", 2) != 2)
     writecf (FS_ERR,"Message sending fuzzy.");
 }

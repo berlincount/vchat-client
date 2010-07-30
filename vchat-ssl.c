@@ -11,7 +11,7 @@
  * without even the implied warranty of merchantability or fitness for a
  * particular purpose. In no event shall the copyright holder be liable for
  * any direct, indirect, incidental or special damages arising in any way out
- * of the use of this software. 
+ * of the use of this software.
  *
  */
 
@@ -111,31 +111,19 @@ SSL_CTX * vc_create_sslctx( vc_x509store_t *vc_store )
       } else if(vc_store->use_key)
             r=SSL_CTX_use_PrivateKey(ctx, vc_store->use_key);
 
-      if(r!=1)
+      if( r!=1 || !SSL_CTX_check_private_key(ctx))
          VC_SETCERT_ERR_EXIT(store, ctx, "Load private key failed");
-
    }
 
    SSL_CTX_set_app_data(ctx, vc_store);
    return(ctx);
 }
 
-#define VC_CONNSSL_ERR_EXIT(_cx, cx, cn) do { \
-      snprintf(tmpstr, TMPSTRSIZE, "[SSL ERROR] %s", \
-            ERR_error_string (ERR_get_error (), NULL)); \
-      writecf(FS_ERR, tmpstr); \
-      if(cn)  BIO_free_all(cn); \
-      if(*cx) SSL_CTX_free(*cx); \
-      if(_cx) *cx = 0; \
-      return(0); \
-   } while(0)
-
-BIO * vc_connect_ssl(char *host, int port, vc_x509store_t *vc_store,
-      SSL_CTX **ctx)
+int vc_connect_ssl( BIO **conn, vc_x509store_t *vc_store, SSL_CTX **ctx)
 {
-   BIO *conn   = NULL;
-   int _ctx    = 0;
-   
+   BIO *ssl_conn = NULL;
+   int _ctx      = 0;
+
    if(*ctx) {
       CRYPTO_add( &((*ctx)->references), 1, CRYPTO_LOCK_SSL_CTX );
       if( vc_store && vc_store != SSL_CTX_get_app_data(*ctx) ) {
@@ -147,72 +135,26 @@ BIO * vc_connect_ssl(char *host, int port, vc_x509store_t *vc_store,
       _ctx = 1;
    }
 
-   if( !(conn = BIO_new_ssl_connect(*ctx)) )
-      VC_CONNSSL_ERR_EXIT(_ctx, ctx, conn);
+  ssl_conn = BIO_new_ssl(*ctx, 1);
+  if(_ctx)
+    SSL_CTX_free(*ctx);
 
-   BIO_set_conn_hostname(conn, host);
-   BIO_set_conn_int_port(conn, &port);
+  if( ssl_conn ) {
+    BIO_push( ssl_conn, *conn );
+    *conn = ssl_conn;
+    fflush(stdout);
+    if( BIO_do_handshake( *conn ) > 0 )
+      return 0;
+  }
 
-   fflush(stdout);
-   if(BIO_do_connect(conn) <= 0)
-      VC_CONNSSL_ERR_EXIT(_ctx, ctx, conn);
+  snprintf(tmpstr, TMPSTRSIZE, "[SSL ERROR] %s", ERR_error_string (ERR_get_error (), NULL));
+  writecf(FS_ERR, tmpstr);
 
-   if(_ctx)
-      SSL_CTX_free(*ctx);
-
-   return(conn);
-}
-
-#define VC_CONN_ERR_EXIT(cn) do { \
-      snprintf(tmpstr, TMPSTRSIZE, "[SSL ERROR] %s", \
-            ERR_error_string(ERR_get_error(), NULL)); \
-      if(ERR_get_error()) \
-         writecf(FS_ERR, tmpstr); \
-      if(cn)  BIO_free_all(cn); \
-      return(NULL); \
-   } while(0)
-
-#define VC_VERIFICATION_ERR_EXIT(cn, err) do { \
-      snprintf(tmpstr, TMPSTRSIZE, \
-            "[SSL ERROR] certificate verify failed: %s", err); \
-      writecf(FS_ERR, tmpstr); \
-      if(cn && !ignore_ssl) { BIO_free_all(cn); return(NULL); } \
-   } while(0)
-
-BIO * vc_connect( char *host, int port, int use_ssl, 
-      vc_x509store_t *vc_store, SSL_CTX **ctx)
-{
-   BIO *conn   = NULL;
-   SSL *ssl    = NULL;
-
-   if(use_ssl) {
-      if( !(conn = vc_connect_ssl(host, port, vc_store, ctx)) )
-         VC_CONN_ERR_EXIT(conn);
-
-
-      BIO_get_ssl(conn, &ssl);
-      if(!vc_verify_cert_hostname(SSL_get_peer_certificate(ssl), host))
-         VC_VERIFICATION_ERR_EXIT(conn, "Hostname does not match!");
-
-      return(conn);
-   } 
-
-   *ctx = 0;
-
-   if( !(conn = BIO_new_connect(host)) )
-      VC_CONN_ERR_EXIT(conn);
-
-   BIO_set_conn_int_port(conn, &port);
-
-   if(BIO_do_connect(conn) <= 0)
-      VC_CONN_ERR_EXIT(conn);
-
-   return(conn);
+  return 1;
 }
 
 int vc_verify_cert_hostname(X509 *cert, char *host)
 {
-   
    int i          = 0;
    int j          = 0;
    int n          = 0;
@@ -231,39 +173,39 @@ int vc_verify_cert_hostname(X509 *cert, char *host)
    memset(&name, 0, sizeof(name));
 
    if((extcount = X509_get_ext_count(cert)) > 0) {
-      
+
       for(i=0; !ok && i < extcount; i++) {
-         
+
          meth = NULL;
 
          ext = X509_get_ext(cert, i);
          extstr = OBJ_nid2sn(OBJ_obj2nid(X509_EXTENSION_get_object(ext)));
 
          if(!strcasecmp(extstr, "subjectAltName")) {
-            
+
             if( !(meth = X509V3_EXT_get(ext)) )
                break;
 
             if( !(meth->d2i) )
                break;
-            
+
             data = ext->value->data;
 
             val = meth->i2v(meth, meth->d2i(0, &data, ext->value->length), 0);
             for( j=0, n=sk_CONF_VALUE_num(val); j<n; j++ ) {
                nval = sk_CONF_VALUE_value(val, j);
-               if( !strcasecmp(nval->name, "DNS") && 
+               if( !strcasecmp(nval->name, "DNS") &&
                      !strcasecmp(nval->value, host) ) {
                   ok = 1;
                   break;
                }
-            } 
+            }
          }
       }
    }
 
    if( !ok && (subj = X509_get_subject_name(cert)) &&
-         X509_NAME_get_text_by_NID(subj, NID_commonName, 
+         X509_NAME_get_text_by_NID(subj, NID_commonName,
             name, sizeof(name)) > 0 ) {
       name[sizeof(name)-1] = '\0';
       if(!strcasecmp(name, host))
@@ -331,7 +273,7 @@ X509_STORE *vc_x509store_create(vc_x509store_t *vc_store)
       X509_STORE_set_flags( store, 
             X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL );
    }
-   
+
    if( !(lookup = X509_STORE_add_lookup(store, X509_LOOKUP_hash_dir())) )
       VC_STORE_ERR_EXIT(store);
 

@@ -23,7 +23,6 @@
 #endif
 
 /* configuration array with structure as defined in vchat.h */
-extern unsigned int usessl;
 extern unsigned int ignssl;
 extern unsigned int usetime;
 extern unsigned int hscroll;
@@ -41,7 +40,7 @@ static volatile configoption configoptions[] = {
   {CF_FORMFILE,    CO_STR, "formatfile", "~/.vchat/formats",     NULL,       { NULL }  },
   {CF_LOGINSCRIPT, CO_STR, "loginscript","~/.vchat/loginscript", NULL,       { NULL }  },
   {CF_ENCODING,    CO_STR, "encoding",   NULL,                   NULL,       { .pstr = &encoding }},
-  {CF_USESSL,      CO_INT, "usessl",     (char *) 1,             (char *)-1, { .pint = &usessl }  },
+  {CF_USESSL,      CO_INT, "usessl",     (char *) 1,             (char *)-1, { NULL }  },
   {CF_IGNSSL,      CO_INT, "ignssl",     (char *) 0,             (char *)-1, { .pint = &ignssl }  },
   {CF_USECERT,     CO_INT, "usecert",    (char *) 1,             (char *)-1, { NULL }  },
   {CF_USETIME,     CO_INT, "usetime",    (char *) 1,             (char *)-1, { .pint = &usetime } },
@@ -100,8 +99,9 @@ static formatstring formatstrings[] = {
   FE( FS_CONSOLETIME,  "[%H:%M] "),
   FE( FS_TOPICW,       "[ Channel %d: %s"),
   FE( FS_NOTOPICW,     "[ Channel %d has no topic"),
-  FE( FS_CONSOLE,      "%s@%s:%d, use .h to get help "),
-  FE( FS_CONNECTED,    "\0012# Connected to '\0016%s\0012', port \0016%d\0012 ..."),
+  FE( FS_CONSOLE,      "%s@%s:%s, use .h to get help "),
+  FE( FS_CONNECTED,    "\0012# Connected to '\0016%s\0012', port \0016%s\0012 ..."),
+  FE( FS_CANTCONNECT,  "\0012# Can not connect to '\0016%s\0012', port \0016%s\0012 ..."),
   FE( FS_TOPIC,        "\0012# Channel \0016%d\0012 topic is: '\0010%s\0012'"),
   FE( FS_NOTOPIC,      "\0012# Channel \0016%d\0012 has no topic"),
   FE( FS_CHGTOPIC,     "\0012# \0016%s\0012 changes topic to: '\0010%s\0012'"),
