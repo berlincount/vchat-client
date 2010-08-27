@@ -23,7 +23,6 @@
 #endif
 
 /* configuration array with structure as defined in vchat.h */
-extern unsigned int ignssl;
 extern unsigned int usetime;
 extern unsigned int hscroll;
 
@@ -41,7 +40,7 @@ static volatile configoption configoptions[] = {
   {CF_LOGINSCRIPT, CO_STR, "loginscript","~/.vchat/loginscript", NULL,       { NULL }  },
   {CF_ENCODING,    CO_STR, "encoding",   NULL,                   NULL,       { .pstr = &encoding }},
   {CF_USESSL,      CO_INT, "usessl",     (char *) 1,             (char *)-1, { NULL }  },
-  {CF_IGNSSL,      CO_INT, "ignssl",     (char *) 0,             (char *)-1, { .pint = &ignssl }  },
+  {CF_IGNSSL,      CO_INT, "ignssl",     (char *) 0,             (char *)-1, { NULL }  },
   {CF_USECERT,     CO_INT, "usecert",    (char *) 1,             (char *)-1, { NULL }  },
   {CF_USETIME,     CO_INT, "usetime",    (char *) 1,             (char *)-1, { .pint = &usetime } },
   {CF_USETOPIC,    CO_INT, "usetopicbar",(char *) 1,             (char *)-1, { NULL }  },

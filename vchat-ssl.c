@@ -27,12 +27,12 @@
 #include <openssl/x509v3.h>
 #include <openssl/conf.h>
 
+#include <readline/readline.h>
+
 #include "vchat.h"
 #include "vchat-ssl.h"
 
 char *vchat_ssl_version = "$Id$";
-
-static int ignore_ssl;
 
 #define VC_CTX_ERR_EXIT(se, cx) do { \
       snprintf(tmpstr, TMPSTRSIZE, "CREATE CTX: %s", \
@@ -119,25 +119,16 @@ SSL_CTX * vc_create_sslctx( vc_x509store_t *vc_store )
    return(ctx);
 }
 
-int vc_connect_ssl( BIO **conn, vc_x509store_t *vc_store, SSL_CTX **ctx)
+int vc_connect_ssl( BIO **conn, vc_x509store_t *vc_store )
 {
-   BIO *ssl_conn = NULL;
-   int _ctx      = 0;
+  BIO *ssl_conn = NULL;
+  SSL_CTX * ctx = vc_create_sslctx(vc_store);
 
-   if(*ctx) {
-      CRYPTO_add( &((*ctx)->references), 1, CRYPTO_LOCK_SSL_CTX );
-      if( vc_store && vc_store != SSL_CTX_get_app_data(*ctx) ) {
-         SSL_CTX_set_cert_store(*ctx, vc_x509store_create(vc_store));
-         SSL_CTX_set_app_data(*ctx, vc_store);
-      }
-   } else {
-      *ctx = vc_create_sslctx(vc_store);
-      _ctx = 1;
-   }
+  if( !ctx )
+    return 1;
 
-  ssl_conn = BIO_new_ssl(*ctx, 1);
-  if(_ctx)
-    SSL_CTX_free(*ctx);
+  ssl_conn = BIO_new_ssl(ctx, 1);
+  SSL_CTX_free(ctx);
 
   if( ssl_conn ) {
     BIO_push( ssl_conn, *conn );
@@ -151,88 +142,6 @@ int vc_connect_ssl( BIO **conn, vc_x509store_t *vc_store, SSL_CTX **ctx)
   writecf(FS_ERR, tmpstr);
 
   return 1;
-}
-
-int vc_verify_cert_hostname(X509 *cert, char *host)
-{
-   int i          = 0;
-   int j          = 0;
-   int n          = 0;
-   int extcount   = 0;
-   int ok         = 0;
-
-   X509_NAME            *subj    = NULL;
-   const char           *extstr  = NULL;
-   CONF_VALUE           *nval    = NULL;
-   const unsigned char  *data    = NULL;
-   X509_EXTENSION       *ext     = NULL;
-   X509V3_EXT_METHOD    *meth    = NULL;
-   STACK_OF(CONF_VALUE) *val     = NULL;
-
-   char name[256];
-   memset(&name, 0, sizeof(name));
-
-   if((extcount = X509_get_ext_count(cert)) > 0) {
-
-      for(i=0; !ok && i < extcount; i++) {
-
-         meth = NULL;
-
-         ext = X509_get_ext(cert, i);
-         extstr = OBJ_nid2sn(OBJ_obj2nid(X509_EXTENSION_get_object(ext)));
-
-         if(!strcasecmp(extstr, "subjectAltName")) {
-
-            if( !(meth = X509V3_EXT_get(ext)) )
-               break;
-
-            if( !(meth->d2i) )
-               break;
-
-            data = ext->value->data;
-
-            val = meth->i2v(meth, meth->d2i(0, &data, ext->value->length), 0);
-            for( j=0, n=sk_CONF_VALUE_num(val); j<n; j++ ) {
-               nval = sk_CONF_VALUE_value(val, j);
-               if( !strcasecmp(nval->name, "DNS") &&
-                     !strcasecmp(nval->value, host) ) {
-                  ok = 1;
-                  break;
-               }
-            }
-         }
-      }
-   }
-
-   if( !ok && (subj = X509_get_subject_name(cert)) &&
-         X509_NAME_get_text_by_NID(subj, NID_commonName,
-            name, sizeof(name)) > 0 ) {
-      name[sizeof(name)-1] = '\0';
-      if(!strcasecmp(name, host))
-         ok = 1;
-   }
-
-   //printf("[*] vc_verify_cert_hostname() return: %d\n", ok);
-   return(ok);
-}
-
-int vc_verify_cert(X509 *cert, vc_x509store_t *vc_store)
-{
-   int result           = -1;
-   X509_STORE  *store   = NULL;
-   X509_STORE_CTX *ctx  = NULL;
-
-   if( !(store = vc_x509store_create(vc_store)) )
-      return(result);
-
-   if( (ctx = X509_STORE_CTX_new()) != 0 ) {
-      if(X509_STORE_CTX_init(ctx, store, cert, 0) == 1)
-         result = (X509_verify_cert(ctx) == 1);
-      X509_STORE_CTX_free(ctx);
-   }
-
-   X509_STORE_free(store);
-   return(result);
 }
 
 #define VC_STORE_ERR_EXIT(s) do { \
@@ -300,7 +209,7 @@ int vc_verify_callback(int ok, X509_STORE_CTX *store)
 {
    if(!ok) {
       /* XXX handle action/abort */
-      if(!ignore_ssl)
+      if(!(ok=getintoption(CF_IGNSSL)))
          snprintf(tmpstr, TMPSTRSIZE, "[SSL ERROR] %s", 
                X509_verify_cert_error_string(store->error));
       else
@@ -308,7 +217,6 @@ int vc_verify_callback(int ok, X509_STORE_CTX *store)
                X509_verify_cert_error_string(store->error));
 
       writecf(FS_ERR, tmpstr);
-      ok = ignore_ssl;
    }
    return(ok);
 }
@@ -316,12 +224,6 @@ int vc_verify_callback(int ok, X509_STORE_CTX *store)
 void vc_x509store_setflags(vc_x509store_t *store, int flags)
 {
    store->flags |= flags;
-}
-
-void vc_x509store_setignssl(vc_x509store_t *store, int ignore)
-{
-   store->ignore_ssl |= ignore;
-   ignore_ssl = ignore;
 }
 
 void vc_x509store_clearflags(vc_x509store_t *store, int flags)
@@ -348,31 +250,31 @@ void vc_x509store_addcert(vc_x509store_t *store, X509 *cert)
 
 void vc_x509store_setcafile(vc_x509store_t *store, char *file) 
 {
-   if( store->cafile) free(store->cafile);
+   free(store->cafile);
    store->cafile = ( file ? strdup(file) : 0 );
 }
 
 void vc_x509store_setcapath(vc_x509store_t *store, char *path) 
 {
-   if( store->capath) free(store->capath);
+   free(store->capath);
    store->capath = ( path ? strdup(path) : 0 );
 }
 
 void vc_x509store_setcrlfile(vc_x509store_t *store, char *file) 
 {
-   if( store->crlfile) free(store->crlfile);
+   free(store->crlfile);
    store->crlfile = ( file ? strdup(file) : 0 );
 }
 
 void vc_x509store_setkeyfile(vc_x509store_t *store, char *file) 
 {
-   if( store->use_keyfile) free(store->use_keyfile);
+   free(store->use_keyfile);
    store->use_keyfile = ( file ? strdup(file) : 0 );
 }
 
 void vc_x509store_setcertfile(vc_x509store_t *store, char *file) 
 {
-   if( store->use_certfile) free(store->use_certfile);
+   free(store->use_certfile);
    store->use_certfile = ( file ? strdup(file) : 0 );
 }
 
@@ -391,19 +293,17 @@ void vc_init_x509store(vc_x509store_t *s)
    s->use_keyfile    = NULL;
    s->use_key        = NULL;
    s->flags          = 0;
-   s->ignore_ssl     = 0;
 }
 
 void vc_cleanup_x509store(vc_x509store_t *s)
 {
-   if(s->cafile)        free(s->cafile);
-   if(s->capath)        free(s->capath);
-   if(s->crlfile)       free(s->crlfile);
-   if(s->use_certfile)  free(s->use_certfile);
-   if(s->use_keyfile)   free(s->use_keyfile);
-   if(s->use_key)       free(s->use_key);
+   free(s->cafile);
+   free(s->capath);
+   free(s->crlfile);
+   free(s->use_certfile);
+   free(s->use_keyfile);
+   free(s->use_key);
    sk_X509_free(s->certs);
    sk_X509_free(s->crls);
    sk_X509_free(s->use_certs);
-   s->ignore_ssl     = 0;
 }

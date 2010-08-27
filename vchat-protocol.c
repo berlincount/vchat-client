@@ -70,7 +70,6 @@ static void pmnotsent (char *message);
 /* status-variable from vchat-client.c
  * eventloop is done as long as this is true */
 extern int status;
-int ignssl = 0;
 char *encoding;
 
 static int connect_socket( char *server, char *port ) {
@@ -106,9 +105,6 @@ vcconnect (char *server, char *port)
 
   /* vchat connection x509 store */
   vc_x509store_t vc_store;
-
-  /* SSL-context */
-  SSL_CTX *sslctx = NULL;
 
   /* pointer to tilde-expanded certificate/keyfile-names */
   char *certfile = NULL, *keyfile = NULL;
@@ -164,10 +160,9 @@ vcconnect (char *server, char *port)
       vc_x509store_set_pkeycb(&vc_store, (vc_askpass_cb_t)passprompt);
       vc_x509store_setkeyfile(&vc_store, tildex);
     }
-    vc_x509store_setignssl(&vc_store, getintoption(CF_IGNSSL));
 
     /* upgrade our plain BIO to ssl */
-    if( vc_connect_ssl( &server_conn, &vc_store, &sslctx ) )
+    if( vc_connect_ssl( &server_conn, &vc_store ) )
       BIO_free_all( server_conn );
   }
 
@@ -279,7 +274,7 @@ topicinfo (char *message)
 {
   char *channel = NULL, *topic = NULL;
   int tmpchan = 0;
-  
+
   /* search start of channel number */
   channel = strchr (message, ' ');
   channel++;
@@ -443,7 +438,7 @@ nickerr (char *message)
       setstroption(CF_NICK,NULL);
       /* get new nick via vchat-ui.c */
       nickprompt ();
-      
+
       /* form login message and send it to server */
       snprintf (tmpstr, TMPSTRSIZE, ".l %s %s %d", nick, getstroption (CF_FROM), getintoption (CF_CHANNEL));
       networkoutput (tmpstr);
@@ -455,8 +450,7 @@ nickerr (char *message)
  *    vars: %s      - this users registered nick
  *          %s msg  - server message */
 static void
-login (char *message)
-{
+login (char *message) {
   char *msg = NULL;
 
   /* mutate message for output */
@@ -465,23 +459,19 @@ login (char *message)
   writecf (FS_SERV,&message[2]);
 
   /* we don't know our nick? */
-  if (!nick)
-    {
-      /* find message after nick */
-      msg = strchr (&message[4], ' ');
-      if (msg)
-	{
-          /* terminate string before message and copy nick */
-	  msg[0] = '\0';
-	  setstroption(CF_NICK,&message[4]);
-	}
-      else
-	{
-          /* no string in servers message (huh?), ask user for nick */
-	  nickprompt ();
-	}
+  if (!nick) {
+    /* find message after nick */
+    msg = strchr (&message[4], ' ');
+    if (msg) {
+      /* terminate string before message and copy nick */
+      msg[0] = '\0';
+      setstroption(CF_NICK,&message[4]);
+    } else {
+      /* no string in servers message (huh?), ask user for nick */
+      nickprompt ();
     }
-  
+  }
+
   /* form login message and send it to server */
   snprintf (tmpstr, TMPSTRSIZE, ".l %s %s %d", nick, getstroption (CF_FROM), getintoption (CF_CHANNEL));
   networkoutput (tmpstr);
