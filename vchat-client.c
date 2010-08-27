@@ -446,6 +446,8 @@ main (int argc, char **argv)
   int pchar;
   int cmdsunparsed = 1;
 
+  setlocale(LC_ALL,"");
+
   loadconfig (GLOBAL_CONFIG_FILE);
   loadconfig (getstroption (CF_CONFIGFILE));
 
