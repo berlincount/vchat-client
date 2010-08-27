@@ -10,7 +10,7 @@
  * without even the implied warranty of merchantability or fitness for a
  * particular purpose. In no event shall the copyright holder be liable for
  * any direct, indirect, incidental or special damages arising in any way out
- * of the use of this software. 
+ * of the use of this software.
  *
  */
 
@@ -24,7 +24,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
-#include <fcntl.h>
 #include <signal.h>
 #include <readline/readline.h>
 #ifndef NO_LOCALE
@@ -66,13 +65,13 @@ static void parsecfg(char *line) {
   int bytes;
   char *param=line;
   char *value=NULL;
-  
+
   /* handle quotes value is empty, so we can use it */
   value = strchr(line,'#');
   if (value) { /* the line contains a cute little quote */
-  	value[0]='\0'; /* ignore the rest of the line */
+    value[0]='\0'; /* ignore the rest of the line */
   }
-  
+
   /* now split the line into two parts */
   value = strchr(line,'=');
   if (!value) return; /* exit if strchr fails */
@@ -86,11 +85,11 @@ static void parsecfg(char *line) {
   while ((value[bytes-1] == ' ')||(value[bytes-1] == '\t')) {
     value[bytes-1] = '\0';
     bytes=strlen(value);
-  } 
+  }
   /* bytes should be strlen(value) */
   if ( value[bytes-1] == '"' ) value[bytes-1] = '\0';
   if ( value[0] == '"' ) value++;
-  
+
   /* "trim" param */
   while ((param[0] == ' ')||(param[0] == '\t'))
     param++;
@@ -102,9 +101,9 @@ static void parsecfg(char *line) {
   /* bytes should be strlen(param) */
   if ( param[bytes-1] == '\"' ) param[bytes-1] = '\0';
   if ( param[0] == '\"' ) param++;
-  
+
   if ((!param)||(!value)) return; /* failsave */
-  
+
   //fprintf(stderr,"\"%s\" -> \"%s\"\n",param,value);
   setnoption(param,value);
 }
@@ -174,63 +173,30 @@ static void parseknownhosts(char *line) {
 void
 loadcfg (char *file,void (*lineparser) (char *))
 {
-  int fd;
-  int bytes,bufoff=0;
-  char *tmp = NULL;
+  FILE *fh;
 #define BUFSIZE 4096
   char buf[BUFSIZE];     /* data buffer */
-  char *ltmp = buf;
-  char *tildex = NULL;
-  buf[BUFSIZE-1] = '\0'; /* sanity stop */
-  
+  char *tildex = NULL, *t;
+
+  /* Check and expand filename then open file */
   if (!file) return;
-  if (!file[0]) return;
-  if (file[0] == '~')
-    tildex = tilde_expand(file);
-   else
-    tildex = file;
-  fd = open(tildex,O_RDONLY);
-  if (fd == -1) {
-    snprintf (errstr, TMPSTRSIZE, "Can't open config-file \"%s\": %s.", tildex, strerror(errno));
-  } else {
-    while ((bytes = read(fd,&buf[bufoff],BUFSIZE-bufoff-1))) {
-      if (bytes < 0) {
-        close(fd);
-        return;
-      } else {
-        /* terminate string */
-        buf[bytes + bufoff] = '\0';
-        /* as long as there are lines .. */
-        while ((tmp = strchr (ltmp, '\n')) != NULL) {
-          /* did the server send CR+LF instead of LF with the last line? */
-          if (tmp[-1] == '\r')
-            tmp[-1] = '\0';
-          
-          /* remove newline from previous message, advance pointer of next
-           * message */
-          tmp[0] = '\0';
-          tmp++;
+  tildex = tilde_expand( file );
+  if (!tildex) return;
+  fh = fopen( tildex, "r" );
+  free( tildex );
 
-          /* we have a last message? give away to line handler! */
-          if (ltmp[0])
-            {
-              lineparser(ltmp);
-            }
-
-          /* move line along .. */
-          ltmp = tmp;
-        }
-        /* buffer exhausted, move partial line to start of buffer and go
-         * on .. */
-        bufoff = (bytes+bufoff) - (ltmp-buf);
-        if (bufoff > 0)
-          memmove (buf, ltmp, bufoff);
-        else
-          bufoff = 0;
-      }
-    }
-    close(fd);
+  if (!fh) {
+    snprintf (errstr, TMPSTRSIZE, "Can't open config-file \"%s\": %s.", file, strerror(errno));
+    return;
   }
+
+  while ( fgets( buf, sizeof(buf), fh ) ) {
+    if( ( t = strchr( buf, '\n' ) ) )
+      *t = 0;
+    lineparser(buf);
+  }
+
+  fclose(fh);
 }
 
 void
@@ -463,7 +429,7 @@ void usage( char *name) {
     printf   ("usage: %s [-C config-file] [-F formats] [-l] [-z] [-s host] [-p port] [-c channel] [-n nickname]\n",name);
     puts     ("   -C   load a second config-file, overriding the first one");
     puts     ("   -F   load format strings (skins) from this file");
-    puts     ("   -l   local connect (no SSL + connects localhost:2323)");
+    puts     ("   -l   local connect (no SSL)");
     puts     ("   -z   don't use certificate files");
     printf   ("   -s   set server (default \"%s\")\n",getstroption(CF_SERVERHOST));
     printf   ("   -p   set port (default %s)\n",getstroption(CF_SERVERPORT));
@@ -517,9 +483,6 @@ main (int argc, char **argv)
 
   loadformats(GLOBAL_FORMAT_FILE);
   loadformats(getstroption (CF_FORMFILE));
-
-  if ( !getintoption(CF_USESSL) && !strcmp(getstroption(CF_SERVERPORT),"2325"))
-    setstroption(CF_SERVERPORT,"2323");
 
   /* install signal handler */
   signal (SIGINT, cleanup);
