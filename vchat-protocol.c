@@ -26,10 +26,8 @@
 #include <readline/readline.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
-#ifndef NO_LOCALE
 #include <locale.h>
 #include <langinfo.h>
-#endif
 
 /* local includes */
 #include "vchat.h"
@@ -243,11 +241,9 @@ pubthoughts (char *message)
 static void
 serverlogin (char *message)
 {
-#ifndef NO_LOCALE
   int utf8=!strcmp(nl_langinfo(CODESET), "UTF-8");
   if (utf8)
     networkoutput(".e utf8");
-#endif
 }
 
 /* parse and handle an idle message
