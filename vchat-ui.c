@@ -31,6 +31,7 @@
 #include <openssl/pem.h>
 #include <regex.h>
 #include "vchat.h"
+#include <wchar.h>
 
 /* version of this module */
 char *vchat_ui_version = "$Id$";
@@ -54,8 +55,6 @@ static WINDOW         *output           = NULL;
 /* our screen dimensions */
 static int             screensx         = 0;
 static int             screensy         = 0;
-/* length of last input on line (for clearing) */
-static int             lastlen          = 0;
 /* current horizontal scrolling offset for input line */
 static int             scroff           = 0;
 /* cache for stepping value of horizontal scrolling */
@@ -140,6 +139,35 @@ togglequery() {
   }
 }
 
+const char * skip_to_character( const char * string, size_t offset ) {
+  mbstate_t mbs;
+  memset(&mbs, 0, sizeof(mbs));
+
+  while( offset-- > 0 ) {
+    size_t ch_size = mbrlen( string, MB_CUR_MAX, &mbs );
+    if( ch_size < 0 ) return NULL;
+    if( !ch_size ) break;
+    string += ch_size;
+  }
+  return string;
+}
+
+size_t offset_to_character( const char * string, size_t offset ) {
+  mbstate_t mbs;
+  memset(&mbs, 0, sizeof(mbs));
+  const char * string_offset = string + offset;
+  size_t nchars = 0;
+
+  while( string < string_offset ) {
+    size_t ch_size = mbrlen( string, MB_CUR_MAX, &mbs );
+    if( ch_size < 0 ) return -1;
+    if( !ch_size ) break;
+    string += ch_size;
+    nchars++;
+  }
+  return nchars;
+}
+
 /* readlines callback when a line is completed */
 static void
 linecomplete (char *line)
@@ -150,35 +178,31 @@ linecomplete (char *line)
   /* send linefeed, return pointer, reset cursors */
   waddch (input, '\n');
   wmove (input, 0, 0);
-  rl_point = 0;
   scroff = 0;
 
   if (line) {
-      i = strlen(line)-1;
-      while (line[i] == ' ') line[i--]='\0';
+    i = strlen(line) - 1;
+    while (line[i] == ' ') line[i--]='\0';
 
-      if (line[0] && strchr(line,' ') == NULL && line[i] == ':')
-          line[i--] = '\0';
+    if (line[0] && strchr(line,' ') == NULL && line[i] == ':')
+      line[i--] = '\0';
 
-      /* empty line? nada. */
-      if (!line[0])
-	return;
-
+    /* empty line? nada. */
+    if (line[0]) {
       /* add line to history and have it handled in vchat-protocol.c */
       add_history (line);
       handleline (line);
-      free (line);
+    }
+    free (line);
+    rl_reset_line_state();
+    rl_point = rl_end = rl_done = 0;
 
-      /* If in query mode, feed query prefix */
-      if (( c = querypartner ))
-        while( *c ) rl_stuff_char( *c++ );
+    /* If in query mode, feed query prefix */
+    if (( c = querypartner ))
+      while( *c ) rl_stuff_char( *c++ );
 
-      /* wipe input line and reset cursor */
-      wmove (input, 0, 0);
-      for (i = 0; i < getmaxx(input) - 1; i++)
-        waddch (input, ' ');
-      wmove (input, 0, 0);
-      wrefresh (input);
+    /* wipe input line and reset cursor */
+    wrefresh (input);
   }
 }
 
@@ -187,36 +211,48 @@ static void
 vciredraw (void)
 {
   int i;
+  size_t readline_point;
+
+  /* readline offers us information we don't need
+     so ignore outabound cursor positions */
+  if( rl_point < 0 ) rl_point = 0;
+  //if( rl_point > rl_end ) rl_point = rl_end;
+
+  readline_point = offset_to_character( rl_line_buffer, rl_point );
+
   /* hscroll value cache set up? */
-  if (!hscroll)
-    {
-      /* check config-option or set hardcoded default */
-      hscroll = getintoption (CF_HSCROLL);
-      if (!hscroll)
-	hscroll = 5;
-    }
+  if (!hscroll) {
+    /* check config-option or set hardcoded default */
+    hscroll = getintoption (CF_HSCROLL);
+    if (!hscroll)
+      hscroll = 15;
+  }
 
   /* calculate horizontal scrolling offset */
-  if (rl_point - scroff < 0)
-    scroff = rl_point - 4;
-  if (rl_point - scroff > getmaxx(input) - 1 )
-    scroff = rl_point - getmaxx(input) + 1;
-  if (rl_point - scroff > getmaxx(input) - 1 - (hscroll - 2))
-    scroff += hscroll;
-  else if (rl_point - scroff < getmaxx(input) - 1 - (hscroll + 2))
-    scroff -= hscroll;
-  if (scroff < 0)
+
+  /* Case 1: readline is left of current scroll offset: Adjust to left to reveal more text */
+  if( readline_point < scroff )
+    scroff = readline_point - hscroll;
+  if( scroff < 1 )
     scroff = 0;
+
+  /* Case 2: readline just hit the last char on the line: Adjust to right to leave more space on screen */
+  if( readline_point >= scroff + getmaxx(input) - 1 )
+    scroff = readline_point - getmaxx(input) + hscroll;
 
   /* wipe input line */
   wmove (input, 0, 0);
   for (i = 0; i < getmaxx(input) - 1; i++)
-  waddch (input, ' ');
+    waddch (input, ' ');
 
   /* show current line, move cursor, redraw! */
-  mvwaddnstr (input, 0, 0, &rl_line_buffer[scroff], getmaxx(input) - 1 );
-  wmove (input, 0, rl_point - scroff);
+  const char *start_line = skip_to_character( rl_line_buffer, scroff );
+  const char *end_line   = skip_to_character( start_line, getmaxx(input) - 1 );
+
+  mvwaddnstr (input, 0, 0, start_line, end_line - start_line );
+  wmove (input, 0, readline_point - scroff );
   wrefresh (input);
+
 }
 
 /* called by the eventloop in vchat-client.c */
@@ -1375,17 +1411,15 @@ nickprompt (void)
   while (!nick || !nick[0])
     {
       if (nick)
-	free (nick);
+        free (nick);
       nick = readline("");
     }
   setstroption(CF_NICK,nick);
 
   /* try to get readlines stats clean again */
   //rl_free_line_state ();
-  rl_point = 0;
-  rl_done = 0;
-  rl_line_buffer[0] = 0;
-  lastlen = 23;
+  memset( rl_line_buffer, 0, rl_end );
+  rl_point = rl_end = rl_done = 0;
 
   /* wipe input line and reset cursor */
   rl_kill_full_line(0,0);
@@ -1422,7 +1456,7 @@ passprompt (char *buf, int size, int rwflag, void *userdata)
 {
   int i;
   char *passphrase = NULL;
-  
+
   /* use special non-revealing redraw function */
   /* FIXME: passphrase isn't protected against e.g. swapping */
   rl_redisplay_function = vcnredraw;
@@ -1432,7 +1466,7 @@ passprompt (char *buf, int size, int rwflag, void *userdata)
   while (!passphrase || !passphrase[0])
     {
       if (passphrase)
-	free (passphrase);
+        free (passphrase);
       passphrase = readline ("");
     }
 
@@ -1445,11 +1479,9 @@ passprompt (char *buf, int size, int rwflag, void *userdata)
 
   /* try to get readlines stats clean again */
   //rl_free_line_state ();
-  rl_point = 0;
-  rl_done = 0;
-  rl_line_buffer[0] = 0;
-  lastlen = 23;
-  
+  memset( rl_line_buffer, 0, rl_end );
+  rl_point = rl_end = rl_done = 0;
+
   /* wipe input line and reset cursor */
   wmove (input, 0, 0);
   for (i = 0; i < getmaxx(input) - 1; i++)
@@ -1482,7 +1514,7 @@ static int
 removefromfilterlist( int(*test)(filt *flt, void *data, char colour), void *data, char colour) {
   filt **flt = &filterlist, *tmp;
   int    removed = 0, stop = 0;
-  
+
   while( *flt && !stop ) {
       switch( test( *flt, data, colour ) ) {
       case RMFILTER_RMANDSTOP:  /* remove */
