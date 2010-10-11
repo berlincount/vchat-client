@@ -26,6 +26,7 @@
 #include <errno.h>
 #include <signal.h>
 #include <readline/readline.h>
+#include <locale.h>
 #include "vchat.h"
 
 /* version of this module */
