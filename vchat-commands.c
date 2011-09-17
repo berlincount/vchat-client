@@ -59,6 +59,7 @@ static void command_user      ( char *tail);
 static void command_pm        ( char *tail);
 static void command_action    ( char *tail);
 static void command_help      ( char *tail);
+static void command_format    ( char *tail);
 static void command_flt       ( char *tail);
 static void command_lsflt     ( char *tail);
 static void command_clflt     ( char *tail);
@@ -80,6 +81,7 @@ commandtable[] = {
 { COMMAND_CLFLT,     "CLFLT",     5, command_clflt,     NULL,                     LONG_HELPTEXT_CLFLT     },
 { COMMAND_HELP,      "HELP",      4, command_help,      SHORT_HELPTEXT_HELP,      LONG_HELPTEXT_HELP      },
 { COMMAND_FILTERS,   "FILTERS",   7, command_help,      SHORT_HELPTEXT_FILTERS,   LONG_HELPTEXT_FILTERS   },
+{ COMMAND_FORMAT,    "FORMAT",    6, command_format,    NULL,                     NULL                    },
 { COMMAND_RECONNECT, "RECONNECT", 9, command_reconnect, SHORT_HELPTEXT_RECONNECT, LONG_HELPTEXT_RECONNECT },
 { COMMAND_KEYS,      "KEYS",      4, command_help,      SHORT_HELPTEXT_KEYS,      LONG_HELPTEXT_KEYS      },
 { COMMAND_QUERY,     "QUERY",     5, command_query,     NULL,                     NULL                    },
@@ -294,7 +296,35 @@ command_pm (char *tail)
 {
   privatemessagetx( tail );
 }
- 
+
+static void
+command_format(char *line) {
+  struct stat testexist;
+  char * tildex = NULL;
+
+  flushout();
+  while( *line==' ') line++;
+  if(file) {
+    tildex = tilde_expand( file );
+    if(tildex && !stat(file, &testexist ))
+      loadformats(file);
+    else {
+#define BUFSIZE 4096
+      char buf[BUFSIZE];
+      snprintf( buf, BUFSIZE, "~/.vchat/sample-%s.fmt", file );
+      free(tildex);
+      tildex = tilde_expand( file );
+      if(tildex && !stat(file, &testexist ))
+        loadformats(file);
+    }
+
+  } else {
+    writeout("  Forgot to specify format file.  ");
+  }
+  free(tildex);
+  showout();
+}
+
 /* handle a help request */
 static void
 command_help (char *line) {

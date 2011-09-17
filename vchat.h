@@ -90,6 +90,7 @@ extern unsigned int loggedin;
 extern char errstr[];
 extern char *vchat_cl_version;
 void loadcfg (char *file,void (*lineparser) (char *));
+void loadformats (char *file);
 void cleanup(int signal);
 
 /*   configuration helper funktions from vchat-client.c */
