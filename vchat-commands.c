@@ -15,10 +15,13 @@
  */
 
 /* general includes */
+#include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <readline/readline.h>
 
 /* local includes */
 #include "vchat.h"
@@ -40,6 +43,7 @@ COMMAND_LSFLT,
 COMMAND_RMFLT,
 COMMAND_CLFLT,
 COMMAND_HELP,
+COMMAND_FORMAT,
 COMMAND_KEYS,
 COMMAND_QUIT,
 COMMAND_USER,
@@ -304,20 +308,20 @@ command_format(char *line) {
 
   flushout();
   while( *line==' ') line++;
-  if(file) {
-    tildex = tilde_expand( file );
-    if(tildex && !stat(file, &testexist ))
-      loadformats(file);
+  if(line) {
+    tildex = tilde_expand( line );
+    if(tildex && !stat(tildex, &testexist ))
+      loadformats(tildex);
     else {
 #define BUFSIZE 4096
       char buf[BUFSIZE];
-      snprintf( buf, BUFSIZE, "~/.vchat/sample-%s.fmt", file );
+      snprintf( buf, BUFSIZE, "~/.vchat/sample-%s.fmt", line );
       free(tildex);
-      tildex = tilde_expand( file );
-      if(tildex && !stat(file, &testexist ))
-        loadformats(file);
+      tildex = tilde_expand( line );
+      if(tildex && !stat(tildex, &testexist ))
+        loadformats(tildex);
     }
-
+    writeout("  Sort of done.  ");
   } else {
     writeout("  Forgot to specify format file.  ");
   }
