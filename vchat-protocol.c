@@ -209,12 +209,12 @@ pubaction (char *message)
   nick = strchr (message, ' ');
   nick[0] = '\0';
   nick++;
-  ul_public_action(nick);
 
   action = strchr (nick, ' ');
   action[0] = '\0';
   action++;
 
+  ul_public_action(nick);
   snprintf(tmpstr,TMPSTRSIZE,getformatstr(FS_PUBACTION),nick,action);
   writechan (tmpstr);
 }
@@ -230,12 +230,12 @@ pubthoughts (char *message)
   nick = strchr (message, ' ');
   nick[0] = '\0';
   nick++;
-  ul_public_action(nick);
 
   thoughts = strchr (nick, ' ');
   thoughts[0] = '\0';
   thoughts++;
 
+  ul_public_action(nick);
   snprintf(tmpstr,TMPSTRSIZE,getformatstr(FS_PUBTHOUGHT),nick,thoughts);
   writechan (tmpstr);
 }
@@ -316,7 +316,6 @@ topicchange (char *message)
   /* search start of nickname */
   nick = strchr (message, ' ');
   nick++;
-  ul_public_action(nick);
 
   /* search start of message before topic, terminate nick */
   topic = strchr (nick, ' ');
@@ -333,6 +332,7 @@ topicchange (char *message)
   if (topic[len-1] == '\'')
     topic[len-1] = '\0';
 
+  ul_public_action(nick);
   /* show change in topic window */
   snprintf (topicstr, TOPICSTRSIZE, getformatstr(FS_TOPICW), ownchan, topic);
   topicline(NULL);
