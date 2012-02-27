@@ -28,7 +28,7 @@ static user    *g_users;       //< all users, incl self
 static size_t   g_users_count; //< number of users in list
 static char    *g_nick;        //< own nick
 static int      g_channel;     //< own channel
-int             ul_case_first = 0;
+unsigned int    ul_case_first = 0;
 
 static int ul_nick_lookup( const char *nick, int *exact_match ) {
   int i;

@@ -9,6 +9,7 @@
 #define __VCHAT_USER_H__
 
 extern char *vchat_us_version;
+extern unsigned int ul_case_first;
 
 /* own nick and channel */
 void        own_channel_set( int channel );
