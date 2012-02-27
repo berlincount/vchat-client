@@ -293,9 +293,33 @@ static int ul_compare_begin_of_line_case( const void *a, const void *b ) {
   return 1;
 }
 
-static int ul_compare_middle( const void *a, const void *b ) {
+static int ul_compare_middle_ncase( const void *a, const void *b ) {
   const user *_a = (const user *)a, *_b = (const user *)b;
-  return strcasecmp( _b->nick, _a->nick );
+
+  /* Ensure that own nick appears last in list */
+  if( _a->flags & UL_ME ) return 1;
+  if( _b->flags & UL_ME ) return -1;
+
+  return strcasecmp( _a->nick, _b->nick );
+}
+
+static int ul_compare_middle_case( const void *a, const void *b ) {
+  const user *_a = (const user *)a, *_b = (const user *)b;
+
+  /* Ensure that own nick appears last in list */
+  if( _a->flags & UL_ME ) return 1;
+  if( _b->flags & UL_ME ) return -1;
+
+  tmpstr_len = strlen( tmpstr );
+  a_s = strncmp( _a->nick, tmpstr, tmpstr_len );
+  b_s = strncmp( _b->nick, tmpstr, tmpstr_len );
+
+  if( !a_s &&  b_s ) return -1; // a matches sensitive, b doesnt
+  if(  a_s && !b_s ) return  1; // b matches sensitive, a doesnt
+
+  /* From now both strings either both or both dont match
+     decide their position by case insensitive match */
+  return strcasecmp( _a->nick, _b->nick );
 }
 
 /* Nick completion function for readline */
@@ -346,7 +370,11 @@ char **ul_complete_user(char *text, int start, int end ) {
        and thus should complete all users, sorted alphabetically without
        preferences. */
     snprintf( tmpstr, end - start + 1, "%s", text );
-    qsort( g_users, g_users_count, sizeof(user), ul_compare_middle );
+    if( ul_case_first )
+      qsort( g_users, g_users_count, sizeof(user), ul_compare_middle_case );
+    else
+      qsort( g_users, g_users_count, sizeof(user), ul_compare_middle_ncase );
+
     for( i=0; i<g_users_count; ++i )
       if( !strncasecmp( g_users[i].nick, tmpstr, end - start ) )
         result[++result_count] = strdup(g_users[i].nick);
