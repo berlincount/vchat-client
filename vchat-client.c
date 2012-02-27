@@ -27,7 +27,9 @@
 #include <signal.h>
 #include <readline/readline.h>
 #include <locale.h>
+
 #include "vchat.h"
+#include "vchat-user.h"
 
 /* version of this module */
 char *vchat_cl_version = "$Id$";
@@ -432,8 +434,8 @@ void usage( char *name) {
     printf   ("   -s   set server (default \"%s\")\n",getstroption(CF_SERVERHOST));
     printf   ("   -p   set port (default %s)\n",getstroption(CF_SERVERPORT));
     printf   ("   -c   set channel (default %d)\n",getintoption(CF_CHANNEL));
-    if (nick)
-       printf("   -n   set nickname (default \"%s\")\n",nick);
+    if (own_nick_get())
+       printf("   -n   set nickname (default \"%s\")\n",own_nick_get());
     else
        puts  ("   -n   set nickname");
     printf   ("   -f   set from (default \"%s\")\n",getstroption(CF_FROM));
@@ -468,7 +470,7 @@ main (int argc, char **argv)
           case 's': setstroption(CF_SERVERHOST,optarg); break;
           case 'p': setstroption(CF_SERVERPORT,optarg); break;
           case 'c': setintoption(CF_CHANNEL,strtol(optarg,NULL,10)); break;
-          case 'n': setstroption(CF_NICK,optarg); break;
+          case 'n': own_nick_set(optarg);  break;
           case 'f': setstroption(CF_FROM,optarg); break;
           case 'h': usage(argv[0]); exit(0); break;
           default : usage(argv[0]); exit(1);

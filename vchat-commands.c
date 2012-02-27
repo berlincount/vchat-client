@@ -26,6 +26,7 @@
 /* local includes */
 #include "vchat.h"
 #include "vchat-help.h"
+#include "vchat-user.h"
 
 /* version of this module */
 char *vchat_cm_version = "$Id$";
@@ -155,14 +156,14 @@ static void
 doaction( char *tail )
 {
   while( *tail == ' ' ) tail++;
-  
+
   if( *tail ) {
       /* send users message to server */
       snprintf (tmpstr, TMPSTRSIZE, ".a %s", tail);
       networkoutput (tmpstr);
-          
+
       /* show action in channel window */
-      snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_TXPUBACTION), nick, tail);
+      snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_TXPUBACTION), own_nick_get(), tail);
       writechan (tmpstr);
   } else {
       /* missing action */
@@ -174,31 +175,31 @@ doaction( char *tail )
 static void
 privatemessagetx ( char *tail ) {
   char *mesg;
-   
+
   /* find nick */
   while( *tail==' ') tail++;
-      
+
   /* find message */
   mesg = tail;
   while ( *mesg && *mesg!=' ') mesg++;
 
   /* check for nick && message */
   if(*tail && *mesg) {
- 
+
       /* terminate nick, move to rel start */
       *mesg++ = '\0';
-  
+
       /* form message and send to server */
       snprintf (tmpstr, TMPSTRSIZE, ".m %s %s", tail, mesg);
       networkoutput (tmpstr);
-   
+
       /* show message in private window */
       snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_TXPRIVMSG), tail, mesg);
       writepriv (tmpstr, 0);
-          
+
       /* note we messaged someone */
-      ul_msgto(tail);
-          
+      ul_private_action(tail);
+
   } else {
       /* Bump user to fill in missing parts */
       msgout( *tail ? "  Won't send empty message. ":"  Recipient missing. " );
@@ -267,11 +268,11 @@ handleline (char *line)
 static void
 output_default(char *line ) {
       /* prepare for output on display */
-      snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_TXPUBMSG), nick, line);
-      
+      snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_TXPUBMSG), own_nick_get(), line);
+
       /* send original line to server */
       networkoutput (line);
-      
+
       /* output message to channel window */
       writechan (tmpstr);
 }
@@ -282,7 +283,7 @@ command_user(char *tail)
 {
   while( *tail == ' ') tail++;
   if( *tail ) {
-      char * out = ul_matchuser( tail);
+      char * out = ul_match_user( tail);
       if( *out ) {
           snprintf( tmpstr, TMPSTRSIZE, getformatstr(FS_USMATCH), tail, out);
       } else {

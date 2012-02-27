@@ -14,12 +14,6 @@
  *
  */
 
-/* user structure */
-struct user;
-typedef struct user user;
-/* userlist from vchat-user.c */
-extern user *nicks;
-
 /* servermessage types */
 typedef enum { SM_IGNORE, SM_INFO, SM_USERINFO, SM_CHANNEL, SM_ERROR } smtype;
 
@@ -39,7 +33,7 @@ typedef enum { CF_NIL, CF_NICK, CF_FROM, CF_SERVERHOST, CF_SERVERPORT,
 CF_CIPHERSUITE, CF_CONFIGFILE, CF_CERTFILE, CF_KEYFILE, CF_FORMFILE, CF_LOGINSCRIPT,
 CF_USESSL, CF_IGNSSL, CF_USECERT, CF_PRIVHEIGHT, CF_PRIVCOLLAPS, CF_HSCROLL, CF_CHANNEL, CF_USETIME,
 CF_USETOPIC, CF_SCROLLBPRIV, CF_SCROLLBACK, CF_SCROLLBPRIVT, CF_SCROLLBACKT,
-CF_ENCODING, CF_BELLPRIV, CF_AUTORECONN } confopt;
+CF_ENCODING, CF_BELLPRIV, CF_CASEFIRST, CF_AUTORECONN } confopt;
 
 /* format strings */
 typedef enum { FS_PLAIN, FS_CHAN, FS_PRIV, FS_SERV, FS_GLOB, FS_DBG, FS_ERR,
@@ -80,9 +74,6 @@ typedef struct formatstring formatstring;
 #define TMPSTRSIZE 1024
 static char tmpstr[TMPSTRSIZE];
 
-extern char *nick;
-extern int   chan;
-
 extern unsigned int loggedin;
 
 /* vchat-client.c */
@@ -99,38 +90,6 @@ char *getstroption (confopt option);
 void setstroption (confopt option, char *string);
 int getintoption (confopt option);
 void setintoption (confopt option, int value);
-
-/* vchat-user.c */
-extern char *vchat_us_version;
-
-/*   add / delete user */
-void ul_add (char *nick, int ignored);
-void ul_del (char *nick, int ignored);
-
-/*   clear userlist */
-void ul_clear ();
-
-/*   channel join / leave */
-void ul_join (char *nick, int channel);
-void ul_leave (char *nick, int channel);
-
-/*   nickchange */
-void ul_nickchange (char *oldnick, char *newnick);
-
-/*   place user in channel */
-void ul_moveuser (char *nick, int channel);
-
-/*   message nick completion */
-void ul_msgto (char *nick);
-void ul_msgfrom (char *nick);
-
-/*   nick-completion for vchat-ui.c */
-char *ul_nickcomp (const char *text, int state);
-char *ul_cnickcomp (const char *text, int state);
-char *ul_mnickcomp (const char *text, int state);
-
-/*   try to find user by substring */
-char *ul_matchuser (char *substr);
 
 /* vchat-ui.c */
 extern char *vchat_ui_version;

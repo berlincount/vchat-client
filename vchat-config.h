@@ -28,7 +28,7 @@ extern unsigned int hscroll;
 
 static volatile configoption configoptions[] = {
 /* config-option   type    name in file  default value           value       localvar  */
-  {CF_NICK,        CO_STR, "nick",       NULL,                   NULL,       { .pstr = &nick }   },
+  {CF_NICK,        CO_STR, "nick",       NULL,                   NULL,       { NULL }  },
   {CF_FROM,        CO_STR, "from",       "vc-alpha-0.17",        NULL,       { NULL }  },
   {CF_SERVERHOST,  CO_STR, "host",       "localhost",            NULL,       { NULL }  },
   {CF_SERVERPORT,  CO_STR, "port",       "2325",                 NULL,       { NULL }  },
@@ -53,6 +53,7 @@ static volatile configoption configoptions[] = {
   {CF_SCROLLBPRIVT,CO_INT, "privscrollt",(char *) 0,             (char *)-1, { NULL }  },
   {CF_SCROLLBACKT, CO_INT, "scrolltime", (char *) 86400,         (char *)-1, { NULL }  },
   {CF_BELLPRIV,    CO_INT, "bellonpm",   (char *) 0,             (char *)-1, { NULL }  },
+  {CF_CASEFIRST,   CO_INT, "casefirst",  (char *) 0,             (char *)-1, { .pint = &ul_case_first }  },
   {CF_AUTORECONN,  CO_INT, "autoreconn", (char *) 0,             (char *)-1, { NULL }  },
   {CF_NIL,         CO_NIL, NULL,         NULL,                   NULL,       { NULL }  },
 };

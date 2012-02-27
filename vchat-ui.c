@@ -30,8 +30,10 @@
 #include <readline/history.h>
 #include <openssl/pem.h>
 #include <regex.h>
-#include "vchat.h"
 #include <wchar.h>
+
+#include "vchat.h"
+#include "vchat-user.h"
 
 /* version of this module */
 char *vchat_ui_version = "$Id$";
@@ -667,37 +669,6 @@ shrinkprivwin (void) {
   }
 }
 
-/* nick completion callback for readline */
-static char **
-vcccomplete (char *text, int start, int end)
-{
-  char **matches;
-  matches = (char **) NULL;
-  /* are we at start of line, with no characters typed? message completion */
-  if (start == 0 && end == 0)
-    {
-#ifdef OLDREADLINE
-      matches = completion_matches (text, (CPFunction *) ul_mnickcomp);
-#else
-      matches = rl_completion_matches (text, (rl_compentry_func_t *) ul_mnickcomp);
-#endif
-      rl_attempted_completion_over = 1;
-    }
-  /* start of line? get matches for channel! */
-  else if (start == 0)
-    {
-#ifdef OLDREADLINE
-      matches = completion_matches (text, (CPFunction *) ul_cnickcomp);
-#else
-      matches = rl_completion_matches (text, (rl_compentry_func_t *) ul_cnickcomp);
-#endif
-      /* no, we want no 'normal' completion if started typing on the beginning
-       * of the line */
-      rl_attempted_completion_over = 1;
-    }
-  return (matches);
-}
-
 /* clear message window */
 void
 clearpriv ()
@@ -1057,10 +1028,6 @@ drawwin (WINDOW *win, struct sb_data *sb )
   }
 }
 
-#ifdef OLDREADLINE
-typedef int rl_command_func_t __P((int, int));
-#endif
-
 /* initialize curses and display */
 void
 initui (void)
@@ -1224,9 +1191,6 @@ initui (void)
   rl_generic_bind (ISFUNC, "\\M-[5~", (void *)scrollup, keymap);
   rl_generic_bind (ISFUNC, "\\M-[6~", (void *)scrolldown, keymap);
 
-//  rl_bind_keyseq( "\\M-[5~", (rl_command_func_t *)scrollup );
-//  rl_bind_keyseq( "\\M-[6~", (rl_command_func_t *)scrolldown );
-
   /* bind TAB to menu complete from readline */
   rl_bind_key ('\t', (rl_command_func_t *) rl_menu_complete);
 
@@ -1235,66 +1199,17 @@ initui (void)
 
   /* set up nick completion functions .. */
   rl_ignore_completion_duplicates = 0;
-#ifdef OLDREADLINE
-  rl_completion_entry_function = (Function *) ul_nickcomp;
-  rl_attempted_completion_function = vcccomplete;
-#else
-  rl_completion_entry_function = (rl_compentry_func_t *) ul_nickcomp;
-  rl_attempted_completion_function = (rl_completion_func_t *) vcccomplete;
-#endif
+  rl_sort_completion_matches = 0;
+  rl_attempted_completion_function = (rl_completion_func_t *) ul_complete_user;
 
   /* .. and 'line completed' callback */
-#ifdef OLDREADLINE
-  rl_callback_handler_install ("", linecomplete);
-#else
   rl_callback_handler_install ("", (rl_vcpfunc_t *) linecomplete);
-#endif
-
 
   if( getintoption(CF_PRIVCOLLAPS) )
     toggleprivwin();
 
-/*
-  writeout( ">> Ctrl-X <<");
-
-  if (errstr[0] != '\0') {
-     writeout(errstr);
-     writeout( " ");
-  }
-
-  writeout (vchat_cl_version);
-  writeout (vchat_ui_version);
-  writeout (vchat_io_version);
-  writeout (vchat_us_version);
-  writeout (vchat_cm_version);
-  showout( );
-*/
-
-  resize(0);  
+  resize(0);
 }
-
-/* render colorized line to window */
-/* DOES NOT WRAP !!!
-   CURRENTLY UNUSED
-   Enable, when needed
-
-static void
-writecolorized( WINDOW *win, char *string) {
-  ncurs_attr old_att, new_att;
-  int        i;
-
-  WATTR_GET( win, old_att );
-  new_att = old_att;
-  for( i = 0; string[ i ]; i++ )
-      if( string[ i ] == 1 ) {
-          docolorize( string[++i], &new_att, old_att);
-      } else {
-          WATTR_SET( win, new_att );
-          waddch( win, string[ i ] );
-     }
-  WATTR_SET( win, old_att );
-}
-*/
 
 /* render consoleline to screen */
 void
@@ -1403,18 +1318,18 @@ exitui (void)
 void
 nickprompt (void)
 {
-  if (nick)
+  char * newnick = 0;
+
+  if (own_nick_get())
     return;
 
   /* prompt user for nick unless he enters one */
   consoleline("Please enter your nickname:");
-  while (!nick || !nick[0])
-    {
-      if (nick)
-        free (nick);
-      nick = readline("");
-    }
-  setstroption(CF_NICK,nick);
+  while (!newnick)
+    newnick = readline("");
+
+  own_nick_set(newnick);
+  setstroption(CF_NICK,newnick);
 
   /* try to get readlines stats clean again */
   //rl_free_line_state ();

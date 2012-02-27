@@ -31,6 +31,7 @@
 
 /* local includes */
 #include "vchat.h"
+#include "vchat-user.h"
 #include "vchat-ssl.h"
 
 /* version of this module */
@@ -208,6 +209,7 @@ pubaction (char *message)
   nick = strchr (message, ' ');
   nick[0] = '\0';
   nick++;
+  ul_public_action(nick);
 
   action = strchr (nick, ' ');
   action[0] = '\0';
@@ -228,11 +230,12 @@ pubthoughts (char *message)
   nick = strchr (message, ' ');
   nick[0] = '\0';
   nick++;
+  ul_public_action(nick);
 
   thoughts = strchr (nick, ' ');
   thoughts[0] = '\0';
   thoughts++;
- 
+
   snprintf(tmpstr,TMPSTRSIZE,getformatstr(FS_PUBTHOUGHT),nick,thoughts);
   writechan (tmpstr);
 }
@@ -269,7 +272,7 @@ static void
 topicinfo (char *message)
 {
   char *channel = NULL, *topic = NULL;
-  int tmpchan = 0;
+  int tmpchan = 0, ownchan = own_channel_get();
 
   /* search start of channel number */
   channel = strchr (message, ' ');
@@ -283,12 +286,12 @@ topicinfo (char *message)
   /* convert channel number to integer */
   tmpchan = atoi (channel);
 
-  if (tmpchan == chan) {
+  if (tmpchan == ownchan ) {
      /* show change in topic window */
      if (strlen(topic))
-        snprintf (topicstr, TOPICSTRSIZE, getformatstr(FS_TOPICW), chan, topic);
+        snprintf (topicstr, TOPICSTRSIZE, getformatstr(FS_TOPICW), ownchan, topic);
       else
-        snprintf (topicstr, TOPICSTRSIZE, getformatstr(FS_NOTOPICW), chan);
+        snprintf (topicstr, TOPICSTRSIZE, getformatstr(FS_NOTOPICW), ownchan );
      topicline(NULL);
   }
 
@@ -308,11 +311,12 @@ static void
 topicchange (char *message)
 {
   char *nick = NULL, *topic = NULL;
-  int len;
+  int len, ownchan = own_channel_get();
 
   /* search start of nickname */
   nick = strchr (message, ' ');
   nick++;
+  ul_public_action(nick);
 
   /* search start of message before topic, terminate nick */
   topic = strchr (nick, ' ');
@@ -330,7 +334,7 @@ topicchange (char *message)
     topic[len-1] = '\0';
 
   /* show change in topic window */
-  snprintf (topicstr, TOPICSTRSIZE, getformatstr(FS_TOPICW), chan, topic);
+  snprintf (topicstr, TOPICSTRSIZE, getformatstr(FS_TOPICW), ownchan, topic);
   topicline(NULL);
 
   /* announce change in channel window */
@@ -356,15 +360,14 @@ justloggedin (char *message)
   str2++;
 
   /* if we have a new nick, store it */
-  if (!nick || strcasecmp (nick, str1))
-     setstroption(CF_NICK,str1);
+  own_nick_set( str1 );
 
   /* show change in console window */
-  snprintf (consolestr, CONSOLESTRSIZE, getformatstr(FS_CONSOLE), nick, getstroption (CF_SERVERHOST), getstroption (CF_SERVERPORT));
+  snprintf (consolestr, CONSOLESTRSIZE, getformatstr(FS_CONSOLE), str1, getstroption (CF_SERVERHOST), getstroption (CF_SERVERPORT));
   consoleline (NULL);
 
   /* announce login as servermessage */
-  snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_SIGNON), nick, str2);
+  snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_SIGNON), str1, str2);
   writechan (tmpstr);
 
   /* we're not logged in, change status and request nicks */
@@ -380,31 +383,15 @@ justloggedin (char *message)
 void
 ownjoin (int channel)
 {
-  /* change global channel info */
-  chan = channel;
   networkoutput(".t");
-  snprintf(tmpstr, TMPSTRSIZE, ".S %d",chan);
+  snprintf(tmpstr, TMPSTRSIZE, ".S %d",channel);
   networkoutput(tmpstr);
-}
-
-/* this user leaves a channel */
-void
-ownleave (int channel)
-{
-  /* change global channel info */
-  chan = 0;
 }
 
 /* this user changes his nick */
 void
 ownnickchange (char *newnick)
 {
-  /* free old nick, store copy of new nick */
-  setstroption(CF_NICK,newnick);
-
-  /* show change in console window */
-  snprintf (consolestr, CONSOLESTRSIZE, getformatstr(FS_CONSOLE), nick, getstroption (CF_SERVERHOST), getstroption (CF_SERVERPORT));
-  consoleline (NULL);
 }
 
 /* parse and handle a nick error message
@@ -431,12 +418,13 @@ nickerr (char *message)
   if (!loggedin)
     {
       /* free bogus nick */
-      setstroption(CF_NICK,NULL);
+      own_nick_set(NULL);
+
       /* get new nick via vchat-ui.c */
       nickprompt ();
 
       /* form login message and send it to server */
-      snprintf (tmpstr, TMPSTRSIZE, ".l %s %s %d", nick, getstroption (CF_FROM), getintoption (CF_CHANNEL));
+      snprintf (tmpstr, TMPSTRSIZE, ".l %s %s %d", own_nick_get(), getstroption (CF_FROM), getintoption (CF_CHANNEL));
       networkoutput (tmpstr);
     }
 }
@@ -455,13 +443,13 @@ login (char *message) {
   writecf (FS_SERV,&message[2]);
 
   /* we don't know our nick? */
-  if (!nick) {
+  if (!own_nick_get() ) {
     /* find message after nick */
     msg = strchr (&message[4], ' ');
     if (msg) {
       /* terminate string before message and copy nick */
       msg[0] = '\0';
-      setstroption(CF_NICK,&message[4]);
+      own_nick_set(&message[4]);
     } else {
       /* no string in servers message (huh?), ask user for nick */
       nickprompt ();
@@ -469,7 +457,7 @@ login (char *message) {
   }
 
   /* form login message and send it to server */
-  snprintf (tmpstr, TMPSTRSIZE, ".l %s %s %d", nick, getstroption (CF_FROM), getintoption (CF_CHANNEL));
+  snprintf (tmpstr, TMPSTRSIZE, ".l %s %s %d", own_nick_get(), getstroption (CF_FROM), getintoption (CF_CHANNEL));
   networkoutput (tmpstr);
 }
 
@@ -485,11 +473,11 @@ anonlogin (char *message)
   writecf (FS_SERV,&message[2]);
 
   /* we don't know our nick? ask for it! */
-  if (!nick)
+  if (!own_nick_get())
     nickprompt ();
 
   /* form login message and send it to server */
-  snprintf (tmpstr, TMPSTRSIZE, ".l %s %s %d", nick, getstroption (CF_FROM), getintoption (CF_CHANNEL));
+  snprintf (tmpstr, TMPSTRSIZE, ".l %s %s %d", own_nick_get(), getstroption (CF_FROM), getintoption (CF_CHANNEL));
   networkoutput (tmpstr);
 }
 
@@ -497,49 +485,53 @@ anonlogin (char *message)
  *  format: 119 %s ..
  *    vars: %s nick - a users nick */
 static void
-receivenicks (char *message)
-{
+receivenicks (char *message) {
   char *str1 = NULL, *str2 = NULL;
-  int mychan = 0;
-  void (*ul_myfunc)(char*,int);
+  int chanflag = -1;
 
   /* show message to user */
   snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_USONLINE), &message[4]);
   writechan (tmpstr);
 
   /* search for channelnumber */
-  str1 = strchr (message, ' ');
+  if( !(str1 = strchr (message, ' ') ) ) return;
   str1++;
+
   if (str1[0] == '*') {
-      if (nicks) return;
-      ul_myfunc = ul_add;
+      ul_rebuild_list();
       str1++;
   } else {
+      int mychan;
       str2 = str1;
       str1 = strchr(str2,' ');
       str1[0] = '\0';
       mychan = atoi(str2);
-      ul_myfunc = ul_moveuser;
+      if( mychan != own_channel_get() )
+        return;
+
+      /* Kick all users from the IN_MY_CHANNEL list */
+      own_channel_set( own_channel_get() );
+      chanflag = 1;
   }
   str1++;
 
   /* while user .. */
-  while (str1)
-    {
-      /* search next user */
-      str2 = strchr (str1, ' ');
-      /* there is another user? terminate this one */
-      if (str2) {
-        str2[0] = '\0';
-        str2++;
-      }
-
-      /* add this user via vchat-user.c */
-      ul_myfunc (str1,mychan);
-
-      /* next user .. */
-      str1 = str2;
+  while (str1) {
+    /* search next user */
+    str2 = strchr (str1, ' ');
+    /* there is another user? terminate this one */
+    if (str2) {
+      str2[0] = '\0';
+      str2++;
     }
+
+    /* add this user via vchat-user.c */
+    ul_add(str1, chanflag);
+
+    /* next user .. */
+    str1 = str2;
+  }
+  ul_clean();
 }
 
 /* parse and handle a login message
@@ -581,11 +573,13 @@ usersignoff (char *message)
 
   /* search start of message, terminate nick */
   msg = strchr (nick, ' ');
-  msg[0] = '\0';
-  msg++;
+  if( msg ) {
+    msg[0] = '\0';
+    msg++;
+  }
 
   /* delete this user via vchat-user.c */
-  ul_del (nick, 0);
+  ul_del (nick);
 
   /* show message to user */
   snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_SIGNOFF), nick, msg);
@@ -620,8 +614,13 @@ userjoin (char *message)
   /* convert channel to integer */
   chan = atoi (channel);
 
+  /* is it myself joining */
+  if( own_nick_check(nick) )
+    own_channel_set(chan);
+
   /* notice channel join via vchat-user.c */
-  ul_join (nick, chan);
+  if( own_channel_get() == chan )
+    ul_enter_chan(nick);
 
   /* show message to user */
   snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_JOIN), nick, msg, chan);
@@ -657,7 +656,7 @@ userleave (char *message)
   chan = atoi (channel);
 
   /* notice channel leave via vchat-user.c */
-  ul_leave (nick, chan);
+  ul_leave_chan(nick);
 
   /* show message to user */
   snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_LEAVE), nick, msg, chan);
@@ -689,7 +688,13 @@ usernickchange (char *message)
   msg++;
 
   /* notice nickchange via vchat-user.c */
-  ul_nickchange (oldnick, newnick);
+  ul_rename (oldnick, newnick);
+
+  if( own_nick_check(newnick) ) {
+    /* show change in console window */
+    snprintf (consolestr, CONSOLESTRSIZE, getformatstr(FS_CONSOLE), newnick, getstroption (CF_SERVERHOST), getstroption (CF_SERVERPORT));
+    consoleline (NULL);
+  }
 
   /* show message to user */
   snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_NICKCHANGE), oldnick, newnick, msg);
@@ -710,11 +715,13 @@ parsemsg (char *message)
     str2[0] = '\0';
     str2++;
     if (str2[0] == ' ') str2++;
-    if (!strncasecmp(nick,str2,strlen(nick)))
+    if (own_nick_check(str1))
        snprintf(tmpstr,TMPSTRSIZE,getformatstr(FS_MYPUBMSG),str1,str2);
     else
        snprintf(tmpstr,TMPSTRSIZE,getformatstr(FS_RXPUBMSG),str1,str2);
     writechan (tmpstr);
+
+    ul_public_action(str1);
   }
   else if (message[0] == '[')
   {
@@ -723,10 +730,11 @@ parsemsg (char *message)
     str2[0] = '\0';
     str2++;
     if (str2[0] == ' ') str2++;
-    if (!strncasecmp(nick,str2,strlen(nick)))
+    if (own_nick_check( str1 ))
        snprintf(tmpstr,TMPSTRSIZE,getformatstr(FS_MYPUBURL),str1,str2);
     else
        snprintf(tmpstr,TMPSTRSIZE,getformatstr(FS_RXPUBURL),str1,str2);
+    ul_public_action(str1);
     writechan (tmpstr);
   }
   /* message starts with '*'? must be private */
@@ -739,7 +747,7 @@ parsemsg (char *message)
     if (str2[0] == ' ') str2++;
     snprintf(tmpstr,TMPSTRSIZE,getformatstr(FS_RXPRIVMSG),str1,str2);
     writepriv (tmpstr, 1);
-    ul_msgfrom(str1);
+    ul_private_action(str1);
   }
   /* message starts with a number? must be a servermessage */
   else if ((message[0] >= '0') && (message[0] <= '9'))

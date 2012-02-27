@@ -6,18 +6,19 @@
 # configuration                              #
 ##############################################
 
-CFLAGS = -Wall -Os
-#CFLAGS = -Wall -g -ggdb
+#CFLAGS = -Wall -Os
+CFLAGS = -Wall -g -ggdb
 
 ## use this line when you've got an readline before 4.(x|2)
 #CFLAGS += -DOLDREADLINE
 
-CFLAGS += $(OLDREADLINE)
+#CFLAGS += $(OLDREADLINE)
 
 ## you might need one or more of these:
 #CFLAGS += -I/usr/local/ssl/include -L/usr/local/ssl/lib
 #CFLAGS += -I/usr/local/include -L/usr/local/lib
 #CFLAGS += -I/usr/pkg/include -L/usr/pkg/lib
+CFLAGS+=-I../readline-6.2/
 
 ## enable dietlibc
 #CC = diet cc
@@ -29,7 +30,7 @@ CFLAGS += $(OLDREADLINE)
 ## the install prefix best is /usr/local
 PREFIX=/usr/local
 
-LIBS   = -lreadline -lncurses -lssl -lcrypto
+LIBS   = ../readline-6.2/libreadline.a -lncurses -lssl -lcrypto
 OBJS   = vchat-client.o vchat-ui.o vchat-protocol.o vchat-user.o vchat-commands.o vchat-ssl.o
 
 
