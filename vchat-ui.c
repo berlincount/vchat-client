@@ -1199,7 +1199,6 @@ initui (void)
 
   /* set up nick completion functions .. */
   rl_ignore_completion_duplicates = 0;
-  rl_sort_completion_matches = 0;
   rl_attempted_completion_function = (rl_completion_func_t *) ul_complete_user;
 
   /* .. and 'line completed' callback */
