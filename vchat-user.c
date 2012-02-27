@@ -305,6 +305,8 @@ static int ul_compare_middle_ncase( const void *a, const void *b ) {
 
 static int ul_compare_middle_case( const void *a, const void *b ) {
   const user *_a = (const user *)a, *_b = (const user *)b;
+  size_t tmpstr_len;
+  int a_s, b_s;
 
   /* Ensure that own nick appears last in list */
   if( _a->flags & UL_ME ) return 1;
