@@ -55,6 +55,7 @@ static volatile configoption configoptions[] = {
   {CF_BELLPRIV,    CO_INT, "bellonpm",   (char *) 0,             (char *)-1, { NULL }  },
   {CF_CASEFIRST,   CO_INT, "casefirst",  (char *) 0,             (char *)-1, { .pint = &ul_case_first }  },
   {CF_AUTORECONN,  CO_INT, "autoreconn", (char *) 0,             (char *)-1, { NULL }  },
+  {CF_KEEPALIVE,   CO_INT, "keepalive",  (char *) 0,             (char *)-1, { .pint = &want_tcp_keepalive }  },
   {CF_NIL,         CO_NIL, NULL,         NULL,                   NULL,       { NULL }  },
 };
 

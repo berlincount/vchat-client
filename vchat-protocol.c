@@ -92,6 +92,11 @@ static int connect_socket( char *server, char *port ) {
     break;  /* okay we got one */
   }
   freeaddrinfo(res0);
+
+  if (want_tcp_keepalive) { /* global from vchat-client.c */
+    int one=1;
+    setsockopt(s,SOL_SOCKET,SO_KEEPALIVE,&one,sizeof(one));
+  }
   return s;
 }
 
@@ -373,7 +378,7 @@ justloggedin (char *message)
   /* we're not logged in, change status and request nicks */
   if (!loggedin)
     {
-      loadcfg(getstroption(CF_LOGINSCRIPT),handleline);
+      loadcfg(getstroption(CF_LOGINSCRIPT),0,handleline);
       handleline(".S");
       loggedin = 1;
     }

@@ -43,6 +43,8 @@ int status = 1;
 int ownquit = 0;
 /*   we set this, we DONT want to quit */
 int wantreconnect = 0;
+unsigned int want_tcp_keepalive = 0;
+
 static int reconnect_delay = 6;
 static time_t reconnect_time = 0;
 
