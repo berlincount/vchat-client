@@ -142,14 +142,22 @@ togglequery() {
 }
 
 const char * skip_to_character( const char * string, size_t offset ) {
+  size_t ch_size;
   mbstate_t mbs;
   memset(&mbs, 0, sizeof(mbs));
 
   while( offset-- > 0 ) {
-    size_t ch_size = mbrlen( string, MB_CUR_MAX, &mbs );
-    if( ch_size < 0 ) return NULL;
-    if( !ch_size ) break;
-    string += ch_size;
+    switch( ch_size = mbrlen( string, MB_CUR_MAX, &mbs ) )
+    {
+    case (size_t)-1:
+    case (size_t)-2:
+      return NULL;
+    case 0:
+      return string;
+    default:
+      string += ch_size;
+      break;
+    }
   }
   return string;
 }
@@ -158,13 +166,19 @@ size_t offset_to_character( const char * string, size_t offset ) {
   mbstate_t mbs;
   memset(&mbs, 0, sizeof(mbs));
   const char * string_offset = string + offset;
-  size_t nchars = 0;
+  size_t ch_size, nchars = 0;
 
   while( string < string_offset ) {
-    size_t ch_size = mbrlen( string, MB_CUR_MAX, &mbs );
-    if( ch_size < 0 ) return -1;
-    if( !ch_size ) break;
-    string += ch_size;
+    switch( ch_size = mbrlen( string, MB_CUR_MAX, &mbs ) )
+    {
+    case (size_t)-1:
+    case (size_t)-2:
+      return -1;
+    case 0:
+      return nchars;
+    default:
+      string += ch_size;
+    }
     nchars++;
   }
   return nchars;
