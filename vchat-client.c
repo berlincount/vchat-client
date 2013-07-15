@@ -171,7 +171,7 @@ static void parseknownhosts(char *line) {
 
 /* load config file */
 void
-loadcfg (char *file,void (*lineparser) (char *))
+loadcfg (char *file,int complain, void (*lineparser) (char *))
 {
   FILE *fh;
 #define BUFSIZE 4096
@@ -186,7 +186,7 @@ loadcfg (char *file,void (*lineparser) (char *))
   free( tildex );
 
   if (!fh) {
-    snprintf (errstr, TMPSTRSIZE, "Can't open config-file \"%s\": %s.", file, strerror(errno));
+    if( complain ) snprintf (errstr, TMPSTRSIZE, "Can't open config-file \"%s\": %s.", file, strerror(errno));
     return;
   }
 
@@ -202,13 +202,13 @@ loadcfg (char *file,void (*lineparser) (char *))
 void
 loadconfig (char *file)
 {
-  loadcfg(file,parsecfg);
+  loadcfg(file,1,parsecfg);
 }
 
 void
 loadformats (char *file)
 {
-  loadcfg(file,parseformats);
+  loadcfg(file,0,parseformats);
 }
 
 /* get-format-string */

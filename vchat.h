@@ -80,7 +80,7 @@ extern unsigned int loggedin;
 #define ERRSTRSIZE 1024
 extern char errstr[];
 extern char *vchat_cl_version;
-void loadcfg (char *file,void (*lineparser) (char *));
+void loadcfg (char *file,int complain,void (*lineparser) (char *));
 void loadformats (char *file);
 void cleanup(int signal);
 
