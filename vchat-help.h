@@ -55,6 +55,8 @@
 #define LONG_HELPTEXT_QUIT       NULL
 #define SHORT_HELPTEXT_USER      "/USER  REGEX          Lists all users matching regex REGEX"
 #define LONG_HELPTEXT_USER       NULL
+#define SHORT_HELPTEXT_DICT      "/DICT  ITEM [...]     Add space separated items to the user completion dict"
+#define LONG_HELPTEXT_DICT       NULL
 #define SHORT_HELPTEXT_MSG       "/M[SG] USER MESSAGE   Send private message to user USER"
 #define LONG_HELPTEXT_MSG        NULL
 #define SHORT_HELPTEXT_ME        "/ME    ACTION         Let the user do an action"

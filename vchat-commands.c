@@ -48,6 +48,7 @@ COMMAND_FORMAT,
 COMMAND_KEYS,
 COMMAND_QUIT,
 COMMAND_USER,
+COMMAND_DICT,
 COMMAND_FLT,
 COMMAND_PM,
 COMMAND_ACTION,
@@ -73,6 +74,7 @@ static void command_rmflt     ( char *tail);
 static void command_none      ( char *line);
 static void command_query     ( char *tail);
 static void command_reconnect ( char *tail);
+static void command_dict      ( char *tail);
 
 static void output_default  ( char *tail);
 
@@ -92,6 +94,7 @@ commandtable[] = {
 { COMMAND_QUERY,     "QUERY",     5, command_query,     NULL,                     NULL                    },
 { COMMAND_QUIT,      "QUIT",      4, command_quit,      SHORT_HELPTEXT_QUIT,      LONG_HELPTEXT_QUIT      },
 { COMMAND_USER,      "USER",      4, command_user,      SHORT_HELPTEXT_USER,      LONG_HELPTEXT_USER      },
+{ COMMAND_DICT,      "DICT",      4, command_dict,      SHORT_HELPTEXT_DICT,      LONG_HELPTEXT_DICT      },
 { COMMAND_FLT,       "FLT",       3, command_flt,       NULL,                     LONG_HELPTEXT_FLT       },
 { COMMAND_PM,        "MSG",       3, command_pm,        SHORT_HELPTEXT_MSG,       LONG_HELPTEXT_MSG       },
 { COMMAND_ACTION,    "ME",        2, command_action,    SHORT_HELPTEXT_ME,        LONG_HELPTEXT_ME        },
@@ -131,7 +134,7 @@ translatecommand( char **cmd)
   /* ... whose start may be affected by abbrevation */
   if( commandtable[result].number !=  COMMAND_NONE )
       (*cmd) -= cut;
-      
+
   return result;
 }
 
@@ -140,11 +143,11 @@ static void
 dothink( char *tail, char nice )
 {
   while( *tail == ' ' ) tail++;
-  
+
   /* send users message to server */
   snprintf (tmpstr, TMPSTRSIZE, ".%c %s", nice, tail);
   networkoutput (tmpstr);
-          
+
   /* show action in channel window */
   snprintf (tmpstr, TMPSTRSIZE, nice == 'O' ? getformatstr(FS_TXPUBNTHOUGHT) : getformatstr(FS_TXPUBTHOUGHT), tail);
   writechan (tmpstr);
@@ -261,7 +264,7 @@ handleline (char *line)
       break;
   default:
       output_default( line );
-      break;   
+      break;
   }
 }
 
@@ -276,7 +279,7 @@ output_default(char *line ) {
       /* output message to channel window */
       writechan (tmpstr);
 }
- 
+
 /* handle a "/user " request */
 static void
 command_user(char *tail)
@@ -372,7 +375,7 @@ command_none(char *line) {
     snprintf(tmpstr, TMPSTRSIZE, "  Unknown client command: %s ", line);
     msgout(tmpstr);
 }
- 
+
 /* handle a "/flt " request */
 static void
 command_flt(char *tail){
@@ -383,7 +386,7 @@ command_flt(char *tail){
   if( colour && *tail) {
       addfilter( colour, tail);
   }
-}  
+}
 
 /* handle a "/clflt " request */
 static void
@@ -391,20 +394,20 @@ command_clflt (char *tail) {
   while( *tail == ' ') tail++;
   clearfilters( *tail );
 }
-   
+
 /* handle a "/rmflt " request */
 static void
 command_rmflt (char *tail) {
   while( *tail == ' ') tail++;
   removefilter( tail );
 }
- 
+
 /* list filters */
 static void
 command_lsflt (char *tail) {
   listfilters();
 }
- 
+
 /* handle a "/me " action */
 static void
 command_action(char *tail)
@@ -468,4 +471,10 @@ command_query(char *tail)
 
   // Do the ui stuff for query
   handlequery( tail );
+}
+
+void
+command_dict(char *tail)
+{
+  ul_add_to_dict(tail);
 }

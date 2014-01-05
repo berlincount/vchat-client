@@ -30,6 +30,9 @@ static char    *g_nick;        //< own nick
 static int      g_channel;     //< own channel
 unsigned int    ul_case_first = 0;
 
+static char   **g_dict;
+static size_t   g_dict_len;
+
 static int ul_nick_lookup( const char *nick, int *exact_match ) {
   int i;
 
@@ -206,6 +209,15 @@ void ul_public_action(char *name) {
     g_users[base].last_public = ul_now();
 }
 
+void ul_add_to_dict(char *dict_items) {
+  char *i;
+  for(i=strtok(dict_items," ");i;i=strtok(0," ")) {
+    g_dict = realloc( g_dict, sizeof(char*) * ( 1 + g_dict_len ) );
+    if( !g_dict ) exit(1);
+    g_dict[g_dict_len++] = strdup(i);
+  }
+}
+
 /* Finding users ul_finduser? */
 char * ul_match_user(char *regex) {
   char    *dest = tmpstr;
@@ -327,15 +339,21 @@ static int ul_compare_middle_case( const void *a, const void *b ) {
 /* Nick completion function for readline */
 char **ul_complete_user(char *text, int start, int end ) {
   char **result = 0;
-  int    i, result_count = 0;
+  int    i, result_count = 0, dict_result_count = 0;
 
   /* Never want readline to complete filenames */
   rl_attempted_completion_over = 1;
 
+  /* Check for amount of custom dict matches */
+  if( end && ( start != end ) )
+    for( i=0; i<g_dict_len; ++i )
+      if( !strncasecmp( g_dict[i], text+start, end-start ) )
+        ++dict_result_count;
+
   /* Prepare return array ... of max g_users_count (char*)
-     Plus least common prefix in [0] and null terminator
+     Plus least common prefix in [0] and null terminator
    */
-  result = malloc( sizeof(char*) * ( 2 + g_users_count ) );
+  result = malloc( sizeof(char*) * ( 2 + g_users_count + dict_result_count ) );
   if( !result ) return 0;
 
   if( start == 0 && end == 0 ) {
@@ -365,6 +383,14 @@ char **ul_complete_user(char *text, int start, int end ) {
         snprintf( tmpstr, TMPSTRSIZE, "%s:", g_users[i].nick );
         result[++result_count] = strdup(tmpstr);
       }
+
+    /* Copy matches from personal dict to the end */
+    for( i=0; i<g_dict_len; ++i )
+      if( !strncasecmp( g_dict[i], tmpstr, end-start ) ) {
+        snprintf( tmpstr, TMPSTRSIZE, "%s:", g_dict[i] );
+        result[++result_count] = strdup(tmpstr);
+      }
+
     /* Copy common prefix */
     if( result_count ) result[0] = strndup(text, end);
   } else if( start != end ) {
@@ -380,6 +406,12 @@ char **ul_complete_user(char *text, int start, int end ) {
     for( i=0; i<g_users_count; ++i )
       if( !strncasecmp( g_users[i].nick, tmpstr, end - start ) )
         result[++result_count] = strdup(g_users[i].nick);
+
+    /* Copy matches from personal dict to the end */
+    for( i=0; i<g_dict_len; ++i )
+      if( !strncasecmp( g_dict[i], tmpstr, end-start ) )
+        result[++result_count] = strdup(g_dict[i]);
+
     /* Copy common prefix */
     if( result_count ) result[0] = strndup(text, end - start);
   } /* else: completion of an empty word in the middle yields nothing */

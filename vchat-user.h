@@ -38,4 +38,7 @@ char *ul_match_user(char *regex);
 /* Nick completion function for readline */
 char **ul_complete_user(char *text, int start, int end );
 
+/* Setting up a user dict for custum completion */
+void ul_add_to_dict(char *dict_items);
+
 #endif
