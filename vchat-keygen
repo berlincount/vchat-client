@@ -57,7 +57,7 @@ EOT
       fi
       echo "vchat-keygen: generating Certificate Signing Request $KEYBASE.csr"
 		echo "vchat-keygen: please enter your nickname at the 'Name []:' prompt"
-      openssl req -new -config $KEYBASE.ca.keyconf -key $KEYBASE.key -out $KEYBASE.csr
+      openssl req -new -sha1 -config $KEYBASE.ca.keyconf -key $KEYBASE.key -out $KEYBASE.csr
 		echo "vchat-keygen: send this ($KEYBASE.csr) Certificate Signing Request to
 		vchat@vchat.berlin.ccc.de to get it signed by the vchat-CA. You will
 		receive your signed Certificate shortly."
