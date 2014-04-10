@@ -4,13 +4,12 @@ Newbies Guide to vchat via 'Buntclient'
 1. Get the Source, Luke
 -----------------------
 
-Make sure, you got a shell and the tool called cvs.
+Make sure, you got a shell and the tool called git.
 cd to a directory the source shall reside in.
 
 Type:
 
-$ cvs -d:pserver:anoncvs@cvs.erdgeist.org:/home/cvsroot login
-$ cvs -z3 -d:pserver:anoncvs@cvs.erdgeist.org:/home/cvsroot co vchat-client
+$ git clone git://erdgeist.org/vchat-client
 
 (press return at password prompt)
 

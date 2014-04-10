@@ -262,16 +262,15 @@ TAB	nick completion
 <refsect1>
 <title>DEVEL</title>
 
-<para>You can get the most recent version of vchat-client via CVS, e.g:
+<para>You can get the most recent version of vchat-client via git, e.g:
 <screen>
-<prompt>$ </prompt><userinput>cvs -d:pserver:anonymous@pulse.flatline.de:/home/cvsroot login</userinput>
-<prompt>$ </prompt><userinput>cvs -z3 -d:pserver:anonymous@pulse.flatline.de:/home/cvsroot co vchat-client</userinput>
+<prompt>$ </prompt><userinput>git clone git://erdgeist.org/vchat-client</userinput>
 </screen>
 </para>
 
 <para>(press return at password prompt) no autoconf yet, sorry. required libs:
 <literallayout>
-   - openssl (0.9.6+ preferred)
+   - openssl (1.0.1g+ preferred)
    - readline (4.2+ preferred)
    - ncurses (5.2 preferred)
 </literallayout>
@@ -337,7 +336,7 @@ the admins has to be logged in.</para>
 <refsect1>
 
 <title>SEE ALSO</title>
-<para>gcc (1), cvs (1).</para>
+<para>gcc (1), git (1).</para>
 
 </refsect1>
 
