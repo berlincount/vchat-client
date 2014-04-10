@@ -11,7 +11,7 @@ cvs -z3 -d:pserver:anoncvs@cvs.erdgeist.org:/home/cvsroot co vchat-client
 
 no autoconf yet, sorry. required libs:
 
-openssl (0.9.6+ preferred)
+openssl (1.0.1g+ preferred)
 readline (4.2+ preferred)
 ncurses (5.2 preferred)
 
