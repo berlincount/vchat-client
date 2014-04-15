@@ -40,7 +40,7 @@ char *vchat_ui_version = "$Id$";
 
 /* externally used variables */
 /*   current string in topic window */
-char topicstr[TOPICSTRSIZE] = "[] VChat 0.17";
+char topicstr[TOPICSTRSIZE] = "[] VChat 0.18";
 /*   current string in console window */
 char consolestr[CONSOLESTRSIZE] = "[ Get help: .h for server /h for client commands";
 

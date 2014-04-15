@@ -101,7 +101,7 @@ overridden in the configfile.</para></listitem>
 
 <varlistentry>
 <term><option>-f</option> <replaceable>from</replaceable></term>
-<listitem><para>set from (default "vc-alpha-0.15")</para></listitem>
+<listitem><para>set from (default "vc-alpha-0.18")</para></listitem>
 </varlistentry>
 
 <varlistentry>
@@ -144,7 +144,7 @@ configure the behavior of vchat-client</para>
 
 <varlistentry>
 <term><option>from</option></term>
-<listitem><para>Sets the from (default is "vc-alpha-0.15")</para></listitem>
+<listitem><para>Sets the from (default is "vc-alpha-0.18")</para></listitem>
 </varlistentry>
 
 <varlistentry>
