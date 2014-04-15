@@ -143,6 +143,7 @@ int vc_connect_ssl( BIO **conn, vc_x509store_t *vc_store )
 
       /* Get cipher object */
       BIO_get_ssl(ssl_conn, &sslp);
+      if (sslp)
         cipher = SSL_get_current_cipher(sslp);
       if (cipher) {
         char cipher_desc[TMPSTRSIZE];
