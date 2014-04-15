@@ -61,7 +61,7 @@ SSL_CTX * vc_create_sslctx( vc_x509store_t *vc_store )
    X509_STORE           *store            = NULL;
    vc_x509verify_cb_t   verify_callback   = NULL;
 
-   if( !(ctx = SSL_CTX_new(SSLv23_method())) )
+   if( !(ctx = SSL_CTX_new(SSLv23_client_method())) )
       VC_CTX_ERR_EXIT(store, ctx);
 
    if( !(store = vc_x509store_create(vc_store)) )
