@@ -61,7 +61,8 @@ SSL_CTX * vc_create_sslctx( vc_x509store_t *vc_store )
    X509_STORE           *store            = NULL;
    vc_x509verify_cb_t   verify_callback   = NULL;
 
-   if( !(ctx = SSL_CTX_new(SSLv3_method())) )
+   /* Explicitly use TLSv1_2 (or maybe later) */
+   if( !(ctx = SSL_CTX_new(TLSv1_2_client_method())) )
       VC_CTX_ERR_EXIT(store, ctx);
 
    if( !(store = vc_x509store_create(vc_store)) )
@@ -69,7 +70,8 @@ SSL_CTX * vc_create_sslctx( vc_x509store_t *vc_store )
 
    SSL_CTX_set_cert_store(ctx, store);
    store = NULL;
-   SSL_CTX_set_options(ctx, SSL_OP_ALL|SSL_OP_NO_SSLv2);
+   /* Disable A LOT of insecure protocols explicitly */
+   SSL_CTX_set_options(ctx, SSL_OP_ALL|SSL_OP_NO_SSLv2|SSL_OP_NO_SSLv3|SSL_OP_NO_TLSv1|SSL_OP_NO_TLSv1_1);
    SSL_CTX_set_cipher_list(ctx, "ALL:!ADH:!LOW:!EXP:!MD5:@STRENGTH");
 
    SSL_CTX_set_verify_depth (ctx, 2);
