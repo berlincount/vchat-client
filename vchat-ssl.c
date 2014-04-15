@@ -61,7 +61,7 @@ SSL_CTX * vc_create_sslctx( vc_x509store_t *vc_store )
    X509_STORE           *store            = NULL;
    vc_x509verify_cb_t   verify_callback   = NULL;
 
-   if( !(ctx = SSL_CTX_new(SSLv3_method())) )
+   if( !(ctx = SSL_CTX_new(SSLv23_method())) )
       VC_CTX_ERR_EXIT(store, ctx);
 
    if( !(store = vc_x509store_create(vc_store)) )
@@ -69,8 +69,11 @@ SSL_CTX * vc_create_sslctx( vc_x509store_t *vc_store )
 
    SSL_CTX_set_cert_store(ctx, store);
    store = NULL;
-   SSL_CTX_set_options(ctx, SSL_OP_ALL|SSL_OP_NO_SSLv2);
-   SSL_CTX_set_cipher_list(ctx, "ALL:!ADH:!LOW:!EXP:!MD5:@STRENGTH");
+   SSL_CTX_set_options(ctx, SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
+   if( OPENSSL_VERSION_NUMBER < 0x10000000L )
+     SSL_CTX_set_cipher_list(ctx, "DHE-RSA-AES256-SHA");
+   else
+     SSL_CTX_set_cipher_list(ctx, "ECDHE-RSA-AES256-GCM-SHA384");
 
    SSL_CTX_set_verify_depth (ctx, 2);
 
