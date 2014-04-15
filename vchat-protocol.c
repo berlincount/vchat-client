@@ -166,8 +166,11 @@ vcconnect (char *server, char *port)
     }
 
     /* upgrade our plain BIO to ssl */
-    if( vc_connect_ssl( &server_conn, &vc_store ) )
+    if( vc_connect_ssl( &server_conn, &vc_store ) ) {
       BIO_free_all( server_conn );
+      server_conn = NULL;
+      errno = EIO;
+    }
   }
 
   if( !server_conn ) {
@@ -188,7 +191,8 @@ vcconnect (char *server, char *port)
 /* disconnect from server */
 void
 vcdisconnect () {
-  BIO_free_all( server_conn );
+  if (server_conn)
+    BIO_free_all( server_conn );
   serverfd = -1;
 }
 

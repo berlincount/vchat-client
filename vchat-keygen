@@ -29,7 +29,7 @@ if [ ! -e $KEYBASE.key ]; then
    echo "vchat-keygen: generating RSA key $KEYBASE.key"
    echo "vchat-keygen: please set passphrase for local security"
    umask 0077
-   openssl genrsa -des3 -out $KEYBASE.key 2048
+   openssl genrsa -des3 -out $KEYBASE.key 4096
 else
    echo "vchat-keygen: private key $KEYBASE.key exists"
 fi
@@ -40,7 +40,7 @@ fi
          echo "vchat-keygen: generating config-file for self-signing $KEYBASE.ca.keyconf"
          cat >$KEYBASE.ca.keyconf <<EOT
 [ req ]
-default_bits                    = 2048
+default_bits                    = 4096
 default_keyfile                 = user.key
 distinguished_name              = req_distinguished_name
 string_mask                     = nombstr
@@ -57,7 +57,7 @@ EOT
       fi
       echo "vchat-keygen: generating Certificate Signing Request $KEYBASE.csr"
 		echo "vchat-keygen: please enter your nickname at the 'Name []:' prompt"
-      openssl req -new -config $KEYBASE.ca.keyconf -key $KEYBASE.key -out $KEYBASE.csr
+      openssl req -new -sha1 -config $KEYBASE.ca.keyconf -key $KEYBASE.key -out $KEYBASE.csr
 		echo "vchat-keygen: send this ($KEYBASE.csr) Certificate Signing Request to
 		vchat@vchat.berlin.ccc.de to get it signed by the vchat-CA. You will
 		receive your signed Certificate shortly."

@@ -2,16 +2,15 @@ Hi!
 
 this is vchat-client, a GPLed (SSL) client for the vchat protocol.
 
-You can get the most recent version of vchat-client via CVS, e.g:
+You can get the most recent version of vchat-client via git, e.g:
 
-cvs -d:pserver:anoncvs@cvs.erdgeist.org:/home/cvsroot login
-cvs -z3 -d:pserver:anoncvs@cvs.erdgeist.org:/home/cvsroot co vchat-client
+git clone git://erdgeist.org/vchat-client
 
 (press return at password prompt)
 
 no autoconf yet, sorry. required libs:
 
-openssl (0.9.6+ preferred)
+openssl (1.0.1g+ preferred)
 readline (4.2+ preferred)
 ncurses (5.2 preferred)
 

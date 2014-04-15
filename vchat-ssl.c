@@ -137,8 +137,24 @@ int vc_connect_ssl( BIO **conn, vc_x509store_t *vc_store )
     BIO_push( ssl_conn, *conn );
     *conn = ssl_conn;
     fflush(stdout);
-    if( BIO_do_handshake( *conn ) > 0 )
+    if( BIO_do_handshake( *conn ) > 0 ) {
+      /* Show information about cipher used */
+      const SSL *sslp = NULL;
+      const SSL_CIPHER * cipher = NULL;
+
+      /* Get cipher object */
+      BIO_get_ssl(ssl_conn, &sslp);
+        cipher = SSL_get_current_cipher(sslp);
+      if (cipher) {
+        char cipher_desc[TMPSTRSIZE];
+        snprintf(tmpstr, TMPSTRSIZE, "[SSL CIPHER] %s", SSL_CIPHER_description(cipher, cipher_desc, TMPSTRSIZE));
+        writecf(FS_SERV, tmpstr);
+      } else {
+        snprintf(tmpstr, TMPSTRSIZE, "[SSL ERROR] Cipher not known / SSL object can't be queried!");
+        writecf(FS_ERR, tmpstr);
+      }
       return 0;
+    }
   }
 
   snprintf(tmpstr, TMPSTRSIZE, "[SSL ERROR] %s", ERR_error_string (ERR_get_error (), NULL));
