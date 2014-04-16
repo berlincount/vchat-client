@@ -32,7 +32,7 @@
 #include "vchat.h"
 #include "vchat-ssl.h"
 
-char *vchat_ssl_version = "$Id$";
+const char *vchat_ssl_version = "vchat-ssl.c      $Id$";
 
 #define VC_CTX_ERR_EXIT(se, cx) do { \
       snprintf(tmpstr, TMPSTRSIZE, "CREATE CTX: %s", \
@@ -61,6 +61,7 @@ SSL_CTX * vc_create_sslctx( vc_x509store_t *vc_store )
    X509_STORE           *store            = NULL;
    vc_x509verify_cb_t   verify_callback   = NULL;
 
+   /* Explicitly use TLSv1 (or maybe later) */
    if( !(ctx = SSL_CTX_new(SSLv23_client_method())) )
       VC_CTX_ERR_EXIT(store, ctx);
 
@@ -69,13 +70,16 @@ SSL_CTX * vc_create_sslctx( vc_x509store_t *vc_store )
 
    SSL_CTX_set_cert_store(ctx, store);
    store = NULL;
+   /* Disable some insecure protocols explicitly */
    SSL_CTX_set_options(ctx, SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
-   if( OPENSSL_VERSION_NUMBER < 0x10000000L )
+   if (getstroption(CF_CIPHERSUITE))
+     SSL_CTX_set_cipher_list(ctx, getstroption(CF_CIPHERSUITE));
+   else if( OPENSSL_VERSION_NUMBER < 0x10000000L )
      SSL_CTX_set_cipher_list(ctx, "DHE-RSA-AES256-SHA");
    else
      SSL_CTX_set_cipher_list(ctx, "ECDHE-RSA-AES256-GCM-SHA384");
 
-   SSL_CTX_set_verify_depth (ctx, 2);
+   SSL_CTX_set_verify_depth (ctx, getintoption(CF_VERIFYSSL));
 
    if( !(verify_callback = vc_store->callback) )
       verify_callback = vc_verify_callback;
@@ -137,6 +141,7 @@ int vc_connect_ssl( BIO **conn, vc_x509store_t *vc_store )
     BIO_push( ssl_conn, *conn );
     *conn = ssl_conn;
     fflush(stdout);
+
     if( BIO_do_handshake( *conn ) > 0 ) {
       /* Show information about cipher used */
       const SSL *sslp = NULL;
@@ -144,20 +149,89 @@ int vc_connect_ssl( BIO **conn, vc_x509store_t *vc_store )
 
       /* Get cipher object */
       BIO_get_ssl(ssl_conn, &sslp);
+      if (sslp)
         cipher = SSL_get_current_cipher(sslp);
       if (cipher) {
         char cipher_desc[TMPSTRSIZE];
-        snprintf(tmpstr, TMPSTRSIZE, "[SSL CIPHER] %s", SSL_CIPHER_description(cipher, cipher_desc, TMPSTRSIZE));
+        snprintf(tmpstr, TMPSTRSIZE, "[SSL CIPHER       ] %s", SSL_CIPHER_description(cipher, cipher_desc, TMPSTRSIZE));
         writecf(FS_SERV, tmpstr);
       } else {
-        snprintf(tmpstr, TMPSTRSIZE, "[SSL ERROR] Cipher not known / SSL object can't be queried!");
+        snprintf(tmpstr, TMPSTRSIZE, "[SSL ERROR        ] Cipher not known / SSL object can't be queried!");
         writecf(FS_ERR, tmpstr);
       }
-      return 0;
+
+      /* Accept being connected, _if_ verification passed */
+      if (sslp) {
+        long result = SSL_get_verify_result(sslp);
+
+        /* show & verify fingerprint */
+        if (result == X509_V_OK) {
+          X509 *peercert = SSL_get_peer_certificate(sslp);
+
+          /* FIXME: this IS bad code */
+          char new_fingerprint[TMPSTRSIZE] = "";
+          char old_fingerprint[TMPSTRSIZE] = "";
+          FILE *fingerprint_file = NULL;
+
+          unsigned int fingerprint_len;
+          unsigned char fingerprint_bin[EVP_MAX_MD_SIZE];
+
+          /* show basic information about peer cert */
+          snprintf(tmpstr, TMPSTRSIZE, "[SSL SUBJECT      ] %s", X509_NAME_oneline(X509_get_subject_name(peercert),0,0));
+          writecf(FS_SERV, tmpstr);
+          snprintf(tmpstr, TMPSTRSIZE, "[SSL ISSUER       ] %s", X509_NAME_oneline(X509_get_issuer_name(peercert),0,0));
+          writecf(FS_SERV, tmpstr);
+
+          /* calculate fingerprint */
+          if (X509_digest(peercert,EVP_sha1(),fingerprint_bin,&fingerprint_len)) {
+            char shorttmpstr[3] = "XX";
+            int j;
+            for (j=0; j<(int)fingerprint_len; j++) {
+              if (j)
+                strncat(new_fingerprint, ":", TMPSTRSIZE);
+              snprintf(shorttmpstr, 3, "%02X", fingerprint_bin[j]);
+              strncat(new_fingerprint, shorttmpstr, TMPSTRSIZE);
+            }
+            snprintf(tmpstr, TMPSTRSIZE, "[SSL FINGERPRINT  ] from server: %s", new_fingerprint);
+            writecf(FS_SERV, tmpstr);
+          }
+
+          // we don't need the peercert anymore
+          X509_free(peercert);
+
+          fingerprint_file = fopen(tilde_expand(getstroption(CF_FINGERPRINT)), "r");
+          if (fingerprint_file) {
+            fgets(old_fingerprint, TMPSTRSIZE, fingerprint_file);
+            fclose(fingerprint_file);
+
+            /* verify fingerprint matches stored version */
+            if (!strncmp(new_fingerprint, old_fingerprint, TMPSTRSIZE))
+              return 0;
+            else {
+              snprintf(tmpstr, TMPSTRSIZE, "[SSL FINGERPRINT  ] from %s: %s", getstroption(CF_FINGERPRINT), old_fingerprint);
+              writecf(FS_ERR, tmpstr);
+              writecf(FS_ERR, "[SSL CONNECT ERROR] Fingerprint mismatch! Server cert updated?");
+              return 1;
+            }
+          } else {
+            /* FIXME: there might be other errors than missing file */
+            fingerprint_file = fopen(tilde_expand(getstroption(CF_FINGERPRINT)), "w");
+            if (!fingerprint_file) {
+              snprintf (tmpstr, TMPSTRSIZE, "Can't write fingerprint file, %s.", strerror(errno));
+              writecf(FS_ERR, tmpstr);
+            } else {
+              fputs(new_fingerprint, fingerprint_file);
+              fclose(fingerprint_file);
+              writecf(FS_SERV, "Stored fingerprint.");
+              return 0;
+            }
+          }
+        }
+      }
     }
   }
 
-  snprintf(tmpstr, TMPSTRSIZE, "[SSL ERROR] %s", ERR_error_string (ERR_get_error (), NULL));
+  snprintf(tmpstr, TMPSTRSIZE, "[SSL CONNECT ERROR] %s", ERR_error_string (ERR_get_error (), NULL));
   writecf(FS_ERR, tmpstr);
 
   return 1;
@@ -227,17 +301,11 @@ X509_STORE *vc_x509store_create(vc_x509store_t *vc_store)
 int vc_verify_callback(int ok, X509_STORE_CTX *store)
 {
    if(!ok) {
-      /* XXX handle action/abort */
-      if(!(ok=getintoption(CF_IGNSSL)))
-         snprintf(tmpstr, TMPSTRSIZE, "[SSL ERROR] %s", 
+      snprintf(tmpstr, TMPSTRSIZE, "[SSL VERIFY ERROR ] %s", 
                X509_verify_cert_error_string(store->error));
-      else
-         snprintf(tmpstr, TMPSTRSIZE, "[SSL ERROR] %s (ignored)", 
-               X509_verify_cert_error_string(store->error));
-
       writecf(FS_ERR, tmpstr);
    }
-   return(ok);
+   return ok;
 }
 
 void vc_x509store_setflags(vc_x509store_t *store, int flags)
@@ -323,6 +391,14 @@ void vc_cleanup_x509store(vc_x509store_t *s)
    free(s->use_keyfile);
    free(s->use_key);
    sk_X509_free(s->certs);
-   sk_X509_free(s->crls);
+   sk_X509_CRL_free(s->crls);
    sk_X509_free(s->use_certs);
+}
+
+const char *vchat_ssl_version_external = "OpenSSL implementation; version unknown";
+void vchat_ssl_get_version_external()
+{
+   char tmpstr[TMPSTRSIZE];
+   snprintf(tmpstr, TMPSTRSIZE, "%s with %s", SSLeay_version(SSLEAY_VERSION), SSLeay_version(SSLEAY_CFLAGS));
+   vchat_ssl_version_external = strdup(tmpstr);
 }

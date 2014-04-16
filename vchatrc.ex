@@ -4,7 +4,7 @@
 #nick = noname
 
 # Auto-set from-tag during login
-#from = vc-alpha-0.15
+#from = vc-alpha-0.19
 
 # Server-host to connect to
 #host = pulse.flatline.de
@@ -15,7 +15,10 @@
 # Type of ciphers at the SSL-handshake; 
 # further information in the 
 # OpenSSL/mod_ssl/Apache-documentation
-#ciphers = HIGH:MEDIUM
+# default used before OpenSSL 1.0.0:
+#ciphers = DHE-RSA-AES256-SHA
+# default used after OpenSSL 1.0.0:
+#ciphers = ECDHE-RSA-AES256-GCM-SHA384
 
 # Location of the config-file
 #conffile = ~/.vchat/config
@@ -35,6 +38,9 @@
 
 # Use the certificate for connecting [0|1]
 #usecert = 1
+
+# Verify depth for peer certificate
+#verifyssl = 2
 
 # Show the time of the message at start of line [0|1]
 #usetime = 1

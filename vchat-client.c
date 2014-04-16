@@ -32,7 +32,7 @@
 #include "vchat-user.h"
 
 /* version of this module */
-char *vchat_cl_version = "$Id$";
+const char *vchat_cl_version = "vchat-client.c   $Id$";
 
 /* externally used variables */
 /*   we're logged in */
@@ -442,6 +442,17 @@ void usage( char *name) {
        puts  ("   -n   set nickname");
     printf   ("   -f   set from (default \"%s\")\n",getstroption(CF_FROM));
     puts     ("   -h   gives this help");
+    puts     ("   -v   show module versions");
+}
+
+void versions() {
+  puts (vchat_cl_version);
+  puts (vchat_ui_version);
+  puts (vchat_io_version);
+  puts (vchat_us_version);
+  puts (vchat_cm_version);
+  puts (vchat_ssl_version);
+  puts (vchat_ssl_version_external);
 }
 
 /* main - d'oh */
@@ -456,9 +467,12 @@ main (int argc, char **argv)
   loadconfig (GLOBAL_CONFIG_FILE);
   loadconfig (getstroption (CF_CONFIGFILE));
 
+  /* make SSL version used visible */
+  vchat_ssl_get_version_external();
+
   /* parse commandline */
   while (cmdsunparsed) {
-      pchar = getopt(argc,argv,"C:F:lzs:p:c:n:f:kKL:h");
+      pchar = getopt(argc,argv,"C:F:lzs:p:c:n:f:kKL:hv");
 #ifdef DEBUG
       fprintf(stderr,"parse commandline: %d ('%c'): %s\n",pchar,pchar,optarg);
 #endif
@@ -475,6 +489,7 @@ main (int argc, char **argv)
           case 'n': own_nick_set(optarg);  break;
           case 'f': setstroption(CF_FROM,optarg); break;
           case 'h': usage(argv[0]); exit(0); break;
+          case 'v': versions(); exit(0); break;
           default : usage(argv[0]); exit(1);
       }
   }

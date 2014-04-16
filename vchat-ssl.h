@@ -36,6 +36,7 @@ void vc_x509store_setflags(vc_x509store_t *, int);
 void vc_x509store_clearflags(vc_x509store_t *, int);
 int vc_verify_callback(int, X509_STORE_CTX *);
 X509_STORE * vc_x509store_create(vc_x509store_t *);
+char *vc_ssl_version(char *, int);
 
 #define VC_X509S_NODEF_CAFILE                      0x01
 #define VC_X509S_NODEF_CAPATH                      0x02

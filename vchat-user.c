@@ -15,7 +15,7 @@
 #include "vchat-user.h"
 
 /* version of this module */
-char *vchat_us_version = "$Id$";
+char *vchat_us_version = "vchat-user.c     $Id$";
 
 typedef struct
 {
