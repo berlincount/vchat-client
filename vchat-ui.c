@@ -36,7 +36,7 @@
 #include "vchat-user.h"
 
 /* version of this module */
-const char *vchat_ui_version = "$Id$";
+const char *vchat_ui_version = "vchat-ui.c       $Id$";
 
 /* externally used variables */
 /*   current string in topic window */

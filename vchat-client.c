@@ -32,7 +32,7 @@
 #include "vchat-user.h"
 
 /* version of this module */
-const char *vchat_cl_version = "$Id$";
+const char *vchat_cl_version = "vchat-client.c   $Id$";
 
 /* externally used variables */
 /*   we're logged in */

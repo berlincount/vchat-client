@@ -32,7 +32,7 @@
 #include "vchat.h"
 #include "vchat-ssl.h"
 
-const char *vchat_ssl_version = "$Id$";
+const char *vchat_ssl_version = "vchat-ssl.c      $Id$";
 
 #define VC_CTX_ERR_EXIT(se, cx) do { \
       snprintf(tmpstr, TMPSTRSIZE, "CREATE CTX: %s", \

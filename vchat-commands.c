@@ -29,7 +29,7 @@
 #include "vchat-user.h"
 
 /* version of this module */
-const char *vchat_cm_version = "$Id$";
+const char *vchat_cm_version = "vchat-commands.c $Id$";
 
 /* from vchat-client.c */
 extern int ownquit;
