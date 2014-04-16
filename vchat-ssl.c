@@ -153,16 +153,81 @@ int vc_connect_ssl( BIO **conn, vc_x509store_t *vc_store )
         cipher = SSL_get_current_cipher(sslp);
       if (cipher) {
         char cipher_desc[TMPSTRSIZE];
-        snprintf(tmpstr, TMPSTRSIZE, "[SSL CIPHER] %s", SSL_CIPHER_description(cipher, cipher_desc, TMPSTRSIZE));
+        snprintf(tmpstr, TMPSTRSIZE, "[SSL CIPHER       ] %s", SSL_CIPHER_description(cipher, cipher_desc, TMPSTRSIZE));
         writecf(FS_SERV, tmpstr);
       } else {
-        snprintf(tmpstr, TMPSTRSIZE, "[SSL ERROR] Cipher not known / SSL object can't be queried!");
+        snprintf(tmpstr, TMPSTRSIZE, "[SSL ERROR        ] Cipher not known / SSL object can't be queried!");
         writecf(FS_ERR, tmpstr);
       }
 
       /* Accept being connected, _if_ verification passed */
-      if (sslp && SSL_get_verify_result(sslp) == X509_V_OK)
-        return 0;
+      if (sslp) {
+        long result = SSL_get_verify_result(sslp);
+        
+        /* show & verify fingerprint */
+        if (result == X509_V_OK) {
+          X509 *peercert = SSL_get_peer_certificate(sslp);
+
+          /* FIXME: this IS bad code */
+          char new_fingerprint[TMPSTRSIZE] = "";
+          char old_fingerprint[TMPSTRSIZE] = "";
+          FILE *fingerprint_file = NULL;
+
+          unsigned int fingerprint_len;
+          unsigned char fingerprint_bin[EVP_MAX_MD_SIZE];
+
+          /* show basic information about peer cert */
+          snprintf(tmpstr, TMPSTRSIZE, "[SSL SUBJECT      ] %s", X509_NAME_oneline(X509_get_subject_name(peercert),0,0));
+          writecf(FS_SERV, tmpstr);
+          snprintf(tmpstr, TMPSTRSIZE, "[SSL ISSUER       ] %s", X509_NAME_oneline(X509_get_issuer_name(peercert),0,0));
+          writecf(FS_SERV, tmpstr);
+
+          /* calculate fingerprint */
+          if (X509_digest(peercert,EVP_sha1(),fingerprint_bin,&fingerprint_len)) {
+            char shorttmpstr[3] = "XX";
+            int j;
+            for (j=0; j<(int)fingerprint_len; j++) {
+              if (j)
+                strncat(new_fingerprint, ":", TMPSTRSIZE);
+              snprintf(shorttmpstr, 3, "%02X", fingerprint_bin[j]);
+              strncat(new_fingerprint, shorttmpstr, TMPSTRSIZE);
+            }
+            snprintf(tmpstr, TMPSTRSIZE, "[SSL FINGERPRINT  ] from server: %s", new_fingerprint);
+            writecf(FS_SERV, tmpstr);
+          }
+
+          // we don't need the peercert anymore
+          X509_free(peercert);
+
+          fingerprint_file = fopen(tilde_expand(getstroption(CF_FINGERPRINT)), "r");
+          if (fingerprint_file) {
+            fgets(old_fingerprint, TMPSTRSIZE, fingerprint_file);
+            fclose(fingerprint_file);
+
+            /* verify fingerprint matches stored version */
+            if (!strncmp(new_fingerprint, old_fingerprint, TMPSTRSIZE))
+              return 0;
+            else {
+              snprintf(tmpstr, TMPSTRSIZE, "[SSL FINGERPRINT  ] from %s: %s", getstroption(CF_FINGERPRINT), old_fingerprint);
+              writecf(FS_ERR, tmpstr);
+              writecf(FS_ERR, "[SSL CONNECT ERROR] Fingerprint mismatch! Server cert updated?");
+              return 1;
+            }
+          } else {
+            /* FIXME: there might be other errors than missing file */
+            fingerprint_file = fopen(tilde_expand(getstroption(CF_FINGERPRINT)), "w");
+            if (!fingerprint_file) {
+              snprintf (tmpstr, TMPSTRSIZE, "Can't write fingerprint file, %s.", strerror(errno));
+              writecf(FS_ERR, tmpstr);
+            } else {
+              fputs(new_fingerprint, fingerprint_file);
+              fclose(fingerprint_file);
+              writecf(FS_SERV, "Stored fingerprint.");
+              return 0;
+            }
+          }
+        }
+      }
     }
   }
 
@@ -236,7 +301,7 @@ X509_STORE *vc_x509store_create(vc_x509store_t *vc_store)
 int vc_verify_callback(int ok, X509_STORE_CTX *store)
 {
    if(!ok) {
-      snprintf(tmpstr, TMPSTRSIZE, "[SSL VERIFY ERROR] %s", 
+      snprintf(tmpstr, TMPSTRSIZE, "[SSL VERIFY ERROR ] %s", 
                X509_verify_cert_error_string(store->error));
       writecf(FS_ERR, tmpstr);
    }

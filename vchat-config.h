@@ -38,6 +38,7 @@ static volatile configoption configoptions[] = {
   {CF_KEYFILE,     CO_STR, "keyfile",    "~/.vchat/key",         NULL,       { NULL }  },
   {CF_FORMFILE,    CO_STR, "formatfile", "~/.vchat/formats",     NULL,       { NULL }  },
   {CF_LOGINSCRIPT, CO_STR, "loginscript","~/.vchat/loginscript", NULL,       { NULL }  },
+  {CF_FINGERPRINT, CO_STR, "fingerprint","~/.vchat/fingerprint", NULL,       { NULL }  },
   {CF_ENCODING,    CO_STR, "encoding",   NULL,                   NULL,       { .pstr = &encoding }},
   {CF_USESSL,      CO_INT, "usessl",     (char *) 1,             (char *)-1, { NULL }  },
   {CF_VERIFYSSL,   CO_INT, "verifyssl",  (char *) 2,             (char *)-1, { NULL }  },
