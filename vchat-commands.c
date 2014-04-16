@@ -29,7 +29,7 @@
 #include "vchat-user.h"
 
 /* version of this module */
-char *vchat_cm_version = "$Id$";
+const char *vchat_cm_version = "$Id$";
 
 /* from vchat-client.c */
 extern int ownquit;
@@ -452,6 +452,8 @@ command_version(char *tail)
   writeout (vchat_io_version);
   writeout (vchat_us_version);
   writeout (vchat_cm_version);
+  writeout (vchat_ssl_version);
+  writeout (vchat_ssl_version_external);
   showout();
 }
 

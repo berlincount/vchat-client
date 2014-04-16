@@ -35,7 +35,7 @@
 #include "vchat-ssl.h"
 
 /* version of this module */
-char *vchat_io_version = "$Id$";
+const char *vchat_io_version = "$Id$";
 
 /* externally used variables */
 int serverfd = -1;

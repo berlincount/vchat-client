@@ -36,11 +36,11 @@
 #include "vchat-user.h"
 
 /* version of this module */
-char *vchat_ui_version = "$Id$";
+const char *vchat_ui_version = "$Id$";
 
 /* externally used variables */
 /*   current string in topic window */
-char topicstr[TOPICSTRSIZE] = "[] VChat 0.18";
+char topicstr[TOPICSTRSIZE] = "[] VChat 0.19";
 /*   current string in console window */
 char consolestr[CONSOLESTRSIZE] = "[ Get help: .h for server /h for client commands";
 
@@ -117,7 +117,7 @@ static void forceredraw_wrapper (int a) {forceredraw();}
 static void drawwin          (WINDOW *win, struct sb_data  *sb);
 static int  writescr         (WINDOW *win, struct sb_entry *entry);
 static int  testfilter       (             struct sb_entry *entry);
-static int  gettextwidth     (char *textbuffer);
+static int  gettextwidth     (const char *textbuffer);
 static void resize_output    (void);
 static int  getsbeheight     (struct sb_entry *entry, const int xwidth, int needstime );
 static int  getsbdataheight  (struct sb_data *data, const int xwidth, int needstime );
@@ -308,7 +308,7 @@ sb_clear ( struct sb_data **sb ) {
 }*/
 
 static struct sb_entry*
-sb_add (struct sb_data *sb, char *line, time_t when) {
+sb_add (struct sb_data *sb, const char *line, time_t when) {
   struct sb_entry *newone = malloc (sizeof(struct sb_entry));
   if( newone ) {
       if( sb->count == sb->scroll ) sb->scroll++;
@@ -350,7 +350,7 @@ void showout (void)
   resize(0);
 }
 
-void writeout (char *str)
+void writeout (const char *str)
 {
   int i;
   sb_add(sb_out,str,time(NULL));
@@ -865,7 +865,7 @@ resize (int signal)
 }
 
 static int
-gettextwidth (char *textbuffer)
+gettextwidth (const char *textbuffer)
 {
   int  width       = 0;
 

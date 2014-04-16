@@ -32,7 +32,7 @@
 #include "vchat.h"
 #include "vchat-ssl.h"
 
-char *vchat_ssl_version = "$Id$";
+const char *vchat_ssl_version = "$Id$";
 
 #define VC_CTX_ERR_EXIT(se, cx) do { \
       snprintf(tmpstr, TMPSTRSIZE, "CREATE CTX: %s", \
@@ -72,12 +72,14 @@ SSL_CTX * vc_create_sslctx( vc_x509store_t *vc_store )
    store = NULL;
    /* Disable some insecure protocols explicitly */
    SSL_CTX_set_options(ctx, SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
-   if( OPENSSL_VERSION_NUMBER < 0x10000000L )
+   if (getstroption(CF_CIPHERSUITE))
+     SSL_CTX_set_cipher_list(ctx, getstroption(CF_CIPHERSUITE));
+   else if( OPENSSL_VERSION_NUMBER < 0x10000000L )
      SSL_CTX_set_cipher_list(ctx, "DHE-RSA-AES256-SHA");
    else
      SSL_CTX_set_cipher_list(ctx, "ECDHE-RSA-AES256-GCM-SHA384");
 
-   SSL_CTX_set_verify_depth (ctx, 2);
+   SSL_CTX_set_verify_depth (ctx, getintoption(CF_VERIFYSSL));
 
    if( !(verify_callback = vc_store->callback) )
       verify_callback = vc_verify_callback;
@@ -139,6 +141,7 @@ int vc_connect_ssl( BIO **conn, vc_x509store_t *vc_store )
     BIO_push( ssl_conn, *conn );
     *conn = ssl_conn;
     fflush(stdout);
+
     if( BIO_do_handshake( *conn ) > 0 ) {
       /* Show information about cipher used */
       const SSL *sslp = NULL;
@@ -156,11 +159,14 @@ int vc_connect_ssl( BIO **conn, vc_x509store_t *vc_store )
         snprintf(tmpstr, TMPSTRSIZE, "[SSL ERROR] Cipher not known / SSL object can't be queried!");
         writecf(FS_ERR, tmpstr);
       }
-      return 0;
+
+      /* Accept being connected, _if_ verification passed */
+      if (sslp && SSL_get_verify_result(sslp) == X509_V_OK)
+        return 0;
     }
   }
 
-  snprintf(tmpstr, TMPSTRSIZE, "[SSL ERROR] %s", ERR_error_string (ERR_get_error (), NULL));
+  snprintf(tmpstr, TMPSTRSIZE, "[SSL CONNECT ERROR] %s", ERR_error_string (ERR_get_error (), NULL));
   writecf(FS_ERR, tmpstr);
 
   return 1;
@@ -230,17 +236,11 @@ X509_STORE *vc_x509store_create(vc_x509store_t *vc_store)
 int vc_verify_callback(int ok, X509_STORE_CTX *store)
 {
    if(!ok) {
-      /* XXX handle action/abort */
-      if(!(ok=getintoption(CF_IGNSSL)))
-         snprintf(tmpstr, TMPSTRSIZE, "[SSL ERROR] %s", 
+      snprintf(tmpstr, TMPSTRSIZE, "[SSL VERIFY ERROR] %s", 
                X509_verify_cert_error_string(store->error));
-      else
-         snprintf(tmpstr, TMPSTRSIZE, "[SSL ERROR] %s (ignored)", 
-               X509_verify_cert_error_string(store->error));
-
       writecf(FS_ERR, tmpstr);
    }
-   return(ok);
+   return ok;
 }
 
 void vc_x509store_setflags(vc_x509store_t *store, int flags)
@@ -326,6 +326,14 @@ void vc_cleanup_x509store(vc_x509store_t *s)
    free(s->use_keyfile);
    free(s->use_key);
    sk_X509_free(s->certs);
-   sk_X509_free(s->crls);
+   sk_X509_CRL_free(s->crls);
    sk_X509_free(s->use_certs);
+}
+
+const char *vchat_ssl_version_external = "OpenSSL implementation; version unknown";
+void vchat_ssl_get_version_external()
+{
+   char tmpstr[TMPSTRSIZE];
+   snprintf(tmpstr, TMPSTRSIZE, "%s with %s", SSLeay_version(SSLEAY_VERSION), SSLeay_version(SSLEAY_CFLAGS));
+   vchat_ssl_version_external = strdup(tmpstr);
 }

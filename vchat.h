@@ -31,7 +31,7 @@ typedef struct servermessage servermessage;
 typedef enum { CO_NIL, CO_STR, CO_INT } conftype;
 typedef enum { CF_NIL, CF_NICK, CF_FROM, CF_SERVERHOST, CF_SERVERPORT,
 CF_CIPHERSUITE, CF_CONFIGFILE, CF_CERTFILE, CF_KEYFILE, CF_FORMFILE, CF_LOGINSCRIPT,
-CF_USESSL, CF_IGNSSL, CF_USECERT, CF_PRIVHEIGHT, CF_PRIVCOLLAPS, CF_HSCROLL, CF_CHANNEL, CF_USETIME,
+CF_USESSL, CF_VERIFYSSL, CF_USECERT, CF_PRIVHEIGHT, CF_PRIVCOLLAPS, CF_HSCROLL, CF_CHANNEL, CF_USETIME,
 CF_USETOPIC, CF_SCROLLBPRIV, CF_SCROLLBACK, CF_SCROLLBPRIVT, CF_SCROLLBACKT,
 CF_ENCODING, CF_BELLPRIV, CF_CASEFIRST, CF_AUTORECONN, CF_KEEPALIVE } confopt;
 
@@ -80,7 +80,7 @@ extern unsigned int want_tcp_keepalive;
 /* vchat-client.c */
 #define ERRSTRSIZE 1024
 extern char errstr[];
-extern char *vchat_cl_version;
+extern const char *vchat_cl_version;
 void loadcfg (char *file,int complain,void (*lineparser) (char *));
 void loadformats (char *file);
 void cleanup(int signal);
@@ -93,7 +93,7 @@ int getintoption (confopt option);
 void setintoption (confopt option, int value);
 
 /* vchat-ui.c */
-extern char *vchat_ui_version;
+extern const char *vchat_ui_version;
 
 /*   topic and console strings */
 #define TOPICSTRSIZE 1024
@@ -112,7 +112,7 @@ void userinput (void);
 /*   display various messages */
 int   writechan (char *str);
 int   writepriv (char *str, int maybeep );
-void  writeout  (char *str);
+void  writeout  (const char *str);
 void  showout   (void);
 void  flushout  (void);
 #define  msgout(STR) {flushout();writeout(STR);showout();}
@@ -140,7 +140,7 @@ void         clearfilters     ( char colour );
 void         handlequery      ( char *line );
 
 /* vchat-protocol.c */
-extern char *vchat_io_version;
+extern const char *vchat_io_version;
 
 /*   connect/disconnect */
 int  vcconnect    (char *server, char *port);
@@ -156,7 +156,7 @@ void ownleave (int channel);
 void ownnickchange (char *newnick);
 
 /* vchat-commands.c */
-extern char *vchat_cm_version;
+extern const char *vchat_cm_version;
 void   command_version ( char *tail);
 
 /*   user input */
@@ -171,3 +171,8 @@ typedef struct {
   char  *short_help;
   char  *help;
 } commandentry;
+
+/* vchat-ssl.c */
+extern const char *vchat_ssl_version;
+extern const char *vchat_ssl_version_external;
+void vchat_ssl_get_version_external();
