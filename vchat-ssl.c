@@ -163,7 +163,14 @@ int vc_connect_ssl( BIO **conn, vc_x509store_t *vc_store )
       /* Accept being connected, _if_ verification passed */
       if (sslp) {
         long result = SSL_get_verify_result(sslp);
-
+#if 1 == 1
+        if (result == X509_V_OK) {
+          return 0;
+        } else if (getintoption(CF_IGNSSL)) {
+          writecf(FS_ERR, "[SSL VERIFY ERROR ] FAILURE IGNORED!!!");
+          return 0;
+        }
+#else
         /* show & verify fingerprint */
         if (result == X509_V_OK) {
           X509 *peercert = SSL_get_peer_certificate(sslp);
@@ -227,6 +234,7 @@ int vc_connect_ssl( BIO **conn, vc_x509store_t *vc_store )
             }
           }
         }
+#endif
       }
     }
   }
@@ -305,7 +313,7 @@ int vc_verify_callback(int ok, X509_STORE_CTX *store)
                X509_verify_cert_error_string(store->error));
       writecf(FS_ERR, tmpstr);
    }
-   return ok;
+   return (ok | getintoption(CF_IGNSSL));
 }
 
 void vc_x509store_setflags(vc_x509store_t *store, int flags)
