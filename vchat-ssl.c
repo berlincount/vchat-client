@@ -74,10 +74,8 @@ SSL_CTX * vc_create_sslctx( vc_x509store_t *vc_store )
    SSL_CTX_set_options(ctx, SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
    if (getstroption(CF_CIPHERSUITE))
      SSL_CTX_set_cipher_list(ctx, getstroption(CF_CIPHERSUITE));
-   else if( OPENSSL_VERSION_NUMBER < 0x10000000L )
-     SSL_CTX_set_cipher_list(ctx, "DHE-RSA-AES256-SHA");
    else
-     SSL_CTX_set_cipher_list(ctx, "ECDHE-RSA-AES256-GCM-SHA384");
+     SSL_CTX_set_cipher_list(ctx, "ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-SHA");
 
    SSL_CTX_set_verify_depth (ctx, getintoption(CF_VERIFYSSL));
 
