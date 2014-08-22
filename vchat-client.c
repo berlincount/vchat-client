@@ -427,14 +427,14 @@ eventloop (void)
   }
 }
 
-void usage( char *name) {
-    printf   ("usage: %s [-C config-file] [-F formats] [-l] [-z] [-s host] [-p port] [-c channel] [-n nickname]\n",name);
+void usage(char *name) {
+    printf   ("usage: %s [-C config-file] [-F formats] [-l] [-s host] [-p port] [-c channel] [-n nickname]\n",name);
     puts     ("   -C   load a second config-file, overriding the first one");
-    puts     ("   -F   load format strings (skins) from this file");
+    printf   ("   -F   load format strings (skins) from this file (default \"%s\")\n",getstroption(CF_FORMFILE));
     puts     ("   -l   local connect (no SSL)");
-    puts     ("   -z   don't use certificate files");
+    // TODO: puts     ("   -z   don't use certificate files");
     printf   ("   -s   set server (default \"%s\")\n",getstroption(CF_SERVERHOST));
-    printf   ("   -p   set port (default %s)\n",getstroption(CF_SERVERPORT));
+    printf   ("   -p   set port (default \"%s\")\n",getstroption(CF_SERVERPORT));
     printf   ("   -c   set channel (default %d)\n",getintoption(CF_CHANNEL));
     if (own_nick_get())
        printf("   -n   set nickname (default \"%s\")\n",own_nick_get());
@@ -482,7 +482,7 @@ main (int argc, char **argv)
           case 'C': loadconfig(optarg); break;
           case 'F': setstroption(CF_FORMFILE,optarg); break;
           case 'l': setintoption(CF_USESSL,0); break;
-          // FIXME: dead code? // case 'z': setintoption(CF_USECERT,0); break;
+          // TODO: case 'z': setintoption(CF_USECERT,0); break;
           case 's': setstroption(CF_SERVERHOST,optarg); break;
           case 'p': setstroption(CF_SERVERPORT,optarg); break;
           case 'c': setintoption(CF_CHANNEL,strtol(optarg,NULL,10)); break;
