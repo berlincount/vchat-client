@@ -29,7 +29,7 @@ extern unsigned int hscroll;
 static volatile configoption configoptions[] = {
 /* config-option   type    name in file  default value           value       localvar  */
   {CF_NICK,        CO_STR, "nick",       NULL,                   NULL,       { NULL }  },
-  {CF_FROM,        CO_STR, "from",       "vc-alpha-0.20",        NULL,       { NULL }  },
+  {CF_FROM,        CO_STR, "from",       "vc-alpha-0.19",        NULL,       { NULL }  },
   {CF_SERVERHOST,  CO_STR, "host",       "localhost",            NULL,       { NULL }  },
   {CF_SERVERPORT,  CO_STR, "port",       "2325",                 NULL,       { NULL }  },
   {CF_CIPHERSUITE, CO_STR, "ciphers",    NULL,                   NULL,       { NULL }  },

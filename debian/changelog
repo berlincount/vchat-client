@@ -1,3 +1,11 @@
+vchat-client (0.19-2) unstable; urgency=low
+
+  * documentation & TODO
+  * whitespace fixes
+  * document dead code
+
+ -- Andreas Kotes <count@flatline.de>  Wed, 16 Apr 2014 15:12:23 +0200
+
 vchat-client (0.19-1) unstable; urgency=high
 
   * fixed version string display

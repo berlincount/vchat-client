@@ -109,7 +109,7 @@ strings used to render the user interface and output.</para></listitem>
 
 <varlistentry>
 <term><option>-f</option> <replaceable>from</replaceable></term>
-<listitem><para>set from (default "vc-alpha-0.20")</para></listitem>
+<listitem><para>set from (default "vc-alpha-0.19")</para></listitem>
 </varlistentry>
 
 <varlistentry>
