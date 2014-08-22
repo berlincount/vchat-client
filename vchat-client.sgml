@@ -25,7 +25,7 @@ docbook2man $<
 	<surname>Freitag</surname>
 	</author>
 	<copyright>
-	<year>2001</year>
+	<year>2014</year>
 	<holder>Andreas Kotes</holder>
 	</copyright>
 </refentryinfo>
@@ -45,13 +45,15 @@ client for the vchat protocol.</refpurpose></refnamediv>
 <cmdsynopsis>
 <command>vchat-client</command>
 <arg>-C <replaceable>configfile</replaceable></arg>
+<arg>-F <replaceable>formfile</replaceable></arg>
 <arg>-l</arg>
-<arg>-z</arg>
+<!-- <arg>-z</arg> -->
 <arg>-s <replaceable>host</replaceable></arg>
 <arg>-p <replaceable>port</replaceable></arg>
 <arg>-c <replaceable>channel</replaceable></arg>
 <arg>-n <replaceable>nickname</replaceable></arg>
 <arg>-f <replaceable>from</replaceable></arg>
+<arg>-h</arg>
 </cmdsynopsis>
 </refsynopsisdiv>
 
@@ -75,14 +77,20 @@ overridden in the configfile.</para></listitem>
 </varlistentry>
 
 <varlistentry>
+<term><option>-F</option> <replaceable>formfile</replaceable></term>
+<listitem><para>load an format string file, overriding the default format
+strings used to render the user interface and output.</para></listitem>
+</varlistentry>
+
+<varlistentry>
 <term><option>-l</option></term>
 <listitem><para>local connect (no SSL + connects localhost:2323)</para></listitem>
 </varlistentry>
 
-<varlistentry>
+<!--<varlistentry>
 <term><option>-z</option></term>
 <listitem><para>don't use certificate files</para></listitem>
-</varlistentry>
+</varlistentry>-->
 
 <varlistentry>
 <term><option>-s</option> <replaceable>host</replaceable></term>
@@ -101,7 +109,7 @@ overridden in the configfile.</para></listitem>
 
 <varlistentry>
 <term><option>-f</option> <replaceable>from</replaceable></term>
-<listitem><para>set from (default "vc-alpha-0.19")</para></listitem>
+<listitem><para>set from (default "vc-alpha-0.20")</para></listitem>
 </varlistentry>
 
 <varlistentry>
@@ -200,8 +208,8 @@ is 0 (no messages window)</para></listitem>
 
 <varlistentry>
 <term><option>hscroll</option></term>
-<listitem><para>default=5 I don't know what this does, but I will
-know in future. maybe you want to tell me.</para></listitem>
+<listitem><para>default=15 Stepping of the horizontal scrolling, i.e. how many
+lines are scrolled when using Page-Up/Page-Down</para></listitem>
 </varlistentry>
 
 <varlistentry>

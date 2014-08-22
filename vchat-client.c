@@ -482,7 +482,7 @@ main (int argc, char **argv)
           case 'C': loadconfig(optarg); break;
           case 'F': setstroption(CF_FORMFILE,optarg); break;
           case 'l': setintoption(CF_USESSL,0); break;
-          case 'z': setintoption(CF_USECERT,0); break;
+          // FIXME: dead code? // case 'z': setintoption(CF_USECERT,0); break;
           case 's': setstroption(CF_SERVERHOST,optarg); break;
           case 'p': setstroption(CF_SERVERPORT,optarg); break;
           case 'c': setintoption(CF_CHANNEL,strtol(optarg,NULL,10)); break;

@@ -67,9 +67,9 @@ static void pmnotsent (char *message);
 #include "vchat-messages.h"
 
 /* status-variable from vchat-client.c
- * eventloop is done as long as this is true */
+ * eventloop is continued as long as this is true */
 extern int status;
-char *encoding;
+// TODO: char *encoding;
 
 static int connect_socket( char *server, char *port ) {
   struct addrinfo hints, *res, *res0;

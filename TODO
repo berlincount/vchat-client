@@ -11,8 +11,9 @@
 -  clock
 -  config-file load/safe
 -  saveable ignore list
--  known_hosts
--  bell
+-  known_hosts (certificate pinning)
+-  bell / highlighting
+-  idlebell?
 -  signon / no longer idle notify
 
 - better .u parsing
@@ -28,3 +29,12 @@
 - last line from server sometimes isn't parsed realtime
 - optionally quit when idled out
 
+- deal better with garbled utf-8 strings (umlaut-backspaced) received
+- client-to-client protocols
+  - self-ping (to detect dead server connection)
+  - OTR
+  - Pond?
+  - File transfers
+
+- PolarSSL as alternative to OpenSSL
+- UDP transport?
