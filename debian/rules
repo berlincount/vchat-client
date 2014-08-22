@@ -15,14 +15,14 @@ configure-stamp:
 build: configure-stamp build-stamp
 build-stamp:
 	dh_testdir
-	$(MAKE)
+	$(MAKE) MANPAGE=1
 	touch build-stamp
 
 clean:
 	dh_testdir
 	dh_testroot
 	rm -f build-stamp configure-stamp
-	-$(MAKE) clean
+	-$(MAKE) MANPAGE=1 clean
 	dh_clean
 
 install: build
@@ -30,7 +30,7 @@ install: build
 	dh_testroot
 	dh_prep
 	dh_installdirs
-	$(MAKE) install DESTDIR=$(CURDIR)/debian/vchat-client PREFIX=/usr
+	$(MAKE) install DESTDIR=$(CURDIR)/debian/vchat-client PREFIX=/usr MANPAGE=1
 
 
 # Build architecture-independent files here.

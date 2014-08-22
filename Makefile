@@ -32,13 +32,16 @@ PREFIX=/usr/local
 LIBS   = -lreadline -lncursesw -lssl -lcrypto
 OBJS   = vchat-client.o vchat-ui.o vchat-protocol.o vchat-user.o vchat-commands.o vchat-ssl.o
 
-
 ##############################################
 # general targets                            #
 ##############################################
 
 
-all: vchat-client #vchat-client.1
+ifdef MANPAGE
+all: vchat-client vchat-client.1
+else
+all: vchat-client
+endif
 
 install: vchat-client vchat-keygen vchatrc.ex
 	install -d $(DESTDIR)/etc
@@ -46,8 +49,10 @@ install: vchat-client vchat-keygen vchatrc.ex
 	install -d $(DESTDIR)$(PREFIX)/share/man/man1
 	install -m 0755 ./vchat-client $(DESTDIR)$(PREFIX)/bin
 	install -m 0755 ./vchat-keygen $(DESTDIR)$(PREFIX)/bin
-#	install -m 0644 ./vchat-client.1 $(DESTDIR)$(PREFIX)/share/man/man1
 	install -m 0644 ./vchatrc.ex $(DESTDIR)/etc/vchatrc
+ifdef MANPAGE
+	install -m 0644 ./vchat-client.1 $(DESTDIR)$(PREFIX)/share/man/man1
+endif
 
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/vchat-client
@@ -86,5 +91,7 @@ vchat-commands.o: vchat-commands.c vchat.h vchat-config.h
 vchat-ssl.o: vchat-ssl.c vchat-ssl.h
 	$(CC) $(CFLAGS) -o vchat-ssl.o -c vchat-ssl.c
 
-#vchat-client.1: vchat-client.sgml
-#	docbook2man vchat-client.sgml
+ifdef MANPAGE
+vchat-client.1: vchat-client.sgml
+	docbook-to-man vchat-client.sgml > vchat-client.1
+endif

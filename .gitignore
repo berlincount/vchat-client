@@ -1,0 +1,10 @@
+*~
+*.o
+vchat-client
+vchat-client.1
+build-stamp
+configure-stamp
+debian/files
+debian/vchat-client.debhelper.log
+debian/vchat-client.substvars
+debian/vchat-client
