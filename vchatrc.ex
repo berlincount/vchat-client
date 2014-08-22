@@ -36,9 +36,6 @@
 # Connect via ssl [0|1]
 #usessl = 1
 
-# Use the certificate for connecting [0|1]
-#usecert = 1
-
 # Verify depth for peer certificate
 #verifyssl = 2
 
@@ -53,6 +50,10 @@
 
 # Auto-join channel n during login
 #channel = 0
+
+### TODO / Not implemented
+# Use the certificate for connecting [0|1]
+#usecert = 1
 
 # Length of the private-window buffer (0 disables)
 #privscrollb = 2048
