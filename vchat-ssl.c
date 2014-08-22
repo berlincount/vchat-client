@@ -74,7 +74,7 @@ SSL_CTX * vc_create_sslctx( vc_x509store_t *vc_store )
    SSL_CTX_set_options(ctx, SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
    if (getstroption(CF_CIPHERSUITE))
      SSL_CTX_set_cipher_list(ctx, getstroption(CF_CIPHERSUITE));
-   else 
+   else
      SSL_CTX_set_cipher_list(ctx, "ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-SHA");
 
    SSL_CTX_set_verify_depth (ctx, getintoption(CF_VERIFYSSL));
@@ -101,17 +101,17 @@ SSL_CTX * vc_create_sslctx( vc_x509store_t *vc_store )
       if(vc_store->use_certfile)
          SSL_CTX_use_certificate_chain_file(ctx, vc_store->use_certfile);
       else {
-         SSL_CTX_use_certificate(ctx, 
+         SSL_CTX_use_certificate(ctx,
                sk_X509_value(vc_store->use_certs, 0));
          for(i=0,n=sk_X509_num(vc_store->use_certs); i<n; i++)
-            SSL_CTX_add_extra_chain_cert(ctx, 
+            SSL_CTX_add_extra_chain_cert(ctx,
                   sk_X509_value(vc_store->use_certs, i));
       }
 
       SSL_CTX_set_default_passwd_cb(ctx, vc_store->askpass_callback);
 
       if(vc_store->use_keyfile) {
-         r=SSL_CTX_use_PrivateKey_file(ctx, vc_store->use_keyfile, 
+         r=SSL_CTX_use_PrivateKey_file(ctx, vc_store->use_keyfile,
                SSL_FILETYPE_PEM);
       } else if(vc_store->use_key)
             r=SSL_CTX_use_PrivateKey(ctx, vc_store->use_key);
@@ -161,7 +161,7 @@ int vc_connect_ssl( BIO **conn, vc_x509store_t *vc_store )
       /* Accept being connected, _if_ verification passed */
       if (sslp) {
         long result = SSL_get_verify_result(sslp);
-        
+
 #if 1 == 1
         if (result == X509_V_OK) {
           return 0;
@@ -270,16 +270,16 @@ X509_STORE *vc_x509store_create(vc_x509store_t *vc_store)
    if(!vc_store->cafile) {
       if( !(vc_store->flags & VC_X509S_NODEF_CAFILE) )
          X509_LOOKUP_load_file(lookup, 0, X509_FILETYPE_DEFAULT);
-   } else if( !X509_LOOKUP_load_file(lookup, vc_store->cafile, 
+   } else if( !X509_LOOKUP_load_file(lookup, vc_store->cafile,
             X509_FILETYPE_PEM) )
       VC_STORE_ERR_EXIT(store);
 
    if(vc_store->crlfile) {
-      if( !X509_load_crl_file(lookup, vc_store->crlfile, 
+      if( !X509_load_crl_file(lookup, vc_store->crlfile,
                X509_FILETYPE_PEM) )
          VC_STORE_ERR_EXIT(store);
 
-      X509_STORE_set_flags( store, 
+      X509_STORE_set_flags( store,
             X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL );
    }
 
@@ -289,7 +289,7 @@ X509_STORE *vc_x509store_create(vc_x509store_t *vc_store)
    if( !vc_store->capath ) {
       if( !(vc_store->flags & VC_X509S_NODEF_CAPATH) )
          X509_LOOKUP_add_dir(lookup, 0, X509_FILETYPE_DEFAULT);
-   } else if( !X509_LOOKUP_add_dir(lookup, vc_store->capath, 
+   } else if( !X509_LOOKUP_add_dir(lookup, vc_store->capath,
             X509_FILETYPE_PEM) )
       VC_STORE_ERR_EXIT(store);
 
@@ -298,8 +298,8 @@ X509_STORE *vc_x509store_create(vc_x509store_t *vc_store)
          VC_STORE_ERR_EXIT(store);
 
    for( i=0, n=sk_X509_CRL_num(vc_store->crls); i<n; i++)
-      if( !X509_STORE_add_crl(store, 
-               sk_X509_CRL_value(vc_store->crls, i)) ) 
+      if( !X509_STORE_add_crl(store,
+               sk_X509_CRL_value(vc_store->crls, i)) )
          VC_STORE_ERR_EXIT(store);
 
    return(store);
@@ -308,7 +308,7 @@ X509_STORE *vc_x509store_create(vc_x509store_t *vc_store)
 int vc_verify_callback(int ok, X509_STORE_CTX *store)
 {
    if(!ok) {
-      snprintf(tmpstr, TMPSTRSIZE, "[SSL VERIFY ERROR ] %s", 
+      snprintf(tmpstr, TMPSTRSIZE, "[SSL VERIFY ERROR ] %s",
                X509_verify_cert_error_string(store->error));
       writecf(FS_ERR, tmpstr);
    }
@@ -325,13 +325,13 @@ void vc_x509store_clearflags(vc_x509store_t *store, int flags)
    store->flags &= ~flags;
 }
 
-void vc_x509store_setcb(vc_x509store_t *store, 
+void vc_x509store_setcb(vc_x509store_t *store,
       vc_x509verify_cb_t callback)
 {
    store->callback = callback;
 }
 
-void vc_x509store_set_pkeycb(vc_x509store_t *store, 
+void vc_x509store_set_pkeycb(vc_x509store_t *store,
       vc_askpass_cb_t callback)
 {
    store->askpass_callback = callback;
@@ -342,31 +342,31 @@ void vc_x509store_addcert(vc_x509store_t *store, X509 *cert)
    sk_X509_push(store->certs, cert);
 }
 
-void vc_x509store_setcafile(vc_x509store_t *store, char *file) 
+void vc_x509store_setcafile(vc_x509store_t *store, char *file)
 {
    free(store->cafile);
    store->cafile = ( file ? strdup(file) : 0 );
 }
 
-void vc_x509store_setcapath(vc_x509store_t *store, char *path) 
+void vc_x509store_setcapath(vc_x509store_t *store, char *path)
 {
    free(store->capath);
    store->capath = ( path ? strdup(path) : 0 );
 }
 
-void vc_x509store_setcrlfile(vc_x509store_t *store, char *file) 
+void vc_x509store_setcrlfile(vc_x509store_t *store, char *file)
 {
    free(store->crlfile);
    store->crlfile = ( file ? strdup(file) : 0 );
 }
 
-void vc_x509store_setkeyfile(vc_x509store_t *store, char *file) 
+void vc_x509store_setkeyfile(vc_x509store_t *store, char *file)
 {
    free(store->use_keyfile);
    store->use_keyfile = ( file ? strdup(file) : 0 );
 }
 
-void vc_x509store_setcertfile(vc_x509store_t *store, char *file) 
+void vc_x509store_setcertfile(vc_x509store_t *store, char *file)
 {
    free(store->use_certfile);
    store->use_certfile = ( file ? strdup(file) : 0 );

@@ -10,7 +10,7 @@
  * without even the implied warranty of merchantability or fitness for a
  * particular purpose. In no event shall the copyright holder be liable for
  * any direct, indirect, incidental or special damages arising in any way out
- * of the use of this software. 
+ * of the use of this software.
  *
  */
 
@@ -20,7 +20,7 @@ servermessage servermessages[] = {
 /* 100 <message...>
    Informational message for human consumption */
   {"100", SM_INFO, NULL, NULL},
-/* 110 <channel> <nick> <fromhost> 
+/* 110 <channel> <nick> <fromhost>
    User status summary */
   {"110", SM_USERINFO, NULL, NULL},
 /* 111 <date> <time> <code> <message>
@@ -74,10 +74,10 @@ servermessage servermessages[] = {
 /* 221 <nickname>
    User signoff */
   {"221", SM_USERINFO, usersignoff, NULL},
-/* 231 <nickname> 
+/* 231 <nickname>
    Channel departure */
   {"231", SM_CHANNEL, userleave, NULL},
-/* 232 <nickname> 
+/* 232 <nickname>
    Channel join */
   {"232", SM_CHANNEL, userjoin, NULL},
 /* 241 <oldnick> <newnick>

@@ -10,7 +10,7 @@
  * without even the implied warranty of merchantability or fitness for a
  * particular purpose. In no event shall the copyright holder be liable for
  * any direct, indirect, incidental or special damages arising in any way out
- * of the use of this software. 
+ * of the use of this software.
  *
  */
 
@@ -472,7 +472,7 @@ docolorize (char colour, ncurs_attr *attr, ncurs_attr orgattr) {
       if( ( upc >= 'A') && ( upc<='Z' ) && ( newattr = attributes[upc - 'A']) )
           attr->attr = ( colour & 0x20 ) ? attr->attr | newattr : attr->attr & ~newattr;
   }
-}  
+}
 
 /* draw arbitrary strings */
 static int
@@ -493,7 +493,7 @@ writescr ( WINDOW *win, struct sb_entry *entry ) {
   /* store original attributes */
   WATTR_GET( win, orgattr);
   attrbuffer[ 0 ] = orgattr;
-  
+
   /* copy time string */
   for( i = 0; i < timelen; i++ )
       if( tmp[ i ] == 1 ) {
@@ -748,7 +748,7 @@ forceredraw (void)
   if(console) wclear(console);
   if(topic)   wclear(topic);
   if(private) wclear(private);
-  if(channel) wclear(channel );  
+  if(channel) wclear(channel );
   if(output)  wclear(output);
   if(input)   wclear(input);
   resize(0);
@@ -872,13 +872,13 @@ gettextwidth (const char *textbuffer)
   do switch( *(textbuffer++) ) {
   case   1:
       if (!*(textbuffer++)) return width;
-      break;  
+      break;
   case   0:
       return width;
       break;
-  default:   
+  default:
       width++;
-      break;   
+      break;
   } while( 1 );
 }
 
@@ -921,20 +921,20 @@ getsbeheight (struct sb_entry *entry, const int xwidth, int needstime )
       break;
   case   1:
       if (!*textbuffer++) return lines;
-      break;  
+      break;
   case   0:
       return lines;
       break;
   case   2:
       textbuffer=entry->what;
       break;
-  default:   
+  default:
       if( curx++ == xwidth ) {
           curx = 0; lines++;
       }
-      break;   
+      break;
   } while( 1 );
- 
+
 }
 
 /* Check, which kind of filter we have to apply:

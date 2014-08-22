@@ -15,7 +15,7 @@
 # without even the implied warranty of merchantability or fitness for a
 # particular purpose. In no event shall the copyright holder be liable for
 # any direct, indirect, incidental or special damages arising in any way out
-# of the use of this software. 
+# of the use of this software.
 #
 
 # where do we want to store the key?
@@ -35,7 +35,7 @@ else
 fi
 
 # no certificate? dump anonymous CA to disk.
-   if [ ! -e $KEYBASE.csr ]; then 
+   if [ ! -e $KEYBASE.csr ]; then
       if [ ! -e $KEYBASE.ca.keyconf ]; then
          echo "vchat-keygen: generating config-file for self-signing $KEYBASE.ca.keyconf"
          cat >$KEYBASE.ca.keyconf <<EOT

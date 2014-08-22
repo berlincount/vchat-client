@@ -76,7 +76,7 @@ You don't want to ignore SSL-warnings, get the root-certificates from:
    http://www.cacert.org/certs/root.txt
 
 and copy them into your openssl-certs directory. For example:
-   
+
    # cp root.txt /etc/ssl/certs/
    # cp class3.txt /etc/ssl/certs/
    # cd /etc/ssl/certs
@@ -150,7 +150,7 @@ Play around with the completion:
 
 Hitting <TAB> at start of line will complete to
 
-.m <lastpersonyouexchangedprivatemessageswith> 
+.m <lastpersonyouexchangedprivatemessageswith>
 
 if you hit <TAB> more often, you will cycle through this list,
 sorted by the last time you exchanges PMs with.
@@ -225,7 +225,7 @@ Ignore all server leave and join messages
 
 Reenable those lines
 
-/rmflt ((left|joined|entered) (the )?(channel|chat)) 
+/rmflt ((left|joined|entered) (the )?(channel|chat))
 
 Note: zoom overrides ignore.
 

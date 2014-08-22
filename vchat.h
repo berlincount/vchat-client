@@ -10,7 +10,7 @@
  * without even the implied warranty of merchantability or fitness for a
  * particular purpose. In no event shall the copyright holder be liable for
  * any direct, indirect, incidental or special damages arising in any way out
- * of the use of this software. 
+ * of the use of this software.
  *
  */
 

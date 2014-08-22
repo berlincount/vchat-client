@@ -112,7 +112,7 @@ static void parsecfg(char *line) {
 
 static void parseformats(char *line) {
   int i;
-  char *tmp = NULL;  
+  char *tmp = NULL;
 
   /* read a format line from file, syntax is
      FS_XXX = "formatstring"
@@ -166,7 +166,7 @@ static void parseformats(char *line) {
 
 }
 
-/* UNUSED uncomment if needed 
+/* UNUSED uncomment if needed
 static void parseknownhosts(char *line) {
 }
 */
@@ -300,7 +300,7 @@ getintoption (confopt option)
   for (i = 0; configoptions[i].type != CO_NIL; i++)
     if ((configoptions[i].id == option) && (configoptions[i].type == CO_INT)) {
       if ((uintptr_t)configoptions[i].value == -1)
-         return (uintptr_t) configoptions[i].defaultvalue;   
+         return (uintptr_t) configoptions[i].defaultvalue;
        else
          return (uintptr_t) configoptions[i].value;
     }

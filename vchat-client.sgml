@@ -2,7 +2,7 @@
 
 <!-- Process this file with docbook2man to generate an nroff manual
      page: `docbook2man manpage.sgml'.  You may view
-     the manual page with: `man ./manpage.1'.  A typical entry in a 
+     the manual page with: `man ./manpage.1'.  A typical entry in a
      Makefile or Makefile.am is:
 
 manpage.1: manpage.sgml
@@ -37,7 +37,7 @@ docbook2man $<
 </refmeta>
 
 
-<refnamediv><refname>vchat-client</refname><refpurpose>this is vchat-client, a GPLed (SSL) 
+<refnamediv><refname>vchat-client</refname><refpurpose>this is vchat-client, a GPLed (SSL)
 client for the vchat protocol.</refpurpose></refnamediv>
 
 
@@ -45,10 +45,10 @@ client for the vchat protocol.</refpurpose></refnamediv>
 <cmdsynopsis>
 <command>vchat-client</command>
 <arg>-C <replaceable>configfile</replaceable></arg>
-<arg>-l</arg> 
-<arg>-z</arg> 
+<arg>-l</arg>
+<arg>-z</arg>
 <arg>-s <replaceable>host</replaceable></arg>
-<arg>-p <replaceable>port</replaceable></arg> 
+<arg>-p <replaceable>port</replaceable></arg>
 <arg>-c <replaceable>channel</replaceable></arg>
 <arg>-n <replaceable>nickname</replaceable></arg>
 <arg>-f <replaceable>from</replaceable></arg>
@@ -68,9 +68,9 @@ client for the vchat protocol.</refpurpose></refnamediv>
 
 <varlistentry>
 <term><option>-C</option> <replaceable>configfile</replaceable></term>
-<listitem><para>load an alternative configuration file, 
-overiding the parameters in the default config files. -C should 
-be the first parameter, options set before this parameter can be 
+<listitem><para>load an alternative configuration file,
+overiding the parameters in the default config files. -C should
+be the first parameter, options set before this parameter can be
 overridden in the configfile.</para></listitem>
 </varlistentry>
 
@@ -116,8 +116,8 @@ overridden in the configfile.</para></listitem>
 
 <refsect1>
 <title>CONFIGFILE</title>
-<para><command>/etc/vchatrc</command> and <command>~/.vchat/config</command> 
-are the default config files of vchat-client. A third config file can be 
+<para><command>/etc/vchatrc</command> and <command>~/.vchat/config</command>
+are the default config files of vchat-client. A third config file can be
 given as command line Parameter.</para>
 
 <literallayout>
@@ -126,13 +126,13 @@ Hierachie of config files and Options.
    1. /etc/vchatrc
    2. ~/vchat/config
    3. options set before -C option
-   4. options in the config 
+   4. options in the config
       file set with -C option
    5. options set after -C option
 
 </literallayout>
 	
-<para>The config file syntax is "option=value"! it can be used to 
+<para>The config file syntax is "option=value"! it can be used to
 configure the behavior of vchat-client</para>
 
 <variablelist>
@@ -194,13 +194,13 @@ configure the behavior of vchat-client</para>
 
 <varlistentry>
 <term><option>messages</option></term>
-<listitem><para>set the heigth of the messages window default 
+<listitem><para>set the heigth of the messages window default
 is 0 (no messages window)</para></listitem>
 </varlistentry>
 
 <varlistentry>
 <term><option>hscroll</option></term>
-<listitem><para>default=5 I don't know what this does, but I will 
+<listitem><para>default=5 I don't know what this does, but I will
 know in future. maybe you want to tell me.</para></listitem>
 </varlistentry>
 
@@ -243,8 +243,8 @@ Ctrl+O	clear channel window
 Ctrl+L	redraw screen
 Ctrl+F	scroll window up
 Ctrl+B	scroll window down
-Ctrl+R	change active scrolling window 
-	(see rightmost character of 
+Ctrl+R	change active scrolling window
+	(see rightmost character of
 	topic/console lines)
 Ctrl-T  shrink private window size
 Ctrl-G  grow private window size
@@ -253,7 +253,7 @@ Ctrl+X  toggle private window
 TAB	nick completion
 </literallayout>
 
-</refsect1> 
+</refsect1>
 
 
 
@@ -277,11 +277,11 @@ TAB	nick completion
 </para>
 	
 <para>please adjust the Makefile according to your need, then run 'make' to compile,
-'make install' to install and ./vchat-client to start the binary. 
+'make install' to install and ./vchat-client to start the binary.
 nope, I don't have any intention to use autoconf for this hack.</para>
 
-<para>run '<command>fakeroot make -f debian/rules binary</command>' or 
-'<command>dpkg-buildpackage -rfakeroot</command>' to build a debian 
+<para>run '<command>fakeroot make -f debian/rules binary</command>' or
+'<command>dpkg-buildpackage -rfakeroot</command>' to build a debian
 package from the source.</para>
 
 <para>The Makefile knows the targets "all, install, uninstall, clean"</para>
@@ -293,17 +293,17 @@ FILES:
    TODO             - list of things to do
    vchat-client.c   - main() and utility functions
    vchat-config.h   - configuration defaults
-   vchat-keygen     - key generator with anon CA - 
+   vchat-keygen     - key generator with anon CA -
                       server support required
-   vchat-messages.h - server messages -- function 
+   vchat-messages.h - server messages -- function
                       correlation
-   vchat-protocol.c - handling of server 
+   vchat-protocol.c - handling of server
                       connection & messages
-   vchat-ui.c       - user-interface and readline 
+   vchat-ui.c       - user-interface and readline
                       handling
    vchat-user.c     - userlist handling
    vchat.h          - global structures and functions
-   debian/          - the debian package build 
+   debian/          - the debian package build
                       directory
 </literallayout>
 	
@@ -325,8 +325,8 @@ PEM format. You can generate a key and a certificate by calling vchat-keygen,
 but the server you connect needs to know same anon CA provided by
 vchat-keygen, which currently isn't supported anywhere.</para>
 	
-<para>to upload your certificate use nick-request.pl from the vchat-server 
-source available at ftp://vchat.vaxbusters.org. Thisfor at least one of 
+<para>to upload your certificate use nick-request.pl from the vchat-server
+source available at ftp://vchat.vaxbusters.org. Thisfor at least one of
 the admins has to be logged in.</para>
 
 </refsect1>
@@ -345,10 +345,10 @@ the admins has to be logged in.</para>
 <refsect1>
 <title>AUTHOR</title>
 <para>This manual page was written by Hans Freitag &dhemail; for
-vchat-client system.  Permission is granted to copy, distribute 
-and/or modify this document under the terms of the 
-<acronym>GNU</acronym> Free Documentation License, Version 1.1 
-or any later version published by the Free Software Foundation; 
+vchat-client system.  Permission is granted to copy, distribute
+and/or modify this document under the terms of the
+<acronym>GNU</acronym> Free Documentation License, Version 1.1
+or any later version published by the Free Software Foundation;
 with no Invariant Sections, no Front-Cover
 Texts and no Back-Cover Texts.</para>
 </refsect1>
