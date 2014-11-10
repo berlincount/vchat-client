@@ -1,0 +1,41 @@
+
+- SSL: print SSL fingerprint and let the user decide wether it's authentic
+  and store it to a fingerprint cache or not.
+
+- more documentation
+
+- .i with nickchanges
+
+-  autologon
+-  message-window
+-  clock
+-  config-file load/safe
+-  saveable ignore list
+-  known_hosts (certificate pinning)
+-  bell / highlighting
+-  idlebell?
+-  signon / no longer idle notify
+
+- better .u parsing
+
+- non-blocking sends
+
+- url-catcher
+- expire of old messages in scrollbuffer
+- signon/signoff colors
+- don't quit when disconnected externally
+
+- quitmessage (output + config)
+- last line from server sometimes isn't parsed realtime
+- optionally quit when idled out
+
+- deal better with garbled utf-8 strings (umlaut-backspaced) received
+- client-to-client protocols
+  - self-ping (to detect dead server connection)
+  - OTR
+  - Pond?
+  - File transfers
+
+- PolarSSL as alternative to OpenSSL
+- UDP transport?
+- revisit msgout UI flow
