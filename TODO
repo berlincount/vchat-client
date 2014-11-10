@@ -39,3 +39,4 @@
 - PolarSSL as alternative to OpenSSL
 - UDP transport?
 - revisit msgout UI flow
+- SSL_set_tlsext_host_name
