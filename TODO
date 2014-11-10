@@ -40,3 +40,4 @@
 - UDP transport?
 - revisit msgout UI flow
 - SSL_set_tlsext_host_name
+- scrolling down to last line should reset status color
