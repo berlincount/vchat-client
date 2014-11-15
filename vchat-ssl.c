@@ -34,6 +34,33 @@
 
 const char *vchat_ssl_version = "vchat-ssl.c      $Id$";
 
+typedef int (*vc_x509verify_cb_t)(int, X509_STORE_CTX *);
+struct vc_x509store_t {
+   char                 *cafile;
+   char                 *capath;
+   char                 *crlfile;
+   vc_x509verify_cb_t   callback;
+   vc_askpass_cb_t      askpass_callback;
+   STACK_OF(X509)       *certs;
+   STACK_OF(X509_CRL)   *crls;
+   char                 *use_certfile;
+   STACK_OF(X509)       *use_certs;
+   char                 *use_keyfile;
+   EVP_PKEY             *use_key;
+   int                  flags;
+};
+
+static void vc_cleanup_x509store(vc_x509store_t *); // Should not be static but is unused
+static SSL_CTX * vc_create_sslctx( vc_x509store_t *vc_store );
+static int vc_verify_callback(int, X509_STORE_CTX *);
+static X509_STORE * vc_x509store_create(vc_x509store_t *);
+static void vc_x509store_clearflags(vc_x509store_t *, int);
+static void vc_x509store_setcafile(vc_x509store_t *, char *);
+static void vc_x509store_setcapath(vc_x509store_t *, char *);
+static void vc_x509store_setcrlfile(vc_x509store_t *, char *);
+static void vc_x509store_addcert(vc_x509store_t *, X509 *);
+static void vc_x509store_setcb(vc_x509store_t *, vc_x509verify_cb_t);
+
 #define VC_CTX_ERR_EXIT(se, cx) do { \
       snprintf(tmpstr, TMPSTRSIZE, "CREATE CTX: %s", \
             ERR_error_string (ERR_get_error (), NULL)); \
@@ -51,7 +78,7 @@ const char *vchat_ssl_version = "vchat-ssl.c      $Id$";
       return(NULL); \
    } while(0)
 
-SSL_CTX * vc_create_sslctx( vc_x509store_t *vc_store )
+static SSL_CTX * vc_create_sslctx( vc_x509store_t *vc_store )
 {
    int                  i                 = 0;
    int                  n                 = 0;
@@ -161,7 +188,6 @@ int vc_connect_ssl( BIO **conn, vc_x509store_t *vc_store )
       /* Accept being connected, _if_ verification passed */
       if (sslp) {
         long result = SSL_get_verify_result(sslp);
-
 #if 1 == 1
         if (result == X509_V_OK) {
           return 0;
@@ -373,20 +399,31 @@ void vc_x509store_setcertfile(vc_x509store_t *store, char *file)
 }
 
 
-void vc_init_x509store(vc_x509store_t *s)
+vc_x509store_t *vc_init_x509store()
 {
-   s->cafile         = NULL;
-   s->capath         = NULL;
-   s->crlfile        = NULL;
-   s->callback       = NULL;
-   s->askpass_callback = NULL;
-   s->certs          = sk_X509_new_null();
-   s->crls           = sk_X509_CRL_new_null();
-   s->use_certfile   = NULL;
-   s->use_certs      = sk_X509_new_null();
-   s->use_keyfile    = NULL;
-   s->use_key        = NULL;
-   s->flags          = 0;
+   vc_x509store_t *s = malloc(sizeof(vc_x509store_t));
+   if (s) {
+
+       static int sslinit;
+       if( !sslinit++ ) {
+           SSL_library_init ();
+           SSL_load_error_strings();
+       }
+
+       s->cafile         = NULL;
+       s->capath         = NULL;
+       s->crlfile        = NULL;
+       s->callback       = NULL;
+       s->askpass_callback = NULL;
+       s->certs          = sk_X509_new_null();
+       s->crls           = sk_X509_CRL_new_null();
+       s->use_certfile   = NULL;
+       s->use_certs      = sk_X509_new_null();
+       s->use_keyfile    = NULL;
+       s->use_key        = NULL;
+       s->flags          = 0;
+   }
+   return s;
 }
 
 void vc_cleanup_x509store(vc_x509store_t *s)

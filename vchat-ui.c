@@ -28,7 +28,6 @@
 #include <string.h>
 #include <readline/readline.h>
 #include <readline/history.h>
-#include <openssl/pem.h>
 #include <regex.h>
 #include <wchar.h>
 
