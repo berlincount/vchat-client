@@ -24,10 +24,11 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <readline/readline.h>
-#include <openssl/ssl.h>
-#include <openssl/err.h>
 #include <locale.h>
 #include <langinfo.h>
+
+// TO BE GONE
+#include <openssl/bio.h>
 
 /* local includes */
 #include "vchat.h"
@@ -108,7 +109,7 @@ vcconnect (char *server, char *port)
   char *tildex = NULL;
 
   /* vchat connection x509 store */
-  vc_x509store_t vc_store;
+  vc_x509store_t *vc_store;
 
   /* pointer to tilde-expanded certificate/keyfile-names */
   char *certfile = NULL, *keyfile = NULL;
@@ -126,14 +127,9 @@ vcconnect (char *server, char *port)
 
   /* If SSL is requested, get our ssl-BIO running */
   if( server_conn && getintoption(CF_USESSL) ) {
-    static int sslinit;
-    if( !sslinit++ ) {
-      SSL_library_init ();
-      SSL_load_error_strings();
-    }
-
-    vc_init_x509store(&vc_store);
-    vc_x509store_setflags(&vc_store, VC_X509S_SSL_VERIFY_PEER);
+    vc_store = vc_init_x509store();
+    // XXX TODO: Check error (with new API)
+    vc_x509store_setflags(vc_store, VC_X509S_SSL_VERIFY_PEER);
 
     /* get name of certificate file */
     certfile = getstroption (CF_CERTFILE);
@@ -145,8 +141,8 @@ vcconnect (char *server, char *port)
       else
         tildex = certfile;
 
-      vc_x509store_setflags(&vc_store, VC_X509S_USE_CERTIFICATE);
-      vc_x509store_setcertfile(&vc_store, tildex);
+      vc_x509store_setflags(vc_store, VC_X509S_USE_CERTIFICATE);
+      vc_x509store_setcertfile(vc_store, tildex);
 
       /* get name of key file */
       keyfile = getstroption (CF_KEYFILE);
@@ -161,12 +157,12 @@ vcconnect (char *server, char *port)
       else
         tildex = keyfile;
 
-      vc_x509store_set_pkeycb(&vc_store, (vc_askpass_cb_t)passprompt);
-      vc_x509store_setkeyfile(&vc_store, tildex);
+      vc_x509store_set_pkeycb(vc_store, (vc_askpass_cb_t)passprompt);
+      vc_x509store_setkeyfile(vc_store, tildex);
     }
 
     /* upgrade our plain BIO to ssl */
-    if( vc_connect_ssl( &server_conn, &vc_store ) ) {
+    if( vc_connect_ssl( &server_conn, vc_store ) ) {
       BIO_free_all( server_conn );
       server_conn = NULL;
       errno = EIO;
