@@ -128,7 +128,12 @@ vcconnect (char *server, char *port)
   /* If SSL is requested, get our ssl-BIO running */
   if( server_conn && getintoption(CF_USESSL) ) {
     vc_store = vc_init_x509store();
-    // XXX TODO: Check error (with new API)
+    if( !vc_store ) {
+        snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_ERR), "Out of memory" );
+        writechan (tmpstr);
+        return -1;
+    }
+
     vc_x509store_setflags(vc_store, VC_X509S_SSL_VERIFY_PEER);
 
     /* get name of certificate file */
