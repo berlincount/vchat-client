@@ -85,7 +85,7 @@ char const *own_nick_get( ) {
 
 int own_nick_check( char *nick ) {
   if( !g_nick ) return -1;
-  return !strncasecmp(g_nick,nick,strlen(g_nick) );
+  return !strcasecmp(g_nick,nick);
 }
 
 int own_channel_get( ) {
