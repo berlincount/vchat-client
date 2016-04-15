@@ -221,7 +221,7 @@ int vc_connect_ssl( BIO **conn, vc_x509store_t *vc_store )
             assert ( ( fingerprint_len > 1 ) && (fingerprint_len * 3 < TMPSTRSIZE ));
             char * nf = new_fingerprint;
             for (j=0; j<(int)fingerprint_len; j++)
-              nf += snprintf(nf, 3, "%02X:", fingerprint_bin[j]);
+              nf += snprintf(nf, 4, "%02X:", fingerprint_bin[j]);
             assert ( nf > new_fingerprint );
             nf[-1] = 0;
             snprintf(tmpstr, TMPSTRSIZE, "[SSL FINGERPRINT  ] from server: %s", new_fingerprint);
@@ -236,15 +236,20 @@ int vc_connect_ssl( BIO **conn, vc_x509store_t *vc_store )
             char * r = fgets(old_fingerprint, TMPSTRSIZE, fingerprint_file);
             fclose(fingerprint_file);
 
-            /* verify fingerprint matches stored version */
-            if ( r &&!strncmp(new_fingerprint, old_fingerprint, TMPSTRSIZE))
-              return 0;
-            else {
-              snprintf(tmpstr, TMPSTRSIZE, "[SSL FINGERPRINT  ] from %s: %s", getstroption(CF_FINGERPRINT), r ? old_fingerprint : "<FILE READ ERROR>" );
-              writecf(FS_ERR, tmpstr);
-              writecf(FS_ERR, "[SSL CONNECT ERROR] Fingerprint mismatch! Server cert updated?");
-              return 1;
+            if (r) {
+              // chomp
+              char *nl = strchr(r, '\n');
+              if (nl) *nl = 0;
+
+              /* verify fingerprint matches stored version */
+              if (!strcmp(new_fingerprint, old_fingerprint))
+                return 0;
             }
+
+            snprintf(tmpstr, TMPSTRSIZE, "[SSL FINGERPRINT  ] from %s: %s", getstroption(CF_FINGERPRINT), r ? old_fingerprint : "<FILE READ ERROR>" );
+            writecf(FS_ERR, tmpstr);
+            writecf(FS_ERR, "[SSL CONNECT ERROR] Fingerprint mismatch! Server cert updated?");
+            return 1;
           } else {
             /* FIXME: there might be other errors than missing file */
             fingerprint_file = fopen(tilde_expand(getstroption(CF_FINGERPRINT)), "w");
