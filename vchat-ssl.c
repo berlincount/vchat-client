@@ -197,7 +197,7 @@ int vc_connect_ssl( BIO **conn, vc_x509store_t *vc_store )
         }
 #else
         /* show & verify fingerprint */
-        if (result == X509_V_OK) {
+        if ((result == X509_V_OK) || getintoption(CF_IGNSSL)) {
           X509 *peercert = SSL_get_peer_certificate(sslp);
 
           /* FIXME: this IS bad code */
