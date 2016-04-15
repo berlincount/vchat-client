@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include <openssl/err.h>
 #include <openssl/ssl.h>
@@ -219,7 +220,7 @@ int vc_connect_ssl( BIO **conn, vc_x509store_t *vc_store )
             int j;
             assert ( ( fingerprint_len > 1 ) && (fingerprint_len * 3 < TMPSTRSIZE ));
             char * nf = new_fingerprint;
-            for (j=0; j<(int)fingerprint_len; j++) {
+            for (j=0; j<(int)fingerprint_len; j++)
               nf += snprintf(nf, 3, "%02X:", fingerprint_bin[j]);
             assert ( nf > new_fingerprint );
             nf[-1] = 0;
@@ -232,7 +233,7 @@ int vc_connect_ssl( BIO **conn, vc_x509store_t *vc_store )
 
           fingerprint_file = fopen(tilde_expand(getstroption(CF_FINGERPRINT)), "r");
           if (fingerprint_file) {
-            int r = fgets(old_fingerprint, TMPSTRSIZE, fingerprint_file);
+            char * r = fgets(old_fingerprint, TMPSTRSIZE, fingerprint_file);
             fclose(fingerprint_file);
 
             /* verify fingerprint matches stored version */
