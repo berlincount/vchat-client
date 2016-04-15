@@ -168,7 +168,7 @@ int vc_connect_ssl( BIO **conn, vc_x509store_t *vc_store )
   FILE *fingerprint_file = NULL;
   char * fp = fingerprint;
 
-  long result;
+  long result, j;
 
   if( !ctx )
     return 1;
@@ -220,7 +220,7 @@ int vc_connect_ssl( BIO **conn, vc_x509store_t *vc_store )
 
   assert ( ( fingerprint_len > 1 ) && (fingerprint_len <= EVP_MAX_MD_SIZE ));
   for (j=0; j<(int)fingerprint_len; j++)
-    fp += sprintf(nf, "%02X:", fingerprint_bin[j]);
+    fp += sprintf(fp, "%02X:", fingerprint_bin[j]);
   assert ( fp > fingerprint );
   fp[-1] = 0;
   snprintf(tmpstr, TMPSTRSIZE, "[SSL FINGERPRINT  ] from server: %s", fingerprint);
@@ -229,16 +229,8 @@ int vc_connect_ssl( BIO **conn, vc_x509store_t *vc_store )
   /* we don't need the peercert anymore */
   X509_free(peercert);
 
-  /* If verify of x509 chain was requested, do the check here */
-  result = SSL_get_verify_result(sslp);
-  if (result != X509_V_OK && !getintoption(CF_IGNSSL) )
-    goto ssl_error;
-
-  if (result != X509_V_OK)
-    writecf(FS_ERR, "[SSL VERIFY ERROR ] FAILURE IGNORED!!!");
-
   /* verify fingerprint */
-  if (getintoption(CF_PIN_FINGERPRINT)) {
+  if (getintoption(CF_PINFINGER)) {
 
     fingerprint_file = fopen(tilde_expand(getstroption(CF_FINGERPRINT)), "r");
     if (fingerprint_file) {
@@ -273,6 +265,17 @@ int vc_connect_ssl( BIO **conn, vc_x509store_t *vc_store )
       fclose(fingerprint_file);
       writecf(FS_SERV, "Stored fingerprint.");
     }
+    return 0;
+  }
+
+  /* If verify of x509 chain was requested, do the check here */
+  result = SSL_get_verify_result(sslp);
+
+  if (result == X509_V_OK)
+    return 0;
+
+  if (getintoption(CF_IGNSSL)) {
+    writecf(FS_ERR, "[SSL VERIFY ERROR ] FAILURE IGNORED!!!");
     return 0;
   }
 
