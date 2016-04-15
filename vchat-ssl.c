@@ -223,7 +223,7 @@ int vc_connect_ssl( BIO **conn, vc_x509store_t *vc_store )
     fp += sprintf(fp, "%02X:", fingerprint_bin[j]);
   assert ( fp > fingerprint );
   fp[-1] = 0;
-  snprintf(tmpstr, TMPSTRSIZE, "[SSL FINGERPRINT  ] from server: %s", fingerprint);
+  snprintf(tmpstr, TMPSTRSIZE, "[SSL FINGERPRINT  ] %s (from server)", fingerprint);
   writecf(FS_SERV, tmpstr);
 
   /* we don't need the peercert anymore */
@@ -250,7 +250,7 @@ int vc_connect_ssl( BIO **conn, vc_x509store_t *vc_store )
           return 0;
       }
 
-      snprintf(tmpstr, TMPSTRSIZE, "[SSL FINGERPRINT  ] from %s: %s", getstroption(CF_FINGERPRINT), r ? old_fingerprint : "<FILE READ ERROR>" );
+      snprintf(tmpstr, TMPSTRSIZE, "[SSL FINGERPRINT  ] %s (from %s)", r ? old_fingerprint : "<FILE READ ERROR>", getstroption(CF_FINGERPRINT));
       writecf(FS_ERR, tmpstr);
       writecf(FS_ERR, "[SSL CONNECT ERROR] Fingerprint mismatch! Server cert updated?");
       return 1;
