@@ -201,8 +201,8 @@ int vc_connect_ssl( BIO **conn, vc_x509store_t *vc_store )
           X509 *peercert = SSL_get_peer_certificate(sslp);
 
           /* FIXME: this IS bad code */
-          char new_fingerprint[TMPSTRSIZE] = "";
-          char old_fingerprint[TMPSTRSIZE] = "";
+          char new_fingerprint[TMPSTRSIZE];
+          char old_fingerprint[TMPSTRSIZE];
           FILE *fingerprint_file = NULL;
 
           unsigned int fingerprint_len;
@@ -216,14 +216,13 @@ int vc_connect_ssl( BIO **conn, vc_x509store_t *vc_store )
 
           /* calculate fingerprint */
           if (X509_digest(peercert,EVP_sha1(),fingerprint_bin,&fingerprint_len)) {
-            char shorttmpstr[3] = "XX";
             int j;
+            assert ( ( fingerprint_len > 1 ) && (fingerprint_len * 3 < TMPSTRSIZE ));
+            char * nf = new_fingerprint;
             for (j=0; j<(int)fingerprint_len; j++) {
-              if (j)
-                strncat(new_fingerprint, ":", TMPSTRSIZE);
-              snprintf(shorttmpstr, 3, "%02X", fingerprint_bin[j]);
-              strncat(new_fingerprint, shorttmpstr, TMPSTRSIZE);
-            }
+              nf += snprintf(nf, 3, "%02X:", fingerprint_bin[j]);
+            assert ( nf > new_fingerprint );
+            nf[-1] = 0;
             snprintf(tmpstr, TMPSTRSIZE, "[SSL FINGERPRINT  ] from server: %s", new_fingerprint);
             writecf(FS_SERV, tmpstr);
           }
@@ -233,14 +232,14 @@ int vc_connect_ssl( BIO **conn, vc_x509store_t *vc_store )
 
           fingerprint_file = fopen(tilde_expand(getstroption(CF_FINGERPRINT)), "r");
           if (fingerprint_file) {
-            fgets(old_fingerprint, TMPSTRSIZE, fingerprint_file);
+            int r = fgets(old_fingerprint, TMPSTRSIZE, fingerprint_file);
             fclose(fingerprint_file);
 
             /* verify fingerprint matches stored version */
-            if (!strncmp(new_fingerprint, old_fingerprint, TMPSTRSIZE))
+            if ( r &&!strncmp(new_fingerprint, old_fingerprint, TMPSTRSIZE))
               return 0;
             else {
-              snprintf(tmpstr, TMPSTRSIZE, "[SSL FINGERPRINT  ] from %s: %s", getstroption(CF_FINGERPRINT), old_fingerprint);
+              snprintf(tmpstr, TMPSTRSIZE, "[SSL FINGERPRINT  ] from %s: %s", getstroption(CF_FINGERPRINT), r ? old_fingerprint : "<FILE READ ERROR>" );
               writecf(FS_ERR, tmpstr);
               writecf(FS_ERR, "[SSL CONNECT ERROR] Fingerprint mismatch! Server cert updated?");
               return 1;
