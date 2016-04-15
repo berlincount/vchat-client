@@ -154,8 +154,21 @@ static SSL_CTX * vc_create_sslctx( vc_x509store_t *vc_store )
 
 int vc_connect_ssl( BIO **conn, vc_x509store_t *vc_store )
 {
-  BIO *ssl_conn = NULL;
   SSL_CTX * ctx = vc_create_sslctx(vc_store);
+  X509 *peercert = NULL;
+  BIO *ssl_conn = NULL;
+  const SSL *sslp = NULL;
+  const SSL_CIPHER * cipher = NULL;
+
+  /* To display and check server fingerprint */
+  char fingerprint[EVP_MAX_MD_SIZE*4];
+  unsigned char fingerprint_bin[EVP_MAX_MD_SIZE];
+  unsigned int fingerprint_len;
+
+  FILE *fingerprint_file = NULL;
+  char * fp = fingerprint;
+
+  long result;
 
   if( !ctx )
     return 1;
@@ -163,112 +176,107 @@ int vc_connect_ssl( BIO **conn, vc_x509store_t *vc_store )
   ssl_conn = BIO_new_ssl(ctx, 1);
   SSL_CTX_free(ctx);
 
-  if( ssl_conn ) {
-    BIO_push( ssl_conn, *conn );
-    *conn = ssl_conn;
-    fflush(stdout);
+  if( !ssl_conn )
+    goto ssl_error;
 
-    if( BIO_do_handshake( *conn ) > 0 ) {
-      /* Show information about cipher used */
-      const SSL *sslp = NULL;
-      const SSL_CIPHER * cipher = NULL;
+  BIO_push( ssl_conn, *conn );
+  *conn = ssl_conn;
+  fflush(stdout);
 
-      /* Get cipher object */
-      BIO_get_ssl(ssl_conn, &sslp);
-      if (sslp)
-        cipher = SSL_get_current_cipher(sslp);
-      if (cipher) {
-        char cipher_desc[TMPSTRSIZE];
-        snprintf(tmpstr, TMPSTRSIZE, "[SSL CIPHER       ] %s", SSL_CIPHER_description(cipher, cipher_desc, TMPSTRSIZE));
-        writecf(FS_SERV, tmpstr);
-      } else {
-        snprintf(tmpstr, TMPSTRSIZE, "[SSL ERROR        ] Cipher not known / SSL object can't be queried!");
-        writecf(FS_ERR, tmpstr);
-      }
+  if( BIO_do_handshake( *conn ) <= 0 )
+    goto ssl_error;
 
-      /* Accept being connected, _if_ verification passed */
-      if (sslp) {
-        long result = SSL_get_verify_result(sslp);
-#if 1 == 1
-        if (result == X509_V_OK) {
-          return 0;
-        } else if (getintoption(CF_IGNSSL)) {
-          writecf(FS_ERR, "[SSL VERIFY ERROR ] FAILURE IGNORED!!!");
-          return 0;
-        }
-#else
-        /* show & verify fingerprint */
-        if ((result == X509_V_OK) || getintoption(CF_IGNSSL)) {
-          X509 *peercert = SSL_get_peer_certificate(sslp);
-
-          /* FIXME: this IS bad code */
-          char new_fingerprint[TMPSTRSIZE];
-          char old_fingerprint[TMPSTRSIZE];
-          FILE *fingerprint_file = NULL;
-
-          unsigned int fingerprint_len;
-          unsigned char fingerprint_bin[EVP_MAX_MD_SIZE];
-
-          /* show basic information about peer cert */
-          snprintf(tmpstr, TMPSTRSIZE, "[SSL SUBJECT      ] %s", X509_NAME_oneline(X509_get_subject_name(peercert),0,0));
-          writecf(FS_SERV, tmpstr);
-          snprintf(tmpstr, TMPSTRSIZE, "[SSL ISSUER       ] %s", X509_NAME_oneline(X509_get_issuer_name(peercert),0,0));
-          writecf(FS_SERV, tmpstr);
-
-          /* calculate fingerprint */
-          if (X509_digest(peercert,EVP_sha1(),fingerprint_bin,&fingerprint_len)) {
-            int j;
-            assert ( ( fingerprint_len > 1 ) && (fingerprint_len * 3 < TMPSTRSIZE ));
-            char * nf = new_fingerprint;
-            for (j=0; j<(int)fingerprint_len; j++)
-              nf += snprintf(nf, 4, "%02X:", fingerprint_bin[j]);
-            assert ( nf > new_fingerprint );
-            nf[-1] = 0;
-            snprintf(tmpstr, TMPSTRSIZE, "[SSL FINGERPRINT  ] from server: %s", new_fingerprint);
-            writecf(FS_SERV, tmpstr);
-          }
-
-          // we don't need the peercert anymore
-          X509_free(peercert);
-
-          fingerprint_file = fopen(tilde_expand(getstroption(CF_FINGERPRINT)), "r");
-          if (fingerprint_file) {
-            char * r = fgets(old_fingerprint, TMPSTRSIZE, fingerprint_file);
-            fclose(fingerprint_file);
-
-            if (r) {
-              // chomp
-              char *nl = strchr(r, '\n');
-              if (nl) *nl = 0;
-
-              /* verify fingerprint matches stored version */
-              if (!strcmp(new_fingerprint, old_fingerprint))
-                return 0;
-            }
-
-            snprintf(tmpstr, TMPSTRSIZE, "[SSL FINGERPRINT  ] from %s: %s", getstroption(CF_FINGERPRINT), r ? old_fingerprint : "<FILE READ ERROR>" );
-            writecf(FS_ERR, tmpstr);
-            writecf(FS_ERR, "[SSL CONNECT ERROR] Fingerprint mismatch! Server cert updated?");
-            return 1;
-          } else {
-            /* FIXME: there might be other errors than missing file */
-            fingerprint_file = fopen(tilde_expand(getstroption(CF_FINGERPRINT)), "w");
-            if (!fingerprint_file) {
-              snprintf (tmpstr, TMPSTRSIZE, "Can't write fingerprint file, %s.", strerror(errno));
-              writecf(FS_ERR, tmpstr);
-            } else {
-              fputs(new_fingerprint, fingerprint_file);
-              fclose(fingerprint_file);
-              writecf(FS_SERV, "Stored fingerprint.");
-              return 0;
-            }
-          }
-        }
-#endif
-      }
-    }
+  /* Show information about cipher used */
+  /* Get cipher object */
+  BIO_get_ssl(ssl_conn, &sslp);
+  if (sslp)
+    cipher = SSL_get_current_cipher(sslp);
+  if (cipher) {
+    char cipher_desc[TMPSTRSIZE];
+    snprintf(tmpstr, TMPSTRSIZE, "[SSL CIPHER       ] %s", SSL_CIPHER_description(cipher, cipher_desc, TMPSTRSIZE));
+    writecf(FS_SERV, tmpstr);
+  } else {
+    snprintf(tmpstr, TMPSTRSIZE, "[SSL ERROR        ] Cipher not known / SSL object can't be queried!");
+    writecf(FS_ERR, tmpstr);
   }
 
+  /* Accept being connected, _if_ verification passed */
+  if (!sslp)
+    goto ssl_error;
+
+  peercert = SSL_get_peer_certificate(sslp);
+  if (!peercert)
+    goto ssl_error;
+
+  /* show basic information about peer cert */
+  snprintf(tmpstr, TMPSTRSIZE, "[SSL SUBJECT      ] %s", X509_NAME_oneline(X509_get_subject_name(peercert),0,0));
+  writecf(FS_SERV, tmpstr);
+  snprintf(tmpstr, TMPSTRSIZE, "[SSL ISSUER       ] %s", X509_NAME_oneline(X509_get_issuer_name(peercert),0,0));
+  writecf(FS_SERV, tmpstr);
+
+  /* calculate fingerprint */
+  if (!X509_digest(peercert,EVP_sha1(),fingerprint_bin,&fingerprint_len))
+    goto ssl_error;
+
+  assert ( ( fingerprint_len > 1 ) && (fingerprint_len <= EVP_MAX_MD_SIZE ));
+  for (j=0; j<(int)fingerprint_len; j++)
+    fp += sprintf(nf, "%02X:", fingerprint_bin[j]);
+  assert ( fp > fingerprint );
+  fp[-1] = 0;
+  snprintf(tmpstr, TMPSTRSIZE, "[SSL FINGERPRINT  ] from server: %s", fingerprint);
+  writecf(FS_SERV, tmpstr);
+
+  /* we don't need the peercert anymore */
+  X509_free(peercert);
+
+  /* If verify of x509 chain was requested, do the check here */
+  result = SSL_get_verify_result(sslp);
+  if (result != X509_V_OK && !getintoption(CF_IGNSSL) )
+    goto ssl_error;
+
+  if (result != X509_V_OK)
+    writecf(FS_ERR, "[SSL VERIFY ERROR ] FAILURE IGNORED!!!");
+
+  /* verify fingerprint */
+  if (getintoption(CF_PIN_FINGERPRINT)) {
+
+    fingerprint_file = fopen(tilde_expand(getstroption(CF_FINGERPRINT)), "r");
+    if (fingerprint_file) {
+
+      /* Read fingerprint from file */
+      char old_fingerprint[EVP_MAX_MD_SIZE*4];
+      char * r = fgets(old_fingerprint, sizeof(old_fingerprint), fingerprint_file);
+      fclose(fingerprint_file);
+
+      if (r) {
+        /* chomp */
+        char *nl = strchr(r, '\n');
+        if (nl) *nl = 0;
+
+        /* verify fingerprint matches stored version */
+        if (!strcmp(fingerprint, old_fingerprint))
+          return 0;
+      }
+
+      snprintf(tmpstr, TMPSTRSIZE, "[SSL FINGERPRINT  ] from %s: %s", getstroption(CF_FINGERPRINT), r ? old_fingerprint : "<FILE READ ERROR>" );
+      writecf(FS_ERR, tmpstr);
+      writecf(FS_ERR, "[SSL CONNECT ERROR] Fingerprint mismatch! Server cert updated?");
+      return 1;
+    }
+
+    fingerprint_file = fopen(tilde_expand(getstroption(CF_FINGERPRINT)), "w");
+    if (!fingerprint_file) {
+      snprintf (tmpstr, TMPSTRSIZE, "[WARNING] Can't write fingerprint file, %s.", strerror(errno));
+      writecf(FS_ERR, tmpstr);
+    } else {
+      fputs(fingerprint, fingerprint_file);
+      fclose(fingerprint_file);
+      writecf(FS_SERV, "Stored fingerprint.");
+    }
+    return 0;
+  }
+
+ssl_error:
   snprintf(tmpstr, TMPSTRSIZE, "[SSL CONNECT ERROR] %s", ERR_error_string (ERR_get_error (), NULL));
   writecf(FS_ERR, tmpstr);
 
