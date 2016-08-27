@@ -351,7 +351,7 @@ int vc_verify_callback(int ok, X509_STORE_CTX *store)
 {
    if(!ok) {
       snprintf(tmpstr, TMPSTRSIZE, "[SSL VERIFY ERROR ] %s",
-               X509_verify_cert_error_string(store->error));
+               X509_verify_cert_error_string(X509_STORE_CTX_get_error(store)));
       writecf(FS_ERR, tmpstr);
    }
    return (ok | getintoption(CF_IGNSSL));
@@ -414,6 +414,17 @@ void vc_x509store_setcertfile(vc_x509store_t *store, char *file)
    store->use_certfile = ( file ? strdup(file) : 0 );
 }
 
+#if 0
+int vc_tls_read()
+{
+
+}
+
+int vc_tls_read()
+{
+
+}
+#endif
 
 vc_x509store_t *vc_init_x509store()
 {
