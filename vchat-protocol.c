@@ -192,9 +192,12 @@ vcconnect (char *server, char *port)
 /* disconnect from server */
 void
 vcdisconnect () {
-  if (server_conn)
-    BIO_free_all( server_conn );
-  serverfd = -1;
+  BIO_free_all( server_conn );
+  server_conn = 0;
+  if (serverfd>0) {
+    close(serverfd);
+    serverfd = -1;
+  }
 }
 
 /* handle a pm not sent error

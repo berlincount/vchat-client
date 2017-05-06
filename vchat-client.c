@@ -355,8 +355,10 @@ cleanup (int signal)
   /* clear userlist */
   ul_clear ();
   /* close server connection */
-  if (serverfd > 0)
+  if (serverfd > 0) {
     close (serverfd);
+    serverfd = -1;
+  }
   /* inform user if we where killed by signal */
   if (signal > 1)
     {
