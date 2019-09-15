@@ -30,6 +30,8 @@
 // TO BE GONE
 #include <openssl/bio.h>
 
+FILE * dumpfile;
+
 /* local includes */
 #include "vchat.h"
 #include "vchat-user.h"
@@ -185,6 +187,8 @@ vcconnect (char *server, char *port)
   snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_CONNECTED), server, port);
   writechan (tmpstr);
 
+  dumpfile = fopen( "dumpfile", "a");
+
   /* if we didn't fail until now, we've got a connection. */
   return 0;
 }
@@ -198,6 +202,7 @@ vcdisconnect () {
     close(serverfd);
     serverfd = -1;
   }
+  loggedin = 0;
 }
 
 /* handle a pm not sent error
@@ -909,7 +914,7 @@ networkoutput (char *msg)
 {
 #ifdef DEBUG
   /* debugging? log network output! */
-  fprintf (stderr, ">| %s\n", msg);
+  fprintf (dumpfile, ">| %s (%zd)\n", msg, strlen(msg));
 #endif
 
   /* send data to server */
