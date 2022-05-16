@@ -1,6 +1,6 @@
 /*
  * vchat-client - alpha version
- * vchat-ssl.c - handling of SSL connection and X509 certificate
+ * vchat-tls.c - handling of SSL connection and X509 certificate
  * verification
  *
  * Copyright (C) 2007 Thorsten Schroeder <ths@berlin.ccc.de>
@@ -31,9 +31,12 @@
 #include <readline/readline.h>
 
 #include "vchat.h"
-#include "vchat-ssl.h"
+#include "vchat-tls.h"
 
-const char *vchat_ssl_version = "vchat-ssl.c      $Id$";
+const char *vchat_ssl_version = "vchat-tlsl.c      $Id$";
+
+/* connection BIO for openssl */
+static BIO *server_conn = NULL;
 
 typedef int (*vc_x509verify_cb_t)(int, X509_STORE_CTX *);
 struct vc_x509store_t {
@@ -51,12 +54,10 @@ struct vc_x509store_t {
    int                  flags;
 };
 
-static void vc_cleanup_x509store(vc_x509store_t *); // Should not be static but is unused
 static SSL_CTX * vc_create_sslctx( vc_x509store_t *vc_store );
 static int vc_verify_callback(int, X509_STORE_CTX *);
 static X509_STORE * vc_x509store_create(vc_x509store_t *);
 static void vc_x509store_clearflags(vc_x509store_t *, int);
-static void vc_x509store_setcafile(vc_x509store_t *, char *);
 static void vc_x509store_setcapath(vc_x509store_t *, char *);
 static void vc_x509store_setcrlfile(vc_x509store_t *, char *);
 static void vc_x509store_addcert(vc_x509store_t *, X509 *);
@@ -90,7 +91,7 @@ static SSL_CTX * vc_create_sslctx( vc_x509store_t *vc_store )
    vc_x509verify_cb_t   verify_callback   = NULL;
 
    /* Explicitly use TLSv1 (or maybe later) */
-   if( !(ctx = SSL_CTX_new(SSLv23_client_method())) )
+   if( !(ctx = SSL_CTX_new(TLS_client_method())) )
       VC_CTX_ERR_EXIT(store, ctx);
 
    if( !(store = vc_x509store_create(vc_store)) )
@@ -152,13 +153,15 @@ static SSL_CTX * vc_create_sslctx( vc_x509store_t *vc_store )
    return(ctx);
 }
 
-int vc_connect_ssl( BIO **conn, vc_x509store_t *vc_store )
+int vc_tls_connect( int serverfd, vc_x509store_t *vc_store )
 {
   SSL_CTX * ctx = vc_create_sslctx(vc_store);
   X509 *peercert = NULL;
   BIO *ssl_conn = NULL;
   const SSL *sslp = NULL;
   const SSL_CIPHER * cipher = NULL;
+
+  server_conn = BIO_new_socket( serverfd, 1 );
 
   /* To display and check server fingerprint */
   char fingerprint[EVP_MAX_MD_SIZE*4];
@@ -171,7 +174,7 @@ int vc_connect_ssl( BIO **conn, vc_x509store_t *vc_store )
   long result, j;
 
   if( !ctx )
-    return 1;
+    goto all_errors;
 
   ssl_conn = BIO_new_ssl(ctx, 1);
   SSL_CTX_free(ctx);
@@ -179,18 +182,20 @@ int vc_connect_ssl( BIO **conn, vc_x509store_t *vc_store )
   if( !ssl_conn )
     goto ssl_error;
 
-  BIO_push( ssl_conn, *conn );
-  *conn = ssl_conn;
+  BIO_push( ssl_conn, server_conn );
+  server_conn = ssl_conn;
   fflush(stdout);
 
-  if( BIO_do_handshake( *conn ) <= 0 )
+  if( BIO_do_handshake( server_conn ) <= 0 )
     goto ssl_error;
 
   /* Show information about cipher used */
   /* Get cipher object */
   BIO_get_ssl(ssl_conn, &sslp);
-  if (sslp)
-    cipher = SSL_get_current_cipher(sslp);
+  if (!sslp)
+    goto ssl_error;
+
+  cipher = SSL_get_current_cipher(sslp);
   if (cipher) {
     char cipher_desc[TMPSTRSIZE];
     snprintf(tmpstr, TMPSTRSIZE, "[SSL CIPHER       ] %s", SSL_CIPHER_description(cipher, cipher_desc, TMPSTRSIZE));
@@ -201,9 +206,6 @@ int vc_connect_ssl( BIO **conn, vc_x509store_t *vc_store )
   }
 
   /* Accept being connected, _if_ verification passed */
-  if (!sslp)
-    goto ssl_error;
-
   peercert = SSL_get_peer_certificate(sslp);
   if (!peercert)
     goto ssl_error;
@@ -282,7 +284,9 @@ int vc_connect_ssl( BIO **conn, vc_x509store_t *vc_store )
 ssl_error:
   snprintf(tmpstr, TMPSTRSIZE, "[SSL CONNECT ERROR] %s", ERR_error_string (ERR_get_error (), NULL));
   writecf(FS_ERR, tmpstr);
-
+all_errors:
+  BIO_free_all( server_conn );
+  server_conn = NULL;
   return 1;
 }
 
@@ -414,18 +418,6 @@ void vc_x509store_setcertfile(vc_x509store_t *store, char *file)
    store->use_certfile = ( file ? strdup(file) : 0 );
 }
 
-#if 0
-int vc_tls_read()
-{
-
-}
-
-int vc_tls_read()
-{
-
-}
-#endif
-
 vc_x509store_t *vc_init_x509store()
 {
    vc_x509store_t *s = malloc(sizeof(vc_x509store_t));
@@ -464,6 +456,20 @@ void vc_cleanup_x509store(vc_x509store_t *s)
    sk_X509_free(s->certs);
    sk_X509_CRL_free(s->crls);
    sk_X509_free(s->use_certs);
+   free(s);
+}
+
+ssize_t vc_tls_sendmessage(const void *buf, size_t size) {
+   return BIO_write(server_conn, buf, size);
+}
+
+ssize_t vc_tls_receivemessage(void *buf, size_t size) {
+   return BIO_read (server_conn, buf, size);
+}
+
+void vc_tls_cleanup() {
+  BIO_free_all( server_conn );
+  server_conn = NULL;
 }
 
 const char *vchat_ssl_version_external = "OpenSSL implementation; version unknown";

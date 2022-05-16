@@ -1,6 +1,6 @@
 /*
  * vchat-client - alpha version
- * vchat-protocol.c - handling of server connection & messages
+ * vchat-protocol.c - handling of server messages
  *
  * Copyright (C) 2001 Andreas Kotes <count@flatline.de>
  *
@@ -15,37 +15,25 @@
  */
 
 /* general includes */
-#include <unistd.h>
-#include <errno.h>
+#include <stdlib.h>
 #include <stdio.h>
-#include <netdb.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
+#include <errno.h>
 #include <readline/readline.h>
 #include <locale.h>
 #include <langinfo.h>
 
-// TO BE GONE
-#include <openssl/bio.h>
-
+#ifdef DEBUG
 FILE * dumpfile;
+#endif
 
 /* local includes */
 #include "vchat.h"
 #include "vchat-user.h"
-#include "vchat-ssl.h"
+#include "vchat-connection.h"
 
 /* version of this module */
 const char *vchat_io_version = "vchat-protocol.c $Id$";
-
-/* externally used variables */
-int serverfd = -1;
-
-/* locally global variables */
-/* our connection BIO */
-static BIO *server_conn = NULL;
 
 /* declaration of local helper functions */
 static void usersignon (char *);
@@ -73,137 +61,6 @@ static void pmnotsent (char *message);
  * eventloop is done as long as this is true */
 extern int status;
 char *encoding;
-
-static int connect_socket( char *server, char *port ) {
-  struct addrinfo hints, *res, *res0;
-  int s, error;
-
-  memset(&hints, 0, sizeof(hints));
-  hints.ai_family = PF_UNSPEC;
-  hints.ai_socktype = SOCK_STREAM;
-  error = getaddrinfo( server, port, &hints, &res0 );
-  if (error) return -1;
-  s = -1;
-  for (res = res0; res; res = res->ai_next) {
-    s = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-    if (s < 0) continue;
-    if (connect(s, res->ai_addr, res->ai_addrlen) < 0) {
-      close(s);
-      s = -1;
-      continue;
-    }
-    break;  /* okay we got one */
-  }
-  freeaddrinfo(res0);
-
-  if (want_tcp_keepalive) { /* global from vchat-client.c */
-    int one=1;
-    setsockopt(s,SOL_SOCKET,SO_KEEPALIVE,&one,sizeof(one));
-  }
-  return s;
-}
-
-/* connects to server */
-int
-vcconnect (char *server, char *port)
-{
-  /* used for tilde expansion of cert & key filenames */
-  char *tildex = NULL;
-
-  /* vchat connection x509 store */
-  vc_x509store_t *vc_store;
-
-  /* pointer to tilde-expanded certificate/keyfile-names */
-  char *certfile = NULL, *keyfile = NULL;
-
-  /* Connect to the server */
-  serverfd = connect_socket( server, port );
-  if( serverfd < 0 ) {
-    /* inform user */
-    snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_CANTCONNECT), server, port );
-    writechan (tmpstr);
-    return -1;
-  }
-  /* Abstract server IO in openssls BIO */
-  server_conn = BIO_new_socket( serverfd, 1 );
-
-  /* If SSL is requested, get our ssl-BIO running */
-  if( server_conn && getintoption(CF_USESSL) ) {
-    vc_store = vc_init_x509store();
-    if( !vc_store ) {
-        snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_ERR), "Out of memory" );
-        writechan (tmpstr);
-        return -1;
-    }
-
-    vc_x509store_setflags(vc_store, VC_X509S_SSL_VERIFY_PEER);
-
-    /* get name of certificate file */
-    certfile = getstroption (CF_CERTFILE);
-    /* do we have a certificate file? */
-    if (certfile) {
-      /* does the filename start with a tilde? expand it! */
-      if (certfile[0] == '~')
-        tildex = tilde_expand (certfile);
-      else
-        tildex = certfile;
-
-      vc_x509store_setflags(vc_store, VC_X509S_USE_CERTIFICATE);
-      vc_x509store_setcertfile(vc_store, tildex);
-
-      /* get name of key file */
-      keyfile = getstroption (CF_KEYFILE);
-
-      /* if we don't have a key file, the key may be in the cert file */
-      if (!keyfile)
-        keyfile = certfile;
-
-      /* does the filename start with a tilde? expand it! */
-      if (keyfile[0] == '~')
-        tildex = tilde_expand (keyfile);
-      else
-        tildex = keyfile;
-
-      vc_x509store_set_pkeycb(vc_store, (vc_askpass_cb_t)passprompt);
-      vc_x509store_setkeyfile(vc_store, tildex);
-    }
-
-    /* upgrade our plain BIO to ssl */
-    if( vc_connect_ssl( &server_conn, vc_store ) ) {
-      BIO_free_all( server_conn );
-      server_conn = NULL;
-      errno = EIO;
-    }
-  }
-
-  if( !server_conn ) {
-    /* inform user */
-    snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_CANTCONNECT), server, port );
-    writechan (tmpstr);
-    return -1;
-  }
-
-  /* inform user */
-  snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_CONNECTED), server, port);
-  writechan (tmpstr);
-
-  dumpfile = fopen( "dumpfile", "a");
-
-  /* if we didn't fail until now, we've got a connection. */
-  return 0;
-}
-
-/* disconnect from server */
-void
-vcdisconnect () {
-  BIO_free_all( server_conn );
-  server_conn = 0;
-  if (serverfd>0) {
-    close(serverfd);
-    serverfd = -1;
-  }
-  loggedin = 0;
-}
 
 /* handle a pm not sent error
  *  format: 412 %s */
@@ -264,7 +121,7 @@ serverlogin (char *message)
 {
   int utf8=!strcmp(nl_langinfo(CODESET), "UTF-8");
   if (utf8)
-    networkoutput(".e utf8");
+    vc_sendmessage(".e utf8");
 }
 
 /* parse and handle an idle message
@@ -401,9 +258,9 @@ justloggedin (char *message)
 void
 ownjoin (int channel)
 {
-  networkoutput(".t");
+  vc_sendmessage(".t");
   snprintf(tmpstr, TMPSTRSIZE, ".S %d",channel);
-  networkoutput(tmpstr);
+  vc_sendmessage(tmpstr);
 }
 
 /* this user changes his nick */
@@ -443,7 +300,7 @@ nickerr (char *message)
 
       /* form login message and send it to server */
       snprintf (tmpstr, TMPSTRSIZE, ".l %s %s %d", own_nick_get(), getstroption (CF_FROM), getintoption (CF_CHANNEL));
-      networkoutput (tmpstr);
+      vc_sendmessage (tmpstr);
     }
 }
 
@@ -476,7 +333,7 @@ login (char *message) {
 
   /* form login message and send it to server */
   snprintf (tmpstr, TMPSTRSIZE, ".l %s %s %d", own_nick_get(), getstroption (CF_FROM), getintoption (CF_CHANNEL));
-  networkoutput (tmpstr);
+  vc_sendmessage (tmpstr);
 }
 
 /* parse and handle anon login request
@@ -496,7 +353,7 @@ anonlogin (char *message)
 
   /* form login message and send it to server */
   snprintf (tmpstr, TMPSTRSIZE, ".l %s %s %d", own_nick_get(), getstroption (CF_FROM), getintoption (CF_CHANNEL));
-  networkoutput (tmpstr);
+  vc_sendmessage (tmpstr);
 }
 
 /* parse and handle list of nicks (from '.S')
@@ -849,7 +706,7 @@ networkinput (void)
   buf[BUFSIZE-1] = '\0'; /* sanity stop */
 
   /* receive data at offset */
-  bytes = BIO_read (server_conn, &buf[bufoff], BUFSIZE-1 - bufoff);
+  bytes = vc_receivemessage(&buf[bufoff], BUFSIZE-1 - bufoff);
 
   /* no bytes transferred? raise error message, bail out */
   if (bytes < 0)
@@ -907,21 +764,4 @@ networkinput (void)
       else
         bufoff = 0;
     }
-}
-
-void
-networkoutput (char *msg)
-{
-#ifdef DEBUG
-  /* debugging? log network output! */
-  fprintf (dumpfile, ">| %s (%zd)\n", msg, strlen(msg));
-#endif
-
-  /* send data to server */
-  if (BIO_write (server_conn, msg, strlen (msg)) != strlen (msg))
-    writecf (FS_ERR,"Message sending fuzzy.");
-
-  /* send line termination to server */
-  if (BIO_write (server_conn, "\r\n", 2) != 2)
-    writecf (FS_ERR,"Message sending fuzzy.");
 }

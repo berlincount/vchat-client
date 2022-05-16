@@ -29,6 +29,7 @@
 #include <locale.h>
 
 #include "vchat.h"
+#include "vchat-connection.h"
 #include "vchat-user.h"
 
 /* version of this module */
@@ -43,7 +44,6 @@ int status = 1;
 int ownquit = 0;
 /*   we set this, we DONT want to quit */
 int wantreconnect = 0;
-unsigned int want_tcp_keepalive = 0;
 
 static int reconnect_delay = 6;
 static time_t reconnect_time = 0;
@@ -51,17 +51,10 @@ static time_t reconnect_time = 0;
 /*   error string to show after exit */
 char errstr[ERRSTRSIZE] = "\0";
 
-/* locally global variables */
-/* our list of filedescriptors */
-static fd_set masterfds;
-
 /* declaration of configuration array */
 #include "vchat-config.h"
 
-/* servers filedescriptor from vchat-protocol.c */
-extern int serverfd;
-
-void setnoption (char *, char *);
+void setnoption (const char *, char *);
 
 static void parsecfg(char *line) {
   int bytes;
@@ -264,7 +257,7 @@ setstroption (confopt option, char *string)
 
 /* set-named-option, puts string to variable named by name */
 void
-setnoption (char *name, char *string)
+setnoption (const char *name, char *string)
 {
   int i;
 #ifdef DEBUG
@@ -354,11 +347,8 @@ cleanup (int signal)
   exitui ();
   /* clear userlist */
   ul_clear ();
-  /* close server connection */
-  if (serverfd > 0) {
-    close (serverfd);
-    serverfd = -1;
-  }
+  vc_disconnect();
+
   /* inform user if we where killed by signal */
   if (signal > 1)
     {
@@ -394,12 +384,9 @@ void calleverysecond( void ) {
 void
 eventloop (void)
 {
-  /* get fresh copy of filedescriptor list */
-  fd_set readfds = masterfds;
-  struct timeval tv = { 1, 0};
+  int poll_result = vc_poll( 1 /* second timeout */ );
 
-  switch (select (serverfd + 2, &readfds, NULL, NULL, &tv))
-  {
+  switch (poll_result) {
   case -1:
       /* EINTR is most likely a SIGWINCH - ignore for now */
       if (errno != EINTR)
@@ -411,19 +398,19 @@ eventloop (void)
           writecf (FS_ERR,tmpstr);
           /* see this as an error condition and bail out */
           status = 0;
-       }
-       break;
+      }
+      break;
   case 0:
       /* time out reached */
       calleverysecond();
       break;
   default:
       /* something to read from user & we're logged in or have a cert? */
-      if (FD_ISSET (0, &readfds) )
+      if (poll_result & 1)
         userinput ();
 
       /* something to read from server? */
-      if (serverfd!=-1 && FD_ISSET (serverfd, &readfds))
+      if (poll_result & 2)
         networkinput ();
       break;
   }
@@ -511,12 +498,8 @@ main (int argc, char **argv)
   initui ();
 
   while( status ) {
-    /* add stdin to masterfds */
-    FD_ZERO (&masterfds);
-    FD_SET (0, &masterfds);
-
     /* attempt connection */
-    if (vcconnect (getstroption(CF_SERVERHOST), getstroption(CF_SERVERPORT))) {
+    if (vc_connect (getstroption(CF_SERVERHOST), getstroption(CF_SERVERPORT))) {
        snprintf (tmpstr, TMPSTRSIZE, "Could not connect to server, %s.", strerror(errno));
        strncpy(errstr,tmpstr,TMPSTRSIZE-2);
        errstr[TMPSTRSIZE-2] = '\0';
@@ -531,8 +514,7 @@ main (int argc, char **argv)
       } else
         status = 0;
     } else {
-      /* add serverfd to masterfds, reset reconnect delay */
-      FD_SET (serverfd, &masterfds);
+      /* reset reconnect delay */
       reconnect_delay = 6;
       reconnect_time  = 0;
     }
@@ -541,7 +523,7 @@ main (int argc, char **argv)
       eventloop ();
 
     /* sanely close connection to server */
-    vcdisconnect ();
+    vc_disconnect ();
 
     if( !ownquit && ( getintoption( CF_AUTORECONN ) || wantreconnect ) )
       status = 1;

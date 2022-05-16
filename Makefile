@@ -26,11 +26,13 @@ CFLAGS += $(OLDREADLINE)
 ## enable debug code
 #CFLAGS += -DDEBUG
 
+#LDFLAGS = -L"/usr/local/opt/openssl@1.1/lib"
+
 ## the install prefix best is /usr/local
 PREFIX=/usr/local
 
-LIBS   = -lreadline -lncursesw -lssl -lcrypto
-OBJS   = vchat-client.o vchat-ui.o vchat-protocol.o vchat-user.o vchat-commands.o vchat-ssl.o
+LIBS   = -lssl -lcrypto -lncurses -lreadline
+OBJS   = vchat-client.o vchat-ui.o vchat-protocol.o vchat-user.o vchat-commands.o vchat-tls.o vchat-connection.o
 
 
 ##############################################
@@ -66,7 +68,7 @@ clean:
 ##############################################
 
 vchat-client: $(OBJS)
-	$(CC) $(CFLAGS) -o vchat-client $(OBJS) $(LIBS)
+	$(CC) $(CFLAGS) -o vchat-client $(OBJS) $(LIBS) $(LDFLAGS)
 
 vchat-client.o: vchat-client.c vchat-config.h Makefile
 	$(CC) $(CFLAGS) -o vchat-client.o -c vchat-client.c
@@ -83,8 +85,11 @@ vchat-user.o: vchat-user.c vchat.h
 vchat-commands.o: vchat-commands.c vchat.h vchat-config.h
 	$(CC) $(CFLAGS) -o vchat-commands.o -c vchat-commands.c
 
-vchat-ssl.o: vchat-ssl.c vchat-ssl.h
-	$(CC) $(CFLAGS) -o vchat-ssl.o -c vchat-ssl.c
+vchat-tls.o: vchat-tls.c vchat-tls.h
+	$(CC) $(CFLAGS) -o vchat-tls.o -c vchat-tls.c
+
+vchat-connection.o: vchat-connection.c vchat-connection.h
+	$(CC) $(CFLAGS) -o vchat-connection.o -c vchat-connection.c
 
 #vchat-client.1: vchat-client.sgml
 #	docbook2man vchat-client.sgml

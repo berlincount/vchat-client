@@ -25,6 +25,7 @@
 
 /* local includes */
 #include "vchat.h"
+#include "vchat-connection.h"
 #include "vchat-help.h"
 #include "vchat-user.h"
 
@@ -146,7 +147,7 @@ dothink( char *tail, char nice )
 
   /* send users message to server */
   snprintf (tmpstr, TMPSTRSIZE, ".%c %s", nice, tail);
-  networkoutput (tmpstr);
+  vc_sendmessage (tmpstr);
 
   /* show action in channel window */
   snprintf (tmpstr, TMPSTRSIZE, nice == 'O' ? getformatstr(FS_TXPUBNTHOUGHT) : getformatstr(FS_TXPUBTHOUGHT), tail);
@@ -163,7 +164,7 @@ doaction( char *tail )
   if( *tail ) {
       /* send users message to server */
       snprintf (tmpstr, TMPSTRSIZE, ".a %s", tail);
-      networkoutput (tmpstr);
+      vc_sendmessage (tmpstr);
 
       /* show action in channel window */
       snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_TXPUBACTION), own_nick_get(), tail);
@@ -194,7 +195,7 @@ privatemessagetx ( char *tail ) {
 
       /* form message and send to server */
       snprintf (tmpstr, TMPSTRSIZE, ".m %s %s", tail, mesg);
-      networkoutput (tmpstr);
+      vc_sendmessage (tmpstr);
 
       /* show message in private window */
       snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_TXPRIVMSG), tail, mesg);
@@ -254,7 +255,7 @@ handleline (char *line)
           /* generic server command, send to server, show to user */
           snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_COMMAND), line);
           writechan (tmpstr);
-          networkoutput (line);
+          vc_sendmessage (line);
           break;
       }
       break;
@@ -274,7 +275,7 @@ output_default(char *line ) {
       snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_TXPUBMSG), own_nick_get(), line);
 
       /* send original line to server */
-      networkoutput (line);
+      vc_sendmessage (line);
 
       /* output message to channel window */
       writechan (tmpstr);
@@ -430,7 +431,7 @@ command_quit(char *tail)
 {
   /* send users message to server */
   snprintf (tmpstr, TMPSTRSIZE, ".x %s", tail);
-  networkoutput (tmpstr);
+  vc_sendmessage (tmpstr);
 
   /* show action in channel window */
   writechan (tmpstr);

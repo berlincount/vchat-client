@@ -492,7 +492,7 @@ writescr ( WINDOW *win, struct sb_entry *entry ) {
   /* store original attributes */
   WATTR_GET( win, orgattr);
   attrbuffer[ 0 ] = orgattr;
-  
+
   /* copy time string */
   for( i = 0; i < timelen; i++ )
       if( tmp[ i ] == 1 ) {
@@ -871,13 +871,13 @@ gettextwidth (const char *textbuffer)
   do switch( *(textbuffer++) ) {
   case   1:
       if (!*(textbuffer++)) return width;
-      break;  
+      break;
   case   0:
       return width;
       break;
-  default:   
+  default:
       width++;
-      break;   
+      break;
   } while( 1 );
 }
 
@@ -920,20 +920,20 @@ getsbeheight (struct sb_entry *entry, const int xwidth, int needstime )
       break;
   case   1:
       if (!*textbuffer++) return lines;
-      break;  
+      break;
   case   0:
       return lines;
       break;
   case   2:
       textbuffer=entry->what;
       break;
-  default:   
+  default:
       if( curx++ == xwidth ) {
           curx = 0; lines++;
       }
-      break;   
+      break;
   } while( 1 );
- 
+
 }
 
 /* Check, which kind of filter we have to apply:

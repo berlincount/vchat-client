@@ -30,7 +30,7 @@ typedef struct servermessage servermessage;
 /* configuration types and variable numbers */
 typedef enum { CO_NIL, CO_STR, CO_INT } conftype;
 typedef enum { CF_NIL, CF_NICK, CF_FROM, CF_SERVERHOST, CF_SERVERPORT,
-CF_CIPHERSUITE, CF_CONFIGFILE, CF_CERTFILE, CF_KEYFILE, CF_FORMFILE,
+CF_CIPHERSUITE, CF_CONFIGFILE, CF_CERTFILE, CF_KEYFILE, CF_CAFILE, CF_FORMFILE,
 CF_LOGINSCRIPT, CF_FINGERPRINT, CF_PINFINGER, CF_USESSL, CF_IGNSSL, CF_VERIFYSSL, CF_USECERT,
 CF_PRIVHEIGHT, CF_PRIVCOLLAPS, CF_HSCROLL, CF_CHANNEL, CF_USETIME, CF_USETOPIC,
 CF_SCROLLBPRIV, CF_SCROLLBACK, CF_SCROLLBPRIVT, CF_SCROLLBACKT, CF_ENCODING,
@@ -86,7 +86,7 @@ void loadcfg (char *file,int complain,void (*lineparser) (char *));
 void loadformats (char *file);
 void cleanup(int signal);
 
-/*   configuration helper funktions from vchat-client.c */
+/*   configuration helper functions from vchat-client.c */
 char *getformatstr (formtstr id);
 char *getstroption (confopt option);
 void setstroption (confopt option, char *string);
@@ -143,10 +143,6 @@ void         handlequery      ( char *line );
 /* vchat-protocol.c */
 extern const char *vchat_io_version;
 
-/*   connect/disconnect */
-int  vcconnect    (char *server, char *port);
-void vcdisconnect ();
-
 /*   network I/O */
 void networkinput (void);
 void networkoutput (char *);
@@ -173,7 +169,7 @@ typedef struct {
   char  *help;
 } commandentry;
 
-/* vchat-ssl.c */
+/* vchat-tls.c */
 extern const char *vchat_ssl_version;
 extern const char *vchat_ssl_version_external;
 void vchat_ssl_get_version_external();

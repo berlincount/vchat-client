@@ -1,3 +1,4 @@
+#pragma once
 
 /* prototypes */
 
@@ -10,7 +11,13 @@ void vc_x509store_set_pkeycb(vc_x509store_t *, vc_askpass_cb_t);
 void vc_x509store_setflags(vc_x509store_t *, int);
 void vc_x509store_setkeyfile(vc_x509store_t *, char *);
 void vc_x509store_setcertfile(vc_x509store_t *, char *);
-int  vc_connect_ssl(BIO **conn, vc_x509store_t * );
+void vc_x509store_setcafile(vc_x509store_t *, char *);
+void vc_cleanup_x509store(vc_x509store_t *s);
+
+int  vc_tls_connect(int serverfd, vc_x509store_t * );
+ssize_t vc_tls_sendmessage(const void *buf, size_t size);
+ssize_t vc_tls_receivemessage(void *buf, size_t size);
+void vc_tls_cleanup();
 
 #define VC_X509S_NODEF_CAFILE                      0x01
 #define VC_X509S_NODEF_CAPATH                      0x02
