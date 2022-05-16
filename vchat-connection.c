@@ -83,7 +83,7 @@ vc_connect (const char *server, const char *port)
   vc_x509store_t *vc_store;
 
   /* pointer to tilde-expanded certificate/keyfile-names */
-  char *certfile = NULL;
+  char *certfile, *cafile;
 
   /* Connect to the server */
   serverfd = connect_tcp_socket( server, port );
@@ -123,16 +123,15 @@ vc_connect (const char *server, const char *port)
     free(certfile);
   }
 
-  if (getintoption(CF_VERIFYSSL)) {
-      /* get name of key file */
-      char *cafile = get_tilde_expanded (CF_CAFILE);
-      if (cafile) {
-        vc_x509store_setflags(vc_store, VC_X509S_NODEF_CAFILE);
-        vc_x509store_setcafile(vc_store, cafile);
-      }
-      vc_x509store_setflags(vc_store, VC_X509S_SSL_VERIFY_PEER);
-      free(cafile);
+  vc_x509store_setflags(vc_store, VC_X509S_SSL_VERIFY_PEER);
+
+  /* get name of ca file */
+  cafile = get_tilde_expanded (CF_CAFILE);
+  if (cafile && !access(cafile, F_OK)) {
+    vc_x509store_setflags(vc_store, VC_X509S_NODEF_CAFILE);
+    vc_x509store_setcafile(vc_store, cafile);
   }
+  free(cafile);
 
   /* upgrade our plain BIO to ssl */
   int result = vc_tls_connect( serverfd, vc_store );
