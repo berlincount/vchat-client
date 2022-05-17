@@ -456,8 +456,8 @@ command_version(char *tail)
   writeout (vchat_io_version);
   writeout (vchat_us_version);
   writeout (vchat_cm_version);
-  writeout (vchat_ssl_version);
-  writeout (vchat_ssl_version_external);
+  writeout (vchat_tls_version);
+  writeout (vchat_tls_version_external);
   showout();
 }
 

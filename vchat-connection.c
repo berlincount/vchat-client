@@ -84,7 +84,7 @@ int
 vc_connect (const char *server, const char *port)
 {
   /* vchat connection x509 store */
-  vc_x509store_t *vc_store;
+  vc_x509store_t vc_store;
 
   /* pointer to tilde-expanded certificate/keyfile-names */
   char *certfile, *cafile;
@@ -102,12 +102,7 @@ vc_connect (const char *server, const char *port)
     return 0;
 
   /* If SSL is requested, get our ssl-BIO running */
-  vc_store = vc_init_x509store();
-  if( !vc_store ) {
-      snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_ERR), "Out of memory" );
-      writechan (tmpstr);
-      return -1;
-  }
+  vc_init_x509store(&vc_store);
 
   /* get name of certificate file */
   certfile = get_tilde_expanded (CF_CERTFILE);
@@ -116,30 +111,25 @@ vc_connect (const char *server, const char *port)
     /* get name of key file */
     char *keyfile = get_tilde_expanded (CF_KEYFILE);
 
-    vc_x509store_setflags(vc_store, VC_X509S_USE_CERTIFICATE);
-    vc_x509store_setcertfile(vc_store, certfile);
+    vc_x509store_setcertfile(&vc_store, certfile);
+    vc_x509store_set_pkeycb(&vc_store, (vc_askpass_cb_t)passprompt);
 
-    vc_x509store_set_pkeycb(vc_store, (vc_askpass_cb_t)passprompt);
     /* if we don't have a key file, the key may be in the cert file */
-    vc_x509store_setkeyfile(vc_store, keyfile ? keyfile : certfile);
+    vc_x509store_setkeyfile(&vc_store, keyfile ? keyfile : certfile);
 
     free(keyfile);
     free(certfile);
   }
 
-  vc_x509store_setflags(vc_store, VC_X509S_SSL_VERIFY_PEER);
-
   /* get name of ca file */
   cafile = get_tilde_expanded (CF_CAFILE);
-  if (cafile && !access(cafile, F_OK)) {
-    vc_x509store_setflags(vc_store, VC_X509S_NODEF_CAFILE);
-    vc_x509store_setcafile(vc_store, cafile);
-  }
+  if (cafile && !access(cafile, F_OK))
+    vc_x509store_setcafile(&vc_store, cafile);
   free(cafile);
 
   /* upgrade our plain BIO to ssl */
-  int result = vc_tls_connect( serverfd, vc_store );
-  vc_cleanup_x509store(vc_store);
+  int result = vc_tls_connect( serverfd, &vc_store );
+  vc_cleanup_x509store(&vc_store);
 
   if (result) {
     close(serverfd);

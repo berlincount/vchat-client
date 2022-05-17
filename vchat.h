@@ -167,6 +167,6 @@ typedef struct {
 } commandentry;
 
 /* vchat-tls.c */
-extern const char *vchat_ssl_version;
-extern const char *vchat_ssl_version_external;
-void vchat_ssl_get_version_external();
+extern const char *vchat_tls_version;
+extern const char *vchat_tls_version_external;
+void vchat_tls_get_version_external();
