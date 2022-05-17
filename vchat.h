@@ -147,7 +147,7 @@ void protocol_parsemsg (char *message);
 /*   helpers for vchat-user.c */
 void ownjoin (int channel);
 void ownleave (int channel);
-void ownnickchange (char *newnick);
+void ownnickchange (const char *newnick);
 
 /* vchat-commands.c */
 extern const char *vchat_cm_version;

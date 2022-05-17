@@ -112,7 +112,7 @@ static int             currentstamp = 0;
 
 static void resize           (int);
 static void forceredraw      (void);
-static void forceredraw_wrapper (int a) {forceredraw();}
+static void forceredraw_wrapper (int a) {(void)a; forceredraw();}
 static void drawwin          (WINDOW *win, struct sb_data  *sb);
 static int  writescr         (WINDOW *win, struct sb_entry *entry);
 static int  testfilter       (             struct sb_entry *entry);
@@ -760,6 +760,7 @@ void
 resize (int signal)
 {
   int xsize,ysize,topicheight=topic?1:0;
+  (void)signal;
 
   ttgtsz(&xsize,&ysize);
   resizeterm(ysize,xsize);
@@ -1383,6 +1384,8 @@ passprompt (char *buf, int size, int rwflag, void *userdata)
 {
   int i;
   char *passphrase = NULL;
+  (void)rwflag;
+  (void)userdata;
 
   /* use special non-revealing redraw function */
   /* FIXME: passphrase isn't protected against e.g. swapping */
@@ -1476,6 +1479,7 @@ removefromfilterlist( int(*test)(filt *flt, void *data, char colour), void *data
 
 static int
 test_clear( filt *flt, void *data, char c ) {
+  (void)data;
   if( !c || ( c == flt->colour ) || ( (c == '*') && (flt->colour != '-') && (flt->colour != '+') ) )
       return RMFILTER_RMANDCONT;
   else

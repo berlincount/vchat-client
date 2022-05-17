@@ -292,10 +292,10 @@ getintoption (confopt option)
 #endif
   for (i = 0; configoptions[i].type != CO_NIL; i++)
     if ((configoptions[i].id == option) && (configoptions[i].type == CO_INT)) {
-      if ((uintptr_t)configoptions[i].value == -1)
-         return (uintptr_t) configoptions[i].defaultvalue;   
+      if ((intptr_t)configoptions[i].value == -1)
+         return (intptr_t) configoptions[i].defaultvalue;
        else
-         return (uintptr_t) configoptions[i].value;
+         return (intptr_t) configoptions[i].value;
     }
   return 0;
 }

@@ -141,7 +141,7 @@ translatecommand( char **cmd)
 
 /* handle thought */
 static void
-dothink( char *tail, char nice )
+dothink(const char *tail, const char nice )
 {
   while( *tail == ' ' ) tail++;
 
@@ -157,7 +157,7 @@ dothink( char *tail, char nice )
 
 /* handle action */
 static void
-doaction( char *tail )
+doaction(const char *tail )
 {
   while( *tail == ' ' ) tail++;
 
@@ -177,7 +177,7 @@ doaction( char *tail )
 
 /* handle private message outgoing */
 static void
-privatemessagetx ( char *tail ) {
+privatemessagetx (char *tail ) {
   char *mesg;
 
   /* find nick */
@@ -406,6 +406,7 @@ command_rmflt (char *tail) {
 /* list filters */
 static void
 command_lsflt (char *tail) {
+  (void)tail;
   listfilters();
 }
 
@@ -413,13 +414,14 @@ command_lsflt (char *tail) {
 static void
 command_action(char *tail)
 {
-  doaction( tail);
+  doaction(tail);
 }
 
 /* handle a "/reconnect" request */
 static void
 command_reconnect(char *tail)
 {
+  (void)tail;
   status = 0;
   wantreconnect = 1;
   ownquit = 0;
@@ -446,6 +448,7 @@ command_quit(char *tail)
 void
 command_version(char *tail)
 {
+  (void)tail;
   /* output internal versions of all modules */
   flushout();
   writeout (vchat_cl_version);

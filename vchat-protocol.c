@@ -116,7 +116,8 @@ pubthoughts (char *message)
 static void
 serverlogin (char *message)
 {
-  int utf8=!strcmp(nl_langinfo(CODESET), "UTF-8");
+  (void)message;
+  int utf8 = !strcmp(nl_langinfo(CODESET), "UTF-8");
   if (utf8)
     vc_sendmessage(".e utf8");
 }
@@ -262,8 +263,9 @@ ownjoin (int channel)
 
 /* this user changes his nick */
 void
-ownnickchange (char *newnick)
+ownnickchange (const char *newnick)
 {
+  (void)newnick;
 }
 
 /* parse and handle a nick error message
