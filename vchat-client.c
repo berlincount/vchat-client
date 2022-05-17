@@ -411,7 +411,7 @@ eventloop (void)
 
       /* something to read from server? */
       if (poll_result & 2)
-        networkinput ();
+        vc_receive ();
       break;
   }
 }

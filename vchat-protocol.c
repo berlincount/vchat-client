@@ -57,9 +57,6 @@ static void pmnotsent (char *message);
 /* declaration of server message array */
 #include "vchat-messages.h"
 
-/* status-variable from vchat-client.c
- * eventloop is done as long as this is true */
-extern int status;
 char *encoding;
 
 /* handle a pm not sent error
@@ -577,8 +574,8 @@ usernickchange (char *message)
 }
 
 /* handle received message from server */
-static void
-parsemsg (char *message)
+void
+protocol_parsemsg (char *message)
 {
   char *str1, *str2;
   int i;
@@ -691,60 +688,3 @@ parsemsg (char *message)
     }
 }
 
-/* offset in buffer (for linebreaks at packet borders) */
-#define BUFSIZE 4096
-static char _buf[BUFSIZE];
-static size_t _buf_fill;
-
-/* get data from servers filedescriptor */
-void
-networkinput (void)
-{
-  char *endmsg;
-  size_t freebytes = BUFSIZE - _buf_fill;
-  ssize_t bytes = vc_receivemessage(&_buf[_buf_fill], freebytes);
-
-  /* Our tls functions may require retries with handshakes etc, this is signalled by -2 */
-  if (bytes == -2)
-    return;
-
-  /* Error on the socket read? raise error message, bail out */
-  if (bytes == -1) {
-      snprintf (tmpstr, TMPSTRSIZE, "Receive fails, %s.", strerror(errno));
-      snprintf (errstr, ERRSTRSIZE, "Receive fails, %s.\n", strerror(errno));
-      writecf (FS_ERR,tmpstr);
-      status = 0;
-      return;
-  }
-
-  /* end of file from server? */
-  if (bytes == 0) {
-      /* inform user, bail out */
-      writecf (FS_SERV, "* EOF from server.");
-      snprintf (errstr, ERRSTRSIZE, "* EOF from server.\n");
-      status = 0;
-      return;
-  }
-
-  _buf_fill += bytes;
-
-  /* as long as there are lines .. */
-  while ((endmsg = memchr(_buf, '\n', _buf_fill)) != NULL) {
-    if (endmsg > _buf) {
-      /* Zero terminate message, optionally chomp CR */
-      endmsg[0] = 0;
-      if (endmsg[-1] == '\r')
-        endmsg[-1] = 0;
-      /* If terminating and chomping left us with a message, give it to line handler */
-      if (_buf[0]) {
-#ifdef DEBUG
-        /* debugging? log network input! */
-        fprintf (stderr, "<| %s\n", _buf);
-#endif
-        parsemsg (_buf);
-      }
-    }
-    _buf_fill -= 1 + endmsg - _buf;
-    memmove(_buf, endmsg + 1, _buf_fill);
-  }
-}

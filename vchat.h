@@ -142,10 +142,7 @@ void         handlequery      ( char *line );
 
 /* vchat-protocol.c */
 extern const char *vchat_io_version;
-
-/*   network I/O */
-void networkinput (void);
-void networkoutput (char *);
+void protocol_parsemsg (char *message);
 
 /*   helpers for vchat-user.c */
 void ownjoin (int channel);
