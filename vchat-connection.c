@@ -190,31 +190,23 @@ vc_disconnect () {
   loggedin = 0;
 }
 
+#define STAGINGSIZE 16384
+static char _staging[STAGINGSIZE];
 void
 vc_sendmessage (const char *msg)
 {
+  size_t sent, len = snprintf(_staging, sizeof(_staging), "%s\r\n", msg);
 #ifdef DEBUG
   /* debugging? log network output! */
-  fprintf (dumpfile, ">| %s (%zd)\n", msg, strlen(msg));
+  fprintf (dumpfile, ">| (%zd) %s\n", len - 2, msg);
 #endif
 
-  if (getintoption(CF_USESSL)) {
-    /* send data to server */
-    if (vc_tls_sendmessage (msg, strlen (msg)) != strlen (msg))
-      writecf (FS_ERR,"Message sending fuzzy.");
-
-    /* send line termination to server */
-    if (vc_tls_sendmessage ("\r\n", 2) != 2)
-      writecf (FS_ERR,"Message sending fuzzy.");
-  } else {
-    /* send data to server */
-    if (write (serverfd, msg, strlen (msg)) != strlen (msg))
-      writecf (FS_ERR,"Message sending fuzzy.");
-
-    /* send line termination to server */
-    if (write (serverfd, "\r\n", 2) != 2)
-      writecf (FS_ERR,"Message sending fuzzy.");
-  }
+  if (getintoption(CF_USESSL))
+    sent = vc_tls_sendmessage (_staging, len);
+  else
+    sent = write (serverfd, _staging, len);
+  if (sent != len)
+    writecf (FS_ERR,"Message sending fuzzy.");
 }
 
 /* offset in buffer (for linebreaks at packet borders) */
