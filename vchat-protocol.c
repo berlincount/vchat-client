@@ -692,76 +692,59 @@ parsemsg (char *message)
 }
 
 /* offset in buffer (for linebreaks at packet borders) */
-static int bufoff = 0;
+#define BUFSIZE 4096
+static char _buf[BUFSIZE];
+static size_t _buf_fill;
 
 /* get data from servers filedescriptor */
 void
 networkinput (void)
 {
-  int bytes;
-  char *tmp = NULL;
-#define BUFSIZE 4096
-  char buf[BUFSIZE];     /* data buffer */
-  char *ltmp = buf;
-  buf[BUFSIZE-1] = '\0'; /* sanity stop */
+  char *endmsg;
+  size_t freebytes = BUFSIZE - _buf_fill;
+  ssize_t bytes = vc_receivemessage(&_buf[_buf_fill], freebytes);
 
-  /* receive data at offset */
-  bytes = vc_receivemessage(&buf[bufoff], BUFSIZE-1 - bufoff);
+  /* Our tls functions may require retries with handshakes etc, this is signalled by -2 */
+  if (bytes == -2)
+    return;
 
-  /* no bytes transferred? raise error message, bail out */
-  if (bytes < 0)
-    {
+  /* Error on the socket read? raise error message, bail out */
+  if (bytes == -1) {
       snprintf (tmpstr, TMPSTRSIZE, "Receive fails, %s.", strerror(errno));
-      strncpy(errstr,tmpstr,TMPSTRSIZE-2);
-      errstr[TMPSTRSIZE-2] = '\0';
-      strcat(errstr,"\n");
+      snprintf (errstr, ERRSTRSIZE, "Receive fails, %s.\n", strerror(errno));
       writecf (FS_ERR,tmpstr);
       status = 0;
-    }
+      return;
+  }
+
   /* end of file from server? */
-  else if (bytes == 0)
-    {
+  if (bytes == 0) {
       /* inform user, bail out */
-      writecf (FS_SERV,"* EOF from server");
-      strncpy(errstr,"* EOF from server",TMPSTRSIZE-2);
-      errstr[TMPSTRSIZE-2] = '\0';
-      strcat(errstr,"\n");
+      writecf (FS_SERV, "* EOF from server.");
+      snprintf (errstr, ERRSTRSIZE, "* EOF from server.\n");
       status = 0;
-    }
-  else
-    {
-      /* terminate message */
-      buf[bytes + bufoff] = '\0';
-      /* as long as there are lines .. */
-      while ((tmp = strchr (ltmp, '\n')) != NULL)
-	{
-          /* did the server send CR+LF instead of LF with the last line? */
-	  if (tmp[-1] == '\r')
-	    tmp[-1] = '\0';
+      return;
+  }
 
-          /* remove newline from previous message, advance pointer of next
-           * message */
-	  tmp[0] = '\0';
-	  tmp++;
+  _buf_fill += bytes;
 
-          /* we have a last message? give away to line handler! */
-	  if (ltmp[0])
-            {
+  /* as long as there are lines .. */
+  while ((endmsg = memchr(_buf, '\n', _buf_fill)) != NULL) {
+    if (endmsg > _buf) {
+      /* Zero terminate message, optionally chomp CR */
+      endmsg[0] = 0;
+      if (endmsg[-1] == '\r')
+        endmsg[-1] = 0;
+      /* If terminating and chomping left us with a message, give it to line handler */
+      if (_buf[0]) {
 #ifdef DEBUG
-              /* debugging? log network input! */
-              fprintf (stderr, "<| %s\n", ltmp);
+        /* debugging? log network input! */
+        fprintf (stderr, "<| %s\n", _buf);
 #endif
-	      parsemsg (ltmp);
-            }
-
-          /* move line along .. */
-          ltmp = tmp;
+        parsemsg (_buf);
       }
-      /* buffer exhausted, move partial line to start of buffer and go on .. */
-      bufoff = (bytes+bufoff) - (ltmp-buf);
-      if (bufoff > 0)
-        memmove (buf, ltmp, bufoff);
-      else
-        bufoff = 0;
     }
+    _buf_fill -= 1 + endmsg - _buf;
+    memmove(_buf, endmsg + 1, _buf_fill);
+  }
 }
