@@ -465,7 +465,6 @@ ssize_t vc_tls_sendmessage(const void *buf, size_t size) {
 
 ssize_t vc_tls_receivemessage(void *buf, size_t size) {
    ssize_t received = (ssize_t)BIO_read (server_conn, buf, size);
-   fprintf(stderr, "%zd\n", received);
    if (received != 0)
       return received;
    if (BIO_should_retry(server_conn))
