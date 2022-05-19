@@ -436,7 +436,7 @@ void vc_init_x509store(vc_x509store_t *store)
 }
 
 static void vc_tls_report_error(int error, char *message) {
-    size_t used = snprintf(tmpstr, sizeof(tmpstr), message);
+    size_t used = snprintf(tmpstr, sizeof(tmpstr), "%s", message);
     mbedtls_strerror(error, tmpstr + used, sizeof(tmpstr) - used);
     writecf(FS_ERR, tmpstr);
 }
