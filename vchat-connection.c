@@ -135,6 +135,7 @@ vc_connect (const char *server, const char *port)
     close(serverfd);
     serverfd = -1;
     errno = EIO;
+    vc_tls_cleanup();
     snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_CANTCONNECT), server, port );
     writechan (tmpstr);
     return -1;

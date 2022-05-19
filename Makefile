@@ -6,18 +6,35 @@
 # configuration                              #
 ##############################################
 
+OBJS = vchat-client.o vchat-ui.o vchat-protocol.o vchat-user.o vchat-commands.o vchat-tls.o vchat-connection.o
+
+LIBS = -lncurses
+LIBS += -lreadline
+
 CFLAGS = -Wall -Os
-#CFLAGS = -Wall -g -ggdb
 
 ## use this line when you've got an readline before 4.(x|2)
 #CFLAGS += -DOLDREADLINE
-
 CFLAGS += $(OLDREADLINE)
 
+##### Enable this for using the OpenSSL library
+CFLAGS += -DTLS_LIB_OPENSSL -I"/usr/local/opt/openssl@1.1/include"
+LIBS += -lssl -lcrypto
+
+##### Enable this for using the mbedTLS library
+#CFLAGS += -DTLS_LIB_MBEDTLS
+#LIBS += -lmbedx509 -lmbedtls -lmbedcrypto
+
 ## you might need one or more of these:
+#CFLAGS+= -Wextra -Wall -g -ggdb
+#CFLAGS+= -arch x86_64 -Wno-deprecated-declarations
+#CFLAGS+= -arch i386 -Wno-deprecated-declarations
 #CFLAGS += -I/usr/local/ssl/include -L/usr/local/ssl/lib
 #CFLAGS += -I/usr/local/include -L/usr/local/lib
 #CFLAGS += -I/usr/pkg/include -L/usr/pkg/lib
+#LDFLAGS += -L"/usr/local/opt/openssl@1.1/lib"
+#CFLAGS += -I../readline-6.3
+#LIBS += ../readline-6.3/libreadline.a
 
 ## enable dietlibc
 #CC = diet cc
@@ -26,13 +43,8 @@ CFLAGS += $(OLDREADLINE)
 ## enable debug code
 #CFLAGS += -DDEBUG
 
-#LDFLAGS = -L"/usr/local/opt/openssl@1.1/lib"
-
 ## the install prefix best is /usr/local
 PREFIX=/usr/local
-
-LIBS   = -lssl -lcrypto -lncurses -lreadline
-OBJS   = vchat-client.o vchat-ui.o vchat-protocol.o vchat-user.o vchat-commands.o vchat-tls.o vchat-connection.o
 
 
 ##############################################
