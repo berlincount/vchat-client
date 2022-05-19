@@ -18,7 +18,7 @@ CFLAGS = -Wall -Os
 CFLAGS += $(OLDREADLINE)
 
 ##### Enable this for using the OpenSSL library
-CFLAGS += -DTLS_LIB_OPENSSL -I"/usr/local/opt/openssl@1.1/include"
+CFLAGS += -DTLS_LIB_OPENSSL
 LIBS += -lssl -lcrypto
 
 ##### Enable this for using the mbedTLS library
