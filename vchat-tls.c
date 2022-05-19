@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <errno.h>
 
 #include <readline/readline.h>
 
@@ -67,6 +68,52 @@ void vc_x509store_setcertfile(vc_x509store_t *store, char *file) {
     free(store->certfile);
     store->certfile = ( file ? strdup(file) : 0 );
     store->flags |= VC_X509S_USE_CERTIFICATE;
+}
+
+static int verify_or_store_fingerprint(const char *fingerprint) {
+    char *fingerprint_file_path = tilde_expand(getstroption(CF_FINGERPRINT));
+    if (!fingerprint_file_path) {
+        writecf(FS_ERR, "[SSL FINGERPRINT  ] The CF_FINGERPRINT path is not set.");
+        return -1;
+    }
+
+    FILE *fingerprint_file = fopen(fingerprint_file_path, "r");
+    if (fingerprint_file) {
+        /* Read fingerprint from file */
+        char old_fingerprint[128];
+        char * r = fgets(old_fingerprint, sizeof(old_fingerprint), fingerprint_file);
+        fclose(fingerprint_file);
+
+        if (r) {
+            /* chomp */
+            char *nl = strchr(r, '\n');
+            if (nl) *nl = 0;
+
+            /* verify fingerprint matches stored version */
+            if (!strcmp(fingerprint, old_fingerprint))
+                goto cleanup_happy;
+        }
+
+        snprintf(tmpstr, TMPSTRSIZE, "[SSL FINGERPRINT  ] Found pinned fingerprint (in %s) %s but expected %s", r ? old_fingerprint : "<FILE READ ERROR>", getstroption(CF_FINGERPRINT), fingerprint);
+        writecf(FS_ERR, tmpstr);
+        writecf(FS_ERR, "[SSL CONNECT ERROR] Fingerprint mismatch! Server cert updated?");
+        free(fingerprint_file_path);
+        return 1;
+    } else
+        writecf(FS_ERR, "[WARNING] No pinned Fingerprint found!");
+
+    fingerprint_file = fopen(fingerprint_file_path, "w");
+    if (!fingerprint_file) {
+        snprintf (tmpstr, TMPSTRSIZE, "[WARNING] Can't write fingerprint file, %s.", strerror(errno));
+        writecf(FS_ERR, tmpstr);
+    } else {
+        fputs(fingerprint, fingerprint_file);
+        fclose(fingerprint_file);
+        writecf(FS_SERV, "Stored pinned fingerprint.");
+    }
+cleanup_happy:
+    free(fingerprint_file_path);
+    return 0;
 }
 
 #ifdef TLS_LIB_OPENSSL
@@ -186,10 +233,9 @@ int vc_tls_connect( int serverfd, vc_x509store_t *vc_store )
     unsigned char fingerprint_bin[EVP_MAX_MD_SIZE];
     unsigned int fingerprint_len;
 
-    FILE *fingerprint_file = NULL;
     char * fp = fingerprint;
 
-    long result, j;
+    long j;
 
     if( !ctx )
         goto all_errors;
@@ -249,44 +295,8 @@ int vc_tls_connect( int serverfd, vc_x509store_t *vc_store )
     /* we don't need the peercert anymore */
     X509_free(peercert);
 
-    /* verify fingerprint */
-    if (getintoption(CF_PINFINGER)) {
-
-        fingerprint_file = fopen(tilde_expand(getstroption(CF_FINGERPRINT)), "r");
-        if (fingerprint_file) {
-
-            /* Read fingerprint from file */
-            char old_fingerprint[EVP_MAX_MD_SIZE*4];
-            char * r = fgets(old_fingerprint, sizeof(old_fingerprint), fingerprint_file);
-            fclose(fingerprint_file);
-
-            if (r) {
-                /* chomp */
-                char *nl = strchr(r, '\n');
-                if (nl) *nl = 0;
-
-                /* verify fingerprint matches stored version */
-                if (!strcmp(fingerprint, old_fingerprint))
-                    return 0;
-            }
-
-            snprintf(tmpstr, TMPSTRSIZE, "[SSL FINGERPRINT  ] %s (from %s)", r ? old_fingerprint : "<FILE READ ERROR>", getstroption(CF_FINGERPRINT));
-            writecf(FS_ERR, tmpstr);
-            writecf(FS_ERR, "[SSL CONNECT ERROR] Fingerprint mismatch! Server cert updated?");
-            return 1;
-        }
-
-        fingerprint_file = fopen(tilde_expand(getstroption(CF_FINGERPRINT)), "w");
-        if (!fingerprint_file) {
-            snprintf (tmpstr, TMPSTRSIZE, "[WARNING] Can't write fingerprint file, %s.", strerror(errno));
-            writecf(FS_ERR, tmpstr);
-        } else {
-            fputs(fingerprint, fingerprint_file);
-            fclose(fingerprint_file);
-            writecf(FS_SERV, "Stored fingerprint.");
-        }
-        return 0;
-    }
+    if (getintoption(CF_PINFINGER) && verify_or_store_fingerprint(fingerprint))
+        return 1;
 
     /* If verify of x509 chain was requested, do the check here */
     if (X509_V_OK == SSL_get_verify_result(sslp))
