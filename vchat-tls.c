@@ -405,6 +405,7 @@ void vc_tls_cleanup() {
 #include <mbedtls/ctr_drbg.h>
 #include <mbedtls/x509.h>
 #include <mbedtls/pk.h>
+#include <mbedtls/md.h>
 #include <mbedtls/debug.h>
 #include "mbedtls/error.h"
 
@@ -454,7 +455,7 @@ void vc_init_x509store(vc_x509store_t *store)
 }
 
 static void vc_tls_report_error(int error, char *message) {
-    size_t used = snprintf(tmpstr, sizeof(tmpstr), "%s", message);
+    size_t used = snprintf(tmpstr, sizeof(tmpstr), "Error: %s", message);
     mbedtls_strerror(error, tmpstr + used, sizeof(tmpstr) - used);
     writecf(FS_ERR, tmpstr);
 }
@@ -466,7 +467,8 @@ int vc_tls_connect( int serverfd, vc_x509store_t *vc_store )
     mbedtls_ssl_config *conf = &_mbedtls_state._conf;
     mbedtls_ssl_context *ssl = &_mbedtls_state._ssl;
     int ret, suitecount = 0;
-    char *token;
+    char fingerprint[128], *token;
+    uint8_t digest[20];
 
     mbedtls_x509_crt_init(&s->_cacert);
     mbedtls_x509_crt_init(&s->_cert);
@@ -474,8 +476,11 @@ int vc_tls_connect( int serverfd, vc_x509store_t *vc_store )
     mbedtls_ssl_init(ssl);
     mbedtls_ssl_config_init(conf);
 
-    if (mbedtls_ssl_config_defaults(conf, MBEDTLS_SSL_IS_CLIENT, MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT)) {
-        writecf(FS_ERR, "Out of memory");
+    writecf(FS_SERV, "[SOCKET CONNECTED    ]");
+    writecf(FS_SERV, "[UPGRADING TO TLS    ]");
+
+    if ((ret = mbedtls_ssl_config_defaults(conf, MBEDTLS_SSL_IS_CLIENT, MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT)) != 0) {
+        vc_tls_report_error(ret, "Can not initialise tls parameters, mbedtls reports: ");
         return -1;
     }
 
@@ -500,74 +505,121 @@ int vc_tls_connect( int serverfd, vc_x509store_t *vc_store )
     mbedtls_ssl_conf_ciphersuites(conf, s->ciphersuits);
 
     if (vc_store->cafile) {
-        mbedtls_x509_crt_parse_file(&s->_cacert, vc_store->cafile);
-        mbedtls_ssl_conf_ca_chain(conf, &s->_cacert, NULL);
-    }
-
-    mbedtls_x509_crt_parse_file(&s->_cert, vc_store->certfile);
-    char *password = NULL;
-    char password_buf[1024];
-    while (1) {
-        ret = mbedtls_pk_parse_keyfile(&s->_key, vc_store->keyfile, password
-#if MBEDTLS_VERSION_MAJOR >= 3
-        , mbedtls_ctr_drbg_random, &s->_ctr_drbg
-#endif
-        );
-        if (!ret)
-            break;
-        if (ret != MBEDTLS_ERR_PK_PASSWORD_REQUIRED && ret != MBEDTLS_ERR_PK_PASSWORD_MISMATCH) {
-            vc_tls_report_error(ret, "CREATE CTX: Loading key failed, mbedtls reports: ");
+        if ((ret = mbedtls_x509_crt_parse_file(&s->_cacert, vc_store->cafile)) != 0) {
+            vc_tls_report_error(ret, "Can not load CA cert, mbedtls reports: ");
             return -1;
         }
-        if (ret == MBEDTLS_ERR_PK_PASSWORD_MISMATCH)
-            vc_tls_report_error(ret, "Wrong passphrase, mbedtls reports: ");
-        vc_store->askpass_callback(password_buf, sizeof(password_buf), 0, NULL);
-        password = password_buf;
+        mbedtls_ssl_conf_ca_chain(conf, &s->_cacert, NULL);
+        writecf(FS_SERV, "[CA CERT LOADED      ]");
     }
-    memset_s(password_buf, sizeof(password_buf), 0, sizeof(password_buf));
+
+    if (vc_store->flags & VC_X509S_USE_CERTIFICATE) {
+        char *password = NULL;
+        char password_buf[1024];
+
+        if ((ret = mbedtls_x509_crt_parse_file(&s->_cert, vc_store->certfile)) != 0) {
+            vc_tls_report_error(ret, "Can not load client cert, mbedtls reports: ");
+            return -1;
+        }
+        writecf(FS_SERV, "[CLIENT CERT LOADED  ]");
+
+        while (1) {
+            if ((ret = mbedtls_pk_parse_keyfile(&s->_key, vc_store->keyfile, password
+#if MBEDTLS_VERSION_MAJOR >= 3
+            , mbedtls_ctr_drbg_random, &s->_ctr_drbg
+#endif
+            )) == 0)
+                break;
+            if (ret != MBEDTLS_ERR_PK_PASSWORD_REQUIRED && ret != MBEDTLS_ERR_PK_PASSWORD_MISMATCH) {
+                vc_tls_report_error(ret, "Can not load client key, mbedtls reports: ");
+                return -1;
+            }
+            if (ret == MBEDTLS_ERR_PK_PASSWORD_MISMATCH)
+                vc_tls_report_error(ret, "Wrong passphrase, mbedtls reports: ");
+            vc_store->askpass_callback(password_buf, sizeof(password_buf), 0, NULL);
+            password = password_buf;
+        }
+        memset_s(password_buf, sizeof(password_buf), 0, sizeof(password_buf));
+        writecf(FS_SERV, "[CLIENT KEY LOADED   ]");
+
 
 #if MBEDTLS_VERSION_MAJOR == 3 && MBEDTLS_VERSION_MINOR == 0
-    if ((ret = mbedtls_pk_check_pair(&(s->_cert.MBEDTLS_PRIVATE(pk)), &s->_key
+        mbedtls_pk_context *pubkey = &(s->_cert.MBEDTLS_PRIVATE(pk));
 #else
-    if ((ret = mbedtls_pk_check_pair(&(s->_cert.pk), &s->_key
+        mbedtls_pk_context *pubkey = &(s->_cert.pk);
 #endif
-#if MBEDTLS_VERSION_MAJOR >= 3
-        , mbedtls_ctr_drbg_random, &s->_ctr_drbg
-#endif
-    ))) {
-        vc_tls_report_error(ret, "ERROR: Cert and key mismatch, mbedtls reports: ");
-        return 1;
-    }
 
-    if ((ret = mbedtls_ssl_conf_own_cert(conf, &s->_cert, &s->_key)) != 0) {
-        vc_tls_report_error(ret, "Setting key and cert to tls session fails, mbedtls reports: ");
-        return -1;
+        if ((ret = mbedtls_pk_check_pair(pubkey, &s->_key
+#if MBEDTLS_VERSION_MAJOR >= 3
+            , mbedtls_ctr_drbg_random, &s->_ctr_drbg
+#endif
+        )) != 0) {
+            vc_tls_report_error(ret, "Cert and key mismatch, mbedtls reports: ");
+            return 1;
+        }
+
+        if ((ret = mbedtls_ssl_conf_own_cert(conf, &s->_cert, &s->_key)) != 0) {
+            vc_tls_report_error(ret, "Setting key and cert to tls session fails, mbedtls reports: ");
+            return -1;
+        }
     }
 
     /* Config constructed, pass to ssl */
     /* Init ssl and config structs and configure ssl ctx */
-    mbedtls_ssl_setup(ssl, conf);
+    if ((ret = mbedtls_ssl_setup(ssl, conf)) != 0) {
+        vc_tls_report_error(ret, "Can not configure parameters on tls context, mbedtls reports: ");
+        return -1;
+    }
     /* TODO: mbedtls_ssl_set_hostname(&ssl, SERVER_NAME) */
 
     mbedtls_ssl_set_bio(ssl, (void*)(intptr_t)serverfd, static_tcp_send, static_tcp_recv, NULL );
 
-    while ((ret = mbedtls_ssl_handshake(ssl)) != 0) {
+    while ((ret = mbedtls_ssl_handshake(ssl)) != 0)
         if (ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE) {
             vc_tls_report_error(ret, "TLS handshake failed, mbedtls reports: ");
             return -1;
         }
-    }
 
-    snprintf(tmpstr, TMPSTRSIZE, "[SSL CIPHER       ] %s", mbedtls_ssl_get_ciphersuite(ssl));
+    writecf(FS_SERV,"[TSL HANDSHAKE DONE  ]");
+    snprintf(tmpstr, TMPSTRSIZE, "[TSL CIPHER LIST     ] %s", mbedtls_ssl_get_ciphersuite(ssl));
     writecf(FS_SERV, tmpstr);
 
     const mbedtls_x509_crt* peer_cert = mbedtls_ssl_get_peer_cert(ssl);
-    mbedtls_x509_crt_info(tmpstr, sizeof(tmpstr), "[SSL PEER INFO    ] ", peer_cert);
+    mbedtls_x509_crt_info(tmpstr, sizeof(tmpstr), "[TSL PEER INFO       ] ", peer_cert);
 
     for (token = strtok(tmpstr, "\n"); token; token = strtok(NULL, "\n"))
         writecf(FS_SERV, token);
 
-    mbedtls_ssl_get_verify_result(ssl);
+#if MBEDTLS_VERSION_MAJOR == 3 && MBEDTLS_VERSION_MINOR == 0
+    const uint8_t * const rawcert_buf = peer_cert->MBEDTLS_PRIVATE(raw).MBEDTLS_PRIVATE(p);
+    size_t rawcert_len = peer_cert->MBEDTLS_PRIVATE(raw).MBEDTLS_PRIVATE(len);
+#else
+    const uint8_t * const rawcert_buf = peer_cert->raw.p;
+    size_t rawcert_len = peer_cert->raw.len;
+#endif
+    const mbedtls_md_info_t *mdinfo = mbedtls_md_info_from_string("SHA1");
+    if (mdinfo) {
+        mbedtls_md(mdinfo, rawcert_buf, rawcert_len, digest);
+
+        char *fp = fingerprint;
+        for (int j=0; j<mbedtls_md_get_size(mdinfo); j++)
+            fp += sprintf(fp, "%02X:", digest[j]);
+        assert ( fp > fingerprint );
+        fp[-1] = 0;
+        snprintf(tmpstr, TMPSTRSIZE, "[TSL FINGERPRINT     ] %s (from server)", fingerprint);
+        writecf(FS_SERV, tmpstr);
+
+        if (getintoption(CF_PINFINGER) && verify_or_store_fingerprint(fingerprint))
+            return 1;
+    } else {
+        writecf(FS_SERV, "Unable to load SHA-1 md");
+        if (getintoption(CF_PINFINGER)) {
+            writecf(FS_ERR, "ERROR: Can not compute fingerprint, but pinning check is required");
+            return 1;
+        }
+    }
+
+    ret = mbedtls_ssl_get_verify_result(ssl);
 
     return 0;
 }
