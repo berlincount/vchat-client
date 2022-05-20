@@ -410,6 +410,7 @@ void vc_tls_cleanup() {
 #include <mbedtls/md.h>
 #include <mbedtls/debug.h>
 #include "mbedtls/error.h"
+#include "mbedtls/version.h"
 
 #include <sys/socket.h>
 
@@ -582,12 +583,12 @@ int vc_tls_connect( int serverfd, vc_x509store_t *vc_store )
             return -1;
         }
 
-    writecf(FS_SERV,"[TSL HANDSHAKE DONE  ]");
-    snprintf(tmpstr, TMPSTRSIZE, "[TSL CIPHER LIST     ] %s", mbedtls_ssl_get_ciphersuite(ssl));
+    writecf(FS_SERV,"[TLS HANDSHAKE DONE  ]");
+    snprintf(tmpstr, TMPSTRSIZE, "[TLS CIPHER SUITE    ] %s", mbedtls_ssl_get_ciphersuite(ssl));
     writecf(FS_SERV, tmpstr);
 
     const mbedtls_x509_crt* peer_cert = mbedtls_ssl_get_peer_cert(ssl);
-    mbedtls_x509_crt_info(tmpstr, sizeof(tmpstr), "[TSL PEER INFO       ] ", peer_cert);
+    mbedtls_x509_crt_info(tmpstr, sizeof(tmpstr), "[TLS PEER INFO       ] ", peer_cert);
 
     for (token = strtok(tmpstr, "\n"); token; token = strtok(NULL, "\n"))
         writecf(FS_SERV, token);
@@ -608,7 +609,7 @@ int vc_tls_connect( int serverfd, vc_x509store_t *vc_store )
             fp += sprintf(fp, "%02X:", digest[j]);
         assert ( fp > fingerprint );
         fp[-1] = 0;
-        snprintf(tmpstr, TMPSTRSIZE, "[TSL FINGERPRINT     ] %s (from server)", fingerprint);
+        snprintf(tmpstr, TMPSTRSIZE, "[TLS FINGERPRINT     ] %s (from server)", fingerprint);
         writecf(FS_SERV, tmpstr);
 
         if (getintoption(CF_PINFINGER) && verify_or_store_fingerprint(fingerprint))
@@ -624,10 +625,10 @@ int vc_tls_connect( int serverfd, vc_x509store_t *vc_store )
     ret = mbedtls_ssl_get_verify_result(ssl);
     switch (ret) {
         case 0:
-            writecf(FS_SERV, "[TSL HANDSHAKE OK    ]");
+            writecf(FS_SERV, "[TLS HANDSHAKE OK    ]");
             break;
         case -1:
-            writecf(FS_ERR, "Error: TSL verify for an unknown reason");
+            writecf(FS_ERR, "Error: TLS verify for an unknown reason");
             return -1;
         case MBEDTLS_X509_BADCERT_SKIP_VERIFY:
         case MBEDTLS_X509_BADCERT_NOT_TRUSTED:
