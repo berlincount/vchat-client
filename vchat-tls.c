@@ -509,7 +509,7 @@ int vc_tls_connect( int serverfd, vc_x509store_t *vc_store )
     char password_buf[1024];
     while (1) {
         ret = mbedtls_pk_parse_keyfile(&s->_key, vc_store->keyfile, password
-#if MBEDTLS_SSL_MAJOR_VERSION_3 >= 3
+#if MBEDTLS_VERSION_MAJOR >= 3
         , mbedtls_ctr_drbg_random, &s->_ctr_drbg
 #endif
         );
@@ -526,12 +526,19 @@ int vc_tls_connect( int serverfd, vc_x509store_t *vc_store )
     }
     memset_s(password_buf, sizeof(password_buf), 0, sizeof(password_buf));
 
-#if 0
-    /* pk member made private in mbedtls 3 */
-    if (mbedtls_pk_check_pair(&(s->_cert.pk), &s->_key)) {
-        fprintf(stderr, "KEYPAIR MISSMATCH\n");
-    }
+#if MBEDTLS_VERSION_MAJOR == 3 && MBEDTLS_VERSION_MINOR == 0
+    if ((ret = mbedtls_pk_check_pair(&(s->_cert.MBEDTLS_PRIVATE(pk)), &s->_key
+#else
+    if ((ret = mbedtls_pk_check_pair(&(s->_cert.pk), &s->_key
 #endif
+#if MBEDTLS_VERSION_MAJOR >= 3
+        , mbedtls_ctr_drbg_random, &s->_ctr_drbg
+#endif
+    ))) {
+        vc_tls_report_error(ret, "ERROR: Cert and key mismatch, mbedtls reports: ");
+        return 1;
+    }
+
     if ((ret = mbedtls_ssl_conf_own_cert(conf, &s->_cert, &s->_key)) != 0) {
         vc_tls_report_error(ret, "Setting key and cert to tls session fails, mbedtls reports: ");
         return -1;
