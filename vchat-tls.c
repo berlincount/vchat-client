@@ -73,7 +73,7 @@ void vc_x509store_setcertfile(vc_x509store_t *store, char *file) {
 static int verify_or_store_fingerprint(const char *fingerprint) {
     char *fingerprint_file_path = tilde_expand(getstroption(CF_FINGERPRINT));
     if (!fingerprint_file_path) {
-        writecf(FS_ERR, "[SSL FINGERPRINT  ] The CF_FINGERPRINT path is not set.");
+        writecf(FS_ERR, "Error: The CF_FINGERPRINT path is not set but CF_PINFINGER was requested.");
         return -1;
     }
 
@@ -90,26 +90,28 @@ static int verify_or_store_fingerprint(const char *fingerprint) {
             if (nl) *nl = 0;
 
             /* verify fingerprint matches stored version */
-            if (!strcmp(fingerprint, old_fingerprint))
+            if (!strcmp(fingerprint, old_fingerprint)) {
+                writecf(FS_SERV, "[FINGERPRINT MATCH   ]");
                 goto cleanup_happy;
+            }
         }
 
-        snprintf(tmpstr, TMPSTRSIZE, "[SSL FINGERPRINT  ] Found pinned fingerprint (in %s) %s but expected %s", r ? old_fingerprint : "<FILE READ ERROR>", getstroption(CF_FINGERPRINT), fingerprint);
+        snprintf(tmpstr, TMPSTRSIZE, "Error: Found pinned fingerprint (in %s) %s but expected %s", r ? old_fingerprint : "<FILE READ ERROR>", getstroption(CF_FINGERPRINT), fingerprint);
         writecf(FS_ERR, tmpstr);
-        writecf(FS_ERR, "[SSL CONNECT ERROR] Fingerprint mismatch! Server cert updated?");
+        writecf(FS_ERR, "Error: Fingerprint mismatch! Server cert updated?");
         free(fingerprint_file_path);
         return 1;
     } else
-        writecf(FS_ERR, "[WARNING] No pinned Fingerprint found!");
+        writecf(FS_ERR, "Warning: No pinned fingerprint found, writing the current one.");
 
     fingerprint_file = fopen(fingerprint_file_path, "w");
     if (!fingerprint_file) {
-        snprintf (tmpstr, TMPSTRSIZE, "[WARNING] Can't write fingerprint file, %s.", strerror(errno));
+        snprintf (tmpstr, TMPSTRSIZE, "Warning: Can't write fingerprint file, %s.", strerror(errno));
         writecf(FS_ERR, tmpstr);
     } else {
         fputs(fingerprint, fingerprint_file);
         fclose(fingerprint_file);
-        writecf(FS_SERV, "Stored pinned fingerprint.");
+        writecf(FS_SERV, "[FINGERPRINT STORED  ]");
     }
 cleanup_happy:
     free(fingerprint_file_path);
@@ -612,7 +614,7 @@ int vc_tls_connect( int serverfd, vc_x509store_t *vc_store )
         if (getintoption(CF_PINFINGER) && verify_or_store_fingerprint(fingerprint))
             return 1;
     } else {
-        writecf(FS_SERV, "Unable to load SHA-1 md");
+        writecf(FS_ERR, "Warning: Unable to load SHA-1 md");
         if (getintoption(CF_PINFINGER)) {
             writecf(FS_ERR, "ERROR: Can not compute fingerprint, but pinning check is required");
             return 1;
@@ -620,6 +622,23 @@ int vc_tls_connect( int serverfd, vc_x509store_t *vc_store )
     }
 
     ret = mbedtls_ssl_get_verify_result(ssl);
+    switch (ret) {
+        case 0:
+            writecf(FS_SERV, "[TSL HANDSHAKE OK    ]");
+            break;
+        case -1:
+            writecf(FS_ERR, "Error: TSL verify for an unknown reason");
+            return -1;
+        case MBEDTLS_X509_BADCERT_SKIP_VERIFY:
+        case MBEDTLS_X509_BADCERT_NOT_TRUSTED:
+            if (getintoption(CF_IGNSSL) || !getintoption(CF_VERIFYSSL))
+                return 0;
+            vc_tls_report_error(ret, "TLS verify failed, mbedtls reports: ");
+            return -1;
+        default:
+            vc_tls_report_error(ret, "TLS verify failed, mbedtls reports: ");
+            return -1;
+    }
 
     return 0;
 }
