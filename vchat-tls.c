@@ -481,12 +481,11 @@ int vc_tls_connect( int serverfd, vc_x509store_t *vc_store )
     char *password = NULL;
     char password_buf[1024];
     while (1) {
-#if MBEDTLS_SSL_MAJOR_VERSION_3 < 3
-        ret = mbedtls_pk_parse_keyfile(&s->_key, vc_store->keyfile, password);
-#else
-        // ret = fprintf(stderr, "ERROR: %d\n", mbedtls_pk_parse_keyfile(&s->_key, vc_store->keyfile, password, mbedtls_ctr_drbg_random, &s->_ctr_drbg));
-        ret = mbedtls_pk_parse_keyfile(&s->_key, vc_store->keyfile, password, mbedtls_ctr_drbg_random, &s->_ctr_drbg);
+        ret = mbedtls_pk_parse_keyfile(&s->_key, vc_store->keyfile, password
+#if MBEDTLS_SSL_MAJOR_VERSION_3 >= 3
+        , mbedtls_ctr_drbg_random, &s->_ctr_drbg
 #endif
+        );
         if (!ret)
             break;
         if (ret != MBEDTLS_ERR_PK_PASSWORD_REQUIRED && ret != MBEDTLS_ERR_PK_PASSWORD_MISMATCH) {
