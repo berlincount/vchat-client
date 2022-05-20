@@ -462,16 +462,20 @@ int vc_tls_connect( int serverfd, vc_x509store_t *vc_store )
     mbedtls_x509_crt_init(&s->_cacert);
     mbedtls_x509_crt_init(&s->_cert);
     mbedtls_pk_init(&s->_key);
-
+    mbedtls_ssl_init(ssl);
     mbedtls_ssl_config_init(conf);
-    mbedtls_ssl_config_defaults(conf, MBEDTLS_SSL_IS_CLIENT, MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT);
+
+    if (mbedtls_ssl_config_defaults(conf, MBEDTLS_SSL_IS_CLIENT, MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT)) {
+        writecf(FS_ERR, "Out of memory");
+        return -1;
+    }
+
     /* TODO: Always verify peer */
-    mbedtls_ssl_conf_authmode(conf, MBEDTLS_SSL_VERIFY_NONE);
+    mbedtls_ssl_conf_authmode(conf, getintoption(CF_IGNSSL) ? MBEDTLS_SSL_VERIFY_OPTIONAL : MBEDTLS_SSL_VERIFY_REQUIRED);
     mbedtls_ssl_conf_rng(conf, mbedtls_ctr_drbg_random, &s->_ctr_drbg);
 
     /*  mbedtls_ssl_conf_ciphersuites( */
 
-    /* Read in all certs */
     if (vc_store->cafile) {
         mbedtls_x509_crt_parse_file(&s->_cacert, vc_store->cafile);
         mbedtls_ssl_conf_ca_chain(conf, &s->_cacert, NULL);
@@ -505,11 +509,13 @@ int vc_tls_connect( int serverfd, vc_x509store_t *vc_store )
         fprintf(stderr, "KEYPAIR MISSMATCH\n");
     }
 #endif
-    mbedtls_ssl_conf_own_cert(conf, &s->_cert, &s->_key);
+    if ((ret = mbedtls_ssl_conf_own_cert(conf, &s->_cert, &s->_key)) != 0) {
+        vc_tls_report_error(ret, "Setting key and cert to tls session fails, mbedtls reports: ");
+        return -1;
+    }
 
     /* Config constructed, pass to ssl */
     /* Init ssl and config structs and configure ssl ctx */
-    mbedtls_ssl_init(ssl);
     mbedtls_ssl_setup(ssl, conf);
     /* TODO: mbedtls_ssl_set_hostname(&ssl, SERVER_NAME) */
 
@@ -521,6 +527,16 @@ int vc_tls_connect( int serverfd, vc_x509store_t *vc_store )
             return -1;
         }
     }
+
+    snprintf(tmpstr, TMPSTRSIZE, "[SSL CIPHER       ] %s", mbedtls_ssl_get_ciphersuite(ssl));
+    writecf(FS_SERV, tmpstr);
+
+    const mbedtls_x509_crt* peer_cert = mbedtls_ssl_get_peer_cert(ssl);
+    mbedtls_x509_crt_info(tmpstr, sizeof(tmpstr), "[SSL PEER INFO    ] ", peer_cert);
+    char *token = strtok(tmpstr, "\n");
+    do {
+        writecf(FS_SERV, token);
+    } while ((token = strtok(NULL, "\n")));
 
     mbedtls_ssl_get_verify_result(ssl);
 
