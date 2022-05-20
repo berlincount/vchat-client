@@ -116,6 +116,13 @@ cleanup_happy:
     return 0;
 }
 
+#if defined(TLS_LIB_OPENSSL) && defined(TLS_LIB_MBEDTLS)
+#error "Both TLS_LIB_OPENSSL and TLS_LIB_MBEDTLS are defined. Please select only one."
+#endif
+#if !defined(TLS_LIB_OPENSSL) && !defined(TLS_LIB_MBEDTLS)
+#error "Neither TLS_LIB_OPENSSL nor TLS_LIB_MBEDTLS are defined. Please select exactly one."
+#endif
+
 #ifdef TLS_LIB_OPENSSL
 
 #include <openssl/err.h>
