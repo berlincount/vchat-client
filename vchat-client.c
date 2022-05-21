@@ -492,7 +492,7 @@ main (int argc, char **argv)
   signal (SIGINT, cleanup);
   signal (SIGHUP, cleanup);
   signal (SIGTERM, cleanup);
-  signal (SIGQUIT, SIGN_IGN);
+  signal (SIGQUIT, SIG_IGN);
 
   /* initialize userinterface */
   initui ();
