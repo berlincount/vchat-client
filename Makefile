@@ -8,13 +8,16 @@
 
 OBJS = vchat-client.o vchat-ui.o vchat-protocol.o vchat-user.o vchat-commands.o vchat-tls.o vchat-connection.o
 
-LIBS = -lncurses
+LIBS = -lncursesw
 LIBS += -lreadline
 
-CFLAGS = -Wall -Os
+CFLAGS += -Wall -Os
 
 ## use this line when you've got an readline before 4.(x|2)
 #CFLAGS += -DOLDREADLINE
+
+# Alternatively, you can just build with make OLDREADLINE=-DOLDREADLINE
+# if you can't modify this Makefile
 CFLAGS += $(OLDREADLINE)
 
 ##### Enable this for using the OpenSSL library
