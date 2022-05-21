@@ -573,7 +573,11 @@ int vc_tls_connect(int serverfd, vc_x509store_t *vc_store) {
       vc_store->askpass_callback(password_buf, sizeof(password_buf), 0, NULL);
       password = password_buf;
     }
+#if defined(__linux__) || defined(__OpenBSD__)
+    explicit_bzero(password_buf, sizeof(password_buf));
+#else
     memset_s(password_buf, sizeof(password_buf), 0, sizeof(password_buf));
+#endif
     writecf(FS_SERV, "[CLIENT KEY LOADED   ]");
 
 #if MBEDTLS_VERSION_MAJOR == 3 && MBEDTLS_VERSION_MINOR == 0
