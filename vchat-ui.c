@@ -747,7 +747,7 @@ forceredraw (void)
   if(console) wclear(console);
   if(topic)   wclear(topic);
   if(private) wclear(private);
-  if(channel) wclear(channel );  
+  if(channel) wclear(channel);
   if(output)  wclear(output);
   if(input)   wclear(input);
   resize(0);
@@ -847,11 +847,11 @@ resize (int signal)
   /* pub channel is always there, paint scrollback buffers */
                   drawwin(channel, sb_pub);
   /* if priv exists and is visible, paint scrollback buffers */
-  if(private && !privwinhidden )
+  if(private && !privwinhidden)
                   drawwin(private, sb_priv);
   /* Send window's contents to curses virtual buffers */
                   wnoutrefresh(channel);
-  if(private && !privwinhidden )
+  if(private && !privwinhidden)
                   wnoutrefresh(private);
 
   togglequery();
@@ -1079,6 +1079,7 @@ initui (void)
       init_pair (7, COLOR_WHITE, -1);
       init_pair (8, COLOR_WHITE, COLOR_RED);
       init_pair (9, COLOR_WHITE, COLOR_BLUE);
+      init_pair (10, COLOR_WHITE, COLOR_BLACK);
     }
   else
     {
@@ -1093,6 +1094,7 @@ initui (void)
       init_pair (7, -1, -1);
       init_pair (8, -1, -1);
       init_pair (9, -1, -1);
+      init_pair (10, -1, -1);
     }
 
   /* store screen-dimensions to local functions */
@@ -1238,7 +1240,8 @@ consoleline (char *message)
   BCOLR_SET( (&new_att), 8 );
   wmove (console, 0, 0);
   WATTR_GET( console, old_att);
-  if(sb_pub->scroll!=sb_pub->count) WATTR_SET( console, new_att);
+  if(sb_pub->scroll!=sb_pub->count)
+    WATTR_SET( console, new_att);
 
   for (i = 0; i < getmaxx(console) - 1; i++)
      waddch (console, ' ');
