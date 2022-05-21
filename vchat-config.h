@@ -50,6 +50,7 @@ static volatile configoption configoptions[] = {
   {CF_USETOPIC,    CO_INT, "usetopicbar",(char *) 1,             (char *)-1, { NULL }  },
   {CF_PRIVHEIGHT,  CO_INT, "messages",   (char *) 0,             (char *)-1, { NULL }  },
   {CF_PRIVCOLLAPS, CO_INT, "privcollaps",(char *) 0,             (char *)-1, { NULL }  },
+  {CF_INVWINBAR,   CO_INT, "invwinbar",  (char *) 0,             (char *)-1, { NULL }  },
   {CF_HSCROLL,     CO_INT, "hscroll",    (char *)15,             (char *)-1, { .pint = &hscroll } },
   {CF_CHANNEL,     CO_INT, "channel",    (char *) 0,             (char *)-1, { NULL }  },
   {CF_SCROLLBPRIV, CO_INT, "privscrollb",(char *) 2048,          (char *)-1, { NULL }  },
