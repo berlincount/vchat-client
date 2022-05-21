@@ -10,27 +10,29 @@
  * without even the implied warranty of merchantability or fitness for a
  * particular purpose. In no event shall the copyright holder be liable for
  * any direct, indirect, incidental or special damages arising in any way out
- * of the use of this software. 
+ * of the use of this software.
  *
  */
 
 /* general includes */
-#include <stdlib.h>
-#include <unistd.h>
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <unistd.h>
+
 #include <readline/readline.h>
 
 /* local includes */
-#include "vchat.h"
 #include "vchat-connection.h"
 #include "vchat-help.h"
 #include "vchat-user.h"
+#include "vchat.h"
 
 /* version of this module */
-const char *vchat_cm_version = "vchat-commands.c $Id$";
+const char *vchat_cm_version =
+    "vchat-commands.c $Id$";
 
 /* from vchat-client.c */
 extern int ownquit;
@@ -39,45 +41,45 @@ extern int status;
 
 /* our "/command " table */
 enum {
-COMMAND_VERSION,
-COMMAND_FILTERS,
-COMMAND_LSFLT,
-COMMAND_RMFLT,
-COMMAND_CLFLT,
-COMMAND_HELP,
-COMMAND_FORMAT,
-COMMAND_KEYS,
-COMMAND_QUIT,
-COMMAND_USER,
-COMMAND_DICT,
-COMMAND_FLT,
-COMMAND_PM,
-COMMAND_ACTION,
-COMMAND_PMSHORT,
-COMMAND_QUERY,
-COMMAND_QUITSHORT,
-COMMAND_PLAIN,
-COMMAND_RECONNECT,
-COMMAND_NONE
+  COMMAND_VERSION,
+  COMMAND_FILTERS,
+  COMMAND_LSFLT,
+  COMMAND_RMFLT,
+  COMMAND_CLFLT,
+  COMMAND_HELP,
+  COMMAND_FORMAT,
+  COMMAND_KEYS,
+  COMMAND_QUIT,
+  COMMAND_USER,
+  COMMAND_DICT,
+  COMMAND_FLT,
+  COMMAND_PM,
+  COMMAND_ACTION,
+  COMMAND_PMSHORT,
+  COMMAND_QUERY,
+  COMMAND_QUITSHORT,
+  COMMAND_PLAIN,
+  COMMAND_RECONNECT,
+  COMMAND_NONE
 };
 
-static void command_quit      ( char *tail);
-static void command_user      ( char *tail);
-static void command_pm        ( char *tail);
-static void command_action    ( char *tail);
-static void command_help      ( char *tail);
-static void command_format    ( char *tail);
-static void command_flt       ( char *tail);
-static void command_lsflt     ( char *tail);
-static void command_clflt     ( char *tail);
-static void command_rmflt     ( char *tail);
-       void command_version   ( char *tail);
-static void command_none      ( char *line);
-static void command_query     ( char *tail);
-static void command_reconnect ( char *tail);
-static void command_dict      ( char *tail);
+static void command_quit(char *tail);
+static void command_user(char *tail);
+static void command_pm(char *tail);
+static void command_action(char *tail);
+static void command_help(char *tail);
+static void command_format(char *tail);
+static void command_flt(char *tail);
+static void command_lsflt(char *tail);
+static void command_clflt(char *tail);
+static void command_rmflt(char *tail);
+void command_version(char *tail);
+static void command_none(char *line);
+static void command_query(char *tail);
+static void command_reconnect(char *tail);
+static void command_dict(char *tail);
 
-static void output_default  ( char *tail);
+static void output_default(char *tail);
 
 /* commandentry defined in vchat.h */
 
@@ -106,9 +108,7 @@ commandtable[] = {
 };
 
 /* parse "/command" */
-static int
-translatecommand( char **cmd)
-{
+static int translatecommand(char **cmd) {
   int result;
   int cut = 0;
   int maxcut = 0;
@@ -116,214 +116,215 @@ translatecommand( char **cmd)
   /* We do only want to allow Command abbrevation to
      the next newline, so that /VRES won't expand to /V RES */
 
-  while( (*cmd)[maxcut] && ((*cmd)[maxcut] != 0x20) && ((*cmd)[maxcut] != '\n')) maxcut++;
-  if( maxcut ) maxcut--;
+  while ((*cmd)[maxcut] && ((*cmd)[maxcut] != 0x20) && ((*cmd)[maxcut] != '\n'))
+    maxcut++;
+  if (maxcut)
+    maxcut--;
 
-  /* Repeatedly scan command table for command, with growing abbrevation cut off */
+  /* Repeatedly scan command table for command, with growing abbrevation cut off
+   */
   do {
-      /* Looks ugly, needs rewrite for better understanding */
-      for( result = 0;
-             (result != COMMAND_NONE) &&
-             (strncasecmp(*cmd, commandtable[result].name, commandtable[result].len -
-               ((commandtable[result].len - maxcut - cut > 0) ? cut : 0)));
-           result++);
-  } while ((cut < commandtable[0].len) && (commandtable[result].number == COMMAND_NONE) && (++cut));
+    /* Looks ugly, needs rewrite for better understanding */
+    for (result = 0;
+         (result != COMMAND_NONE) &&
+         (strncasecmp(
+             *cmd, commandtable[result].name,
+             commandtable[result].len -
+                 ((commandtable[result].len - maxcut - cut > 0) ? cut : 0)));
+         result++)
+      ;
+  } while ((cut < commandtable[0].len) &&
+           (commandtable[result].number == COMMAND_NONE) && (++cut));
 
   /* Just leave the tail... */
   (*cmd) += commandtable[result].len;
 
   /* ... whose start may be affected by abbrevation */
-  if( commandtable[result].number !=  COMMAND_NONE )
-      (*cmd) -= cut;
+  if (commandtable[result].number != COMMAND_NONE)
+    (*cmd) -= cut;
 
   return result;
 }
 
 /* handle thought */
-static void
-dothink(const char *tail, const char nice )
-{
-  while( *tail == ' ' ) tail++;
+static void dothink(const char *tail, const char nice) {
+  while (*tail == ' ')
+    tail++;
 
   /* send users message to server */
-  snprintf (tmpstr, TMPSTRSIZE, ".%c %s", nice, tail);
-  vc_sendmessage (tmpstr);
+  snprintf(tmpstr, TMPSTRSIZE, ".%c %s", nice, tail);
+  vc_sendmessage(tmpstr);
 
   /* show action in channel window */
-  snprintf (tmpstr, TMPSTRSIZE, nice == 'O' ? getformatstr(FS_TXPUBNTHOUGHT) : getformatstr(FS_TXPUBTHOUGHT), tail);
-  writechan (tmpstr);
+  snprintf(tmpstr, TMPSTRSIZE,
+           nice == 'O' ? getformatstr(FS_TXPUBNTHOUGHT)
+                       : getformatstr(FS_TXPUBTHOUGHT),
+           tail);
+  writechan(tmpstr);
 }
 
-
 /* handle action */
-static void
-doaction(const char *tail )
-{
-  while( *tail == ' ' ) tail++;
+static void doaction(const char *tail) {
+  while (*tail == ' ')
+    tail++;
 
-  if( *tail ) {
-      /* send users message to server */
-      snprintf (tmpstr, TMPSTRSIZE, ".a %s", tail);
-      vc_sendmessage (tmpstr);
+  if (*tail) {
+    /* send users message to server */
+    snprintf(tmpstr, TMPSTRSIZE, ".a %s", tail);
+    vc_sendmessage(tmpstr);
 
-      /* show action in channel window */
-      snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_TXPUBACTION), own_nick_get(), tail);
-      writechan (tmpstr);
+    /* show action in channel window */
+    snprintf(tmpstr, TMPSTRSIZE, getformatstr(FS_TXPUBACTION), own_nick_get(),
+             tail);
+    writechan(tmpstr);
   } else {
-      /* missing action */
-      msgout( "  You do nothing. " );
+    /* missing action */
+    msgout("  You do nothing. ");
   }
 }
 
 /* handle private message outgoing */
-static void
-privatemessagetx (char *tail ) {
+static void privatemessagetx(char *tail) {
   char *mesg;
 
   /* find nick */
-  while( *tail==' ') tail++;
+  while (*tail == ' ')
+    tail++;
 
   /* find message */
   mesg = tail;
-  while ( *mesg && *mesg!=' ') mesg++;
+  while (*mesg && *mesg != ' ')
+    mesg++;
 
   /* check for nick && message */
-  if(*tail && *mesg) {
+  if (*tail && *mesg) {
 
-      /* terminate nick, move to rel start */
-      *mesg++ = '\0';
+    /* terminate nick, move to rel start */
+    *mesg++ = '\0';
 
-      /* form message and send to server */
-      snprintf (tmpstr, TMPSTRSIZE, ".m %s %s", tail, mesg);
-      vc_sendmessage (tmpstr);
+    /* form message and send to server */
+    snprintf(tmpstr, TMPSTRSIZE, ".m %s %s", tail, mesg);
+    vc_sendmessage(tmpstr);
 
-      /* show message in private window */
-      snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_TXPRIVMSG), tail, mesg);
-      writepriv (tmpstr, 0);
+    /* show message in private window */
+    snprintf(tmpstr, TMPSTRSIZE, getformatstr(FS_TXPRIVMSG), tail, mesg);
+    writepriv(tmpstr, 0);
 
-      /* note we messaged someone */
-      ul_private_action(tail);
+    /* note we messaged someone */
+    ul_private_action(tail);
 
   } else {
-      /* Bump user to fill in missing parts */
-      msgout( *tail ? "  Won't send empty message. ":"  Recipient missing. " );
+    /* Bump user to fill in missing parts */
+    msgout(*tail ? "  Won't send empty message. " : "  Recipient missing. ");
   }
 }
 
 /* handle line entered by user */
-void
-handleline (char *line)
-{
+void handleline(char *line) {
 #ifdef DEBUG
   /* debugging? log users input! */
-  fprintf (stderr, "=| %s\n", line);
+  fprintf(stderr, "=| %s\n", line);
 #endif
 
-  switch ( line[0] )
-  {
+  switch (line[0]) {
   case '.':
-      switch ( line[1] ) {
-      case 'm': /* sending a private message? */
-          privatemessagetx( line+2 );
-          break;
-      case 'a': /* Do an action */
-          doaction( line+2 );
-          break;
-      case '.':
-          /* .. on start of line is public */
-          if( line[2] != 'm' ) {
-              output_default( line );
-          } else {
-              /* oopsi, "..m " detected */
-              /* dunno what to do */
-              flushout( );
-              writeout("? You probably misstyped ?");
-              writeout(" ");
-              writeout(line );
-              showout( );
-          }
-          break;
-      case 'o':
-      case 'O':
-          dothink( line + 2, line[1] );
-          break;
-      case 'x':
-          /* inform vchat-client, that the following connection
-             drop was intentional */
-          ownquit = 1; /* fallthrough intended */
-      default:
-          /* generic server command, send to server, show to user */
-          snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_COMMAND), line);
-          writechan (tmpstr);
-          vc_sendmessage (line);
-          break;
+    switch (line[1]) {
+    case 'm': /* sending a private message? */
+      privatemessagetx(line + 2);
+      break;
+    case 'a': /* Do an action */
+      doaction(line + 2);
+      break;
+    case '.':
+      /* .. on start of line is public */
+      if (line[2] != 'm') {
+        output_default(line);
+      } else {
+        /* oopsi, "..m " detected */
+        /* dunno what to do */
+        flushout();
+        writeout("? You probably misstyped ?");
+        writeout(" ");
+        writeout(line);
+        showout();
       }
       break;
+    case 'o':
+    case 'O':
+      dothink(line + 2, line[1]);
+      break;
+    case 'x':
+      /* inform vchat-client, that the following connection
+         drop was intentional */
+      ownquit = 1; /* fallthrough intended */
+    default:
+      /* generic server command, send to server, show to user */
+      snprintf(tmpstr, TMPSTRSIZE, getformatstr(FS_COMMAND), line);
+      writechan(tmpstr);
+      vc_sendmessage(line);
+      break;
+    }
+    break;
   case '/':
-      line++;
-      commandtable[translatecommand(&line)].handler(line);
-      break;
+    line++;
+    commandtable[translatecommand(&line)].handler(line);
+    break;
   default:
-      output_default( line );
-      break;
+    output_default(line);
+    break;
   }
 }
 
-static void
-output_default(char *line ) {
-      /* prepare for output on display */
-      snprintf (tmpstr, TMPSTRSIZE, getformatstr(FS_TXPUBMSG), own_nick_get(), line);
+static void output_default(char *line) {
+  /* prepare for output on display */
+  snprintf(tmpstr, TMPSTRSIZE, getformatstr(FS_TXPUBMSG), own_nick_get(), line);
 
-      /* send original line to server */
-      vc_sendmessage (line);
+  /* send original line to server */
+  vc_sendmessage(line);
 
-      /* output message to channel window */
-      writechan (tmpstr);
+  /* output message to channel window */
+  writechan(tmpstr);
 }
 
 /* handle a "/user " request */
-static void
-command_user(char *tail)
-{
-  while( *tail == ' ') tail++;
-  if( *tail ) {
-      char * out = ul_match_user( tail);
-      if( *out ) {
-          snprintf( tmpstr, TMPSTRSIZE, getformatstr(FS_USMATCH), tail, out);
-      } else {
-          snprintf( tmpstr, TMPSTRSIZE, getformatstr(FS_ERR), "  No user matched that regex. ");
-      }
+static void command_user(char *tail) {
+  while (*tail == ' ')
+    tail++;
+  if (*tail) {
+    char *out = ul_match_user(tail);
+    if (*out) {
+      snprintf(tmpstr, TMPSTRSIZE, getformatstr(FS_USMATCH), tail, out);
+    } else {
+      snprintf(tmpstr, TMPSTRSIZE, getformatstr(FS_ERR),
+               "  No user matched that regex. ");
+    }
   } else {
-      snprintf( tmpstr, TMPSTRSIZE, getformatstr(FS_ERR), "  Which user? ");
+    snprintf(tmpstr, TMPSTRSIZE, getformatstr(FS_ERR), "  Which user? ");
   }
-  msgout( tmpstr );
+  msgout(tmpstr);
 }
 
 /* handle a "/msg " request */
-static void
-command_pm (char *tail)
-{
-  privatemessagetx( tail );
-}
+static void command_pm(char *tail) { privatemessagetx(tail); }
 
-static void
-command_format(char *line) {
+static void command_format(char *line) {
   struct stat testexist;
-  char * tildex = NULL;
+  char *tildex = NULL;
 
   flushout();
-  while( *line==' ') line++;
-  if(line) {
-    tildex = tilde_expand( line );
-    if(tildex && !stat(tildex, &testexist ))
+  while (*line == ' ')
+    line++;
+  if (line) {
+    tildex = tilde_expand(line);
+    if (tildex && !stat(tildex, &testexist))
       loadformats(tildex);
     else {
 #define BUFSIZE 4096
       char buf[BUFSIZE];
-      snprintf( buf, BUFSIZE, "~/.vchat/sample-%s.fmt", line );
+      snprintf(buf, BUFSIZE, "~/.vchat/sample-%s.fmt", line);
       free(tildex);
-      tildex = tilde_expand( line );
-      if(tildex && !stat(tildex, &testexist ))
+      tildex = tilde_expand(line);
+      if (tildex && !stat(tildex, &testexist))
         loadformats(tildex);
     }
     writeout("  Sort of done.  ");
@@ -335,92 +336,87 @@ command_format(char *line) {
 }
 
 /* handle a help request */
-static void
-command_help (char *line) {
-  flushout( );
-  while( *line==' ') line++;
-  if( *line ) { /* Get help on command */
-      int i;
-      if( ( i = translatecommand( &line ) ) != COMMAND_NONE ) {
-          snprintf( tmpstr, TMPSTRSIZE, "Help on command: %s", commandtable[i].name);
-          writeout( tmpstr );
-          writeout(" ");
-          if( commandtable[i].short_help && !commandtable[i].help )
-              writeout(commandtable[i].short_help );
-          line = commandtable[i].help;
-          if( line ) {
-            while( *line ) {
-              char *tmp = tmpstr;
-              while( *line && (*line != '\n') )
-                  *tmp++ = *line++;
-              *tmp = '\0'; if( *line == '\n') line++;
-              writeout ( tmpstr );
-            }
-          }
-      } else {
-          command_help( " " );
+static void command_help(char *line) {
+  flushout();
+  while (*line == ' ')
+    line++;
+  if (*line) { /* Get help on command */
+    int i;
+    if ((i = translatecommand(&line)) != COMMAND_NONE) {
+      snprintf(tmpstr, TMPSTRSIZE, "Help on command: %s", commandtable[i].name);
+      writeout(tmpstr);
+      writeout(" ");
+      if (commandtable[i].short_help && !commandtable[i].help)
+        writeout(commandtable[i].short_help);
+      line = commandtable[i].help;
+      if (line) {
+        while (*line) {
+          char *tmp = tmpstr;
+          while (*line && (*line != '\n'))
+            *tmp++ = *line++;
+          *tmp = '\0';
+          if (*line == '\n')
+            line++;
+          writeout(tmpstr);
+        }
       }
-  } else {      /* Get overall help */
-      int i;
-      for( i = 0; commandtable[i].number != COMMAND_NONE; i++ ) {
-          if( commandtable[i].short_help ) 
-              writeout( commandtable[i].short_help );
-      }
+    } else {
+      command_help(" ");
+    }
+  } else { /* Get overall help */
+    int i;
+    for (i = 0; commandtable[i].number != COMMAND_NONE; i++) {
+      if (commandtable[i].short_help)
+        writeout(commandtable[i].short_help);
+    }
   }
   showout();
 }
 
 /* handle an unknown command */
-static void
-command_none(char *line) {
-    snprintf(tmpstr, TMPSTRSIZE, "  Unknown client command: %s ", line);
-    msgout(tmpstr);
+static void command_none(char *line) {
+  snprintf(tmpstr, TMPSTRSIZE, "  Unknown client command: %s ", line);
+  msgout(tmpstr);
 }
 
 /* handle a "/flt " request */
-static void
-command_flt(char *tail){
+static void command_flt(char *tail) {
   char colour;
-  while(*tail==' ') tail++;
+  while (*tail == ' ')
+    tail++;
   colour = *tail++;
-  while( colour && *tail == ' ') tail++;
-  if( colour && *tail) {
-      addfilter( colour, tail);
+  while (colour && *tail == ' ')
+    tail++;
+  if (colour && *tail) {
+    addfilter(colour, tail);
   }
 }
 
 /* handle a "/clflt " request */
-static void
-command_clflt (char *tail) {
-  while( *tail == ' ') tail++;
-  clearfilters( *tail );
+static void command_clflt(char *tail) {
+  while (*tail == ' ')
+    tail++;
+  clearfilters(*tail);
 }
 
 /* handle a "/rmflt " request */
-static void
-command_rmflt (char *tail) {
-  while( *tail == ' ') tail++;
-  removefilter( tail );
+static void command_rmflt(char *tail) {
+  while (*tail == ' ')
+    tail++;
+  removefilter(tail);
 }
 
 /* list filters */
-static void
-command_lsflt (char *tail) {
+static void command_lsflt(char *tail) {
   (void)tail;
   listfilters();
 }
 
 /* handle a "/me " action */
-static void
-command_action(char *tail)
-{
-  doaction(tail);
-}
+static void command_action(char *tail) { doaction(tail); }
 
 /* handle a "/reconnect" request */
-static void
-command_reconnect(char *tail)
-{
+static void command_reconnect(char *tail) {
   (void)tail;
   status = 0;
   wantreconnect = 1;
@@ -428,15 +424,13 @@ command_reconnect(char *tail)
 }
 
 /* handle a "/quit " exit */
-static void
-command_quit(char *tail)
-{
+static void command_quit(char *tail) {
   /* send users message to server */
-  snprintf (tmpstr, TMPSTRSIZE, ".x %s", tail);
-  vc_sendmessage (tmpstr);
+  snprintf(tmpstr, TMPSTRSIZE, ".x %s", tail);
+  vc_sendmessage(tmpstr);
 
   /* show action in channel window */
-  writechan (tmpstr);
+  writechan(tmpstr);
 
   /* Inform vchat-client, that the closing connection
      following is intended */
@@ -445,42 +439,35 @@ command_quit(char *tail)
 }
 
 /* print out version */
-void
-command_version(char *tail)
-{
+void command_version(char *tail) {
   (void)tail;
   /* output internal versions of all modules */
   flushout();
-  writeout (vchat_cl_version);
-  writeout (vchat_ui_version);
-  writeout (vchat_io_version);
-  writeout (vchat_us_version);
-  writeout (vchat_cm_version);
-  writeout (vchat_tls_version);
-  writeout (vchat_tls_version_external);
+  writeout(vchat_cl_version);
+  writeout(vchat_ui_version);
+  writeout(vchat_io_version);
+  writeout(vchat_us_version);
+  writeout(vchat_cm_version);
+  writeout(vchat_tls_version);
+  writeout(vchat_tls_version_external);
   showout();
 }
 
 /* start or end a query */
-void
-command_query(char *tail)
-{
+void command_query(char *tail) {
   char *msg;
-  while( *tail == ' ') tail++;
+  while (*tail == ' ')
+    tail++;
 
   // Check, if a message is to be sent in first query
   // Note: this is safe, since readline chops trailing spaces
-  if((msg = strchr(tail, ' '))) {
-    privatemessagetx( tail );
+  if ((msg = strchr(tail, ' '))) {
+    privatemessagetx(tail);
     *msg = 0;
   }
 
   // Do the ui stuff for query
-  handlequery( tail );
+  handlequery(tail);
 }
 
-void
-command_dict(char *tail)
-{
-  ul_add_to_dict(tail);
-}
+void command_dict(char *tail) { ul_add_to_dict(tail); }

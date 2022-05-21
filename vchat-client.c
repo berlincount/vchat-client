@@ -15,25 +15,27 @@
  */
 
 /* general includes */
-#include <sys/types.h>
-#include <sys/time.h>
+#include <errno.h>
+#include <locale.h>
+#include <signal.h>
 #include <stdint.h>
-#include <time.h>
-#include <string.h>
-#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <errno.h>
-#include <signal.h>
-#include <readline/readline.h>
-#include <locale.h>
+#include <string.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <time.h>
+#include <unistd.h>
 
-#include "vchat.h"
+#include <readline/readline.h>
+
 #include "vchat-connection.h"
 #include "vchat-user.h"
+#include "vchat.h"
 
 /* version of this module */
-const char *vchat_cl_version = "vchat-client.c   $Id$";
+const char *vchat_cl_version =
+    "vchat-client.c   $Id$";
 
 /* externally used variables */
 /*   we're logged in */
@@ -54,139 +56,149 @@ char errstr[ERRSTRSIZE] = "\0";
 /* declaration of configuration array */
 #include "vchat-config.h"
 
-void setnoption (const char *, char *);
+void setnoption(const char *, char *);
 
 static void parsecfg(char *line) {
   int bytes;
-  char *param=line;
-  char *value=NULL;
+  char *param = line;
+  char *value = NULL;
 
   /* handle quotes value is empty, so we can use it */
-  value = strchr(line,'#');
-  if (value) { /* the line contains a cute little quote */
-    value[0]='\0'; /* ignore the rest of the line */
+  value = strchr(line, '#');
+  if (value) {       /* the line contains a cute little quote */
+    value[0] = '\0'; /* ignore the rest of the line */
   }
 
   /* now split the line into two parts */
-  value = strchr(line,'=');
-  if (!value) return; /* exit if strchr fails */
-  value[0]='\0';
+  value = strchr(line, '=');
+  if (!value)
+    return; /* exit if strchr fails */
+  value[0] = '\0';
   value++;
 
   /* "trim" values */
-  while ((value[0] == ' ')||(value[0] == '\t'))
+  while ((value[0] == ' ') || (value[0] == '\t'))
     value++;
   bytes = strlen(value);
-  while ((value[bytes-1] == ' ')||(value[bytes-1] == '\t')) {
-    value[bytes-1] = '\0';
-    bytes=strlen(value);
+  while ((value[bytes - 1] == ' ') || (value[bytes - 1] == '\t')) {
+    value[bytes - 1] = '\0';
+    bytes = strlen(value);
   }
   /* bytes should be strlen(value) */
-  if ( value[bytes-1] == '"' ) value[bytes-1] = '\0';
-  if ( value[0] == '"' ) value++;
+  if (value[bytes - 1] == '"')
+    value[bytes - 1] = '\0';
+  if (value[0] == '"')
+    value++;
 
   /* "trim" param */
-  while ((param[0] == ' ')||(param[0] == '\t'))
+  while ((param[0] == ' ') || (param[0] == '\t'))
     param++;
   bytes = strlen(param);
-  while ((param[bytes-1] == ' ')||(param[bytes-1] == '\t')) {
-    param[bytes-1] = '\0';
-    bytes=strlen(param);
+  while ((param[bytes - 1] == ' ') || (param[bytes - 1] == '\t')) {
+    param[bytes - 1] = '\0';
+    bytes = strlen(param);
   }
   /* bytes should be strlen(param) */
-  if ( param[bytes-1] == '\"' ) param[bytes-1] = '\0';
-  if ( param[0] == '\"' ) param++;
+  if (param[bytes - 1] == '\"')
+    param[bytes - 1] = '\0';
+  if (param[0] == '\"')
+    param++;
 
-  if ((!param)||(!value)) return; /* failsave */
+  if ((!param) || (!value))
+    return; /* failsave */
 
-  //fprintf(stderr,"\"%s\" -> \"%s\"\n",param,value);
-  setnoption(param,value);
+  // fprintf(stderr,"\"%s\" -> \"%s\"\n",param,value);
+  setnoption(param, value);
 }
 
 static void parseformats(char *line) {
   int i;
-  char *tmp = NULL;  
+  char *tmp = NULL;
 
   /* read a format line from file, syntax is
      FS_XXX = "formatstring"
   */
 
-  while( *line == ' ') line++;
+  while (*line == ' ')
+    line++;
 
-  if( strlen( line ) > TMPSTRSIZE ) return;
+  if (strlen(line) > TMPSTRSIZE)
+    return;
 
-  if( *line != '#') /* allow to comment out the line */
-      for (i = 0; formatstrings[i].formatstr; i++)
-          if (!strncasecmp(formatstrings[i].idstring, line, strlen( formatstrings[i].idstring) ))
-          {
-              char *tail = line + strlen( formatstrings[i].idstring);
-              while( *tail==' ' || *tail=='\t') tail++; /* and skip whitespaces */
+  if (*line != '#') /* allow to comment out the line */
+    for (i = 0; formatstrings[i].formatstr; i++)
+      if (!strncasecmp(formatstrings[i].idstring, line,
+                       strlen(formatstrings[i].idstring))) {
+        char *tail = line + strlen(formatstrings[i].idstring);
+        while (*tail == ' ' || *tail == '\t')
+          tail++; /* and skip whitespaces */
 
-              if( *tail++ == '=' )
-              {
-                  while( *tail==' ' || *tail=='\t') tail++;
-                  if( *(tail++)=='\"' )
-                  {
-                      int j, k = 0, stringends = 0, backslash=0;
-                      for ( j = 0; tail[j] && !stringends; j++)
-                      {
-                          switch( tail[j] ) {
-                          case '^':
-                              if ( tail[j+1] != '^' )
-                                  tmpstr[k++] = 1;
-                              break;
-                          case '\\':
-                              backslash=1-backslash;
-                              tmpstr[k++] = '\\';
-                              break;
-                          case '\"':
-                              if (backslash) k--; else stringends = 1;
-                          default:
-                              tmpstr[k++] = tail[j];
-                              backslash = 0;
-                          }
-                      }
-
-                      if ( stringends && ( (tmp = (char *)malloc( 1 + j )) != NULL ) )
-                      {
-                          memcpy( tmp, tmpstr, k);
-                          tmp[k-1]=0;
-                          formatstrings[i].formatstr = tmp;
-                      }
-                  }
+        if (*tail++ == '=') {
+          while (*tail == ' ' || *tail == '\t')
+            tail++;
+          if (*(tail++) == '\"') {
+            int j, k = 0, stringends = 0, backslash = 0;
+            for (j = 0; tail[j] && !stringends; j++) {
+              switch (tail[j]) {
+              case '^':
+                if (tail[j + 1] != '^')
+                  tmpstr[k++] = 1;
+                break;
+              case '\\':
+                backslash = 1 - backslash;
+                tmpstr[k++] = '\\';
+                break;
+              case '\"':
+                if (backslash)
+                  k--;
+                else
+                  stringends = 1;
+              default:
+                tmpstr[k++] = tail[j];
+                backslash = 0;
               }
-          }
+            }
 
+            if (stringends && ((tmp = (char *)malloc(1 + j)) != NULL)) {
+              memcpy(tmp, tmpstr, k);
+              tmp[k - 1] = 0;
+              formatstrings[i].formatstr = tmp;
+            }
+          }
+        }
+      }
 }
 
-/* UNUSED uncomment if needed 
+/* UNUSED uncomment if needed
 static void parseknownhosts(char *line) {
 }
 */
 
 /* load config file */
-void
-loadcfg (char *file,int complain, void (*lineparser) (char *))
-{
+void loadcfg(char *file, int complain, void (*lineparser)(char *)) {
   FILE *fh;
 #define BUFSIZE 4096
-  char buf[BUFSIZE];     /* data buffer */
+  char buf[BUFSIZE]; /* data buffer */
   char *tildex = NULL, *t;
 
   /* Check and expand filename then open file */
-  if (!file) return;
-  tildex = tilde_expand( file );
-  if (!tildex) return;
-  fh = fopen( tildex, "r" );
-  free( tildex );
+  if (!file)
+    return;
+  tildex = tilde_expand(file);
+  if (!tildex)
+    return;
+  fh = fopen(tildex, "r");
+  free(tildex);
 
   if (!fh) {
-    if( complain ) snprintf (errstr, TMPSTRSIZE, "Can't open config-file \"%s\": %s.", file, strerror(errno));
+    if (complain)
+      snprintf(errstr, TMPSTRSIZE, "Can't open config-file \"%s\": %s.", file,
+               strerror(errno));
     return;
   }
 
-  while ( fgets( buf, sizeof(buf), fh ) ) {
-    if( ( t = strchr( buf, '\n' ) ) )
+  while (fgets(buf, sizeof(buf), fh)) {
+    if ((t = strchr(buf, '\n')))
       *t = 0;
     lineparser(buf);
   }
@@ -194,77 +206,62 @@ loadcfg (char *file,int complain, void (*lineparser) (char *))
   fclose(fh);
 }
 
-void
-loadconfig (char *file)
-{
-  loadcfg(file,1,parsecfg);
-}
+void loadconfig(char *file) { loadcfg(file, 1, parsecfg); }
 
-void
-loadformats (char *file)
-{
-  loadcfg(file,0,parseformats);
-}
+void loadformats(char *file) { loadcfg(file, 0, parseformats); }
 
 /* get-format-string */
-char *
-getformatstr (formtstr id)
-{
+char *getformatstr(formtstr id) {
   int i;
   for (i = 0; formatstrings[i].formatstr; i++)
-      if (formatstrings[i].id == id) return formatstrings[i].formatstr;
+    if (formatstrings[i].id == id)
+      return formatstrings[i].formatstr;
   return NULL;
 }
 
 /* get-string-option, fetches *char-value of variable named by option */
-char *
-getstroption (confopt option)
-{
+char *getstroption(confopt option) {
   int i;
 #ifdef DEBUG
-  fprintf(stderr,"getstroption: %d\n",option);
+  fprintf(stderr, "getstroption: %d\n", option);
 #endif
   for (i = 0; configoptions[i].type != CO_NIL; i++)
     if ((configoptions[i].id == option) && (configoptions[i].type == CO_STR)) {
       if (!configoptions[i].value)
-         return configoptions[i].defaultvalue;
-       else
-         return configoptions[i].value;
+        return configoptions[i].defaultvalue;
+      else
+        return configoptions[i].value;
     }
   return NULL;
 }
 
 /* set-string-option, puts *char-value to variable named by option */
-void
-setstroption (confopt option, char *string)
-{
+void setstroption(confopt option, char *string) {
   int i;
 #ifdef DEBUG
-  fprintf(stderr,"setstroption: %d to %s\n",option,string);
+  fprintf(stderr, "setstroption: %d to %s\n", option, string);
 #endif
   for (i = 0; configoptions[i].type != CO_NIL; i++)
     if ((configoptions[i].id == option) && (configoptions[i].type == CO_STR)) {
       if (configoptions[i].value)
-         free(configoptions[i].value);
+        free(configoptions[i].value);
       if (string)
-         configoptions[i].value = strdup(string);
-       else
-         configoptions[i].value = NULL;
+        configoptions[i].value = strdup(string);
+      else
+        configoptions[i].value = NULL;
       if (configoptions[i].localvar.pstr)
-         *configoptions[i].localvar.pstr = configoptions[i].value;
+        *configoptions[i].localvar.pstr = configoptions[i].value;
     }
 }
 
 /* set-named-option, puts string to variable named by name */
-void
-setnoption (const char *name, char *string)
-{
+void setnoption(const char *name, char *string) {
   int i;
 #ifdef DEBUG
-  fprintf(stderr,"setstrnoption: %s to %s\n",name,string);
+  fprintf(stderr, "setstrnoption: %s to %s\n", name, string);
 #endif
   for (i = 0; configoptions[i].type != CO_NIL; i++)
-    if (!strcmp(configoptions[i].varname,name)) {
+    if (!strcmp(configoptions[i].varname, name)) {
       if (configoptions[i].type == CO_STR) {
         if (configoptions[i].value)
           free(configoptions[i].value);
@@ -273,265 +270,288 @@ setnoption (const char *name, char *string)
         else
           configoptions[i].value = NULL;
         if (configoptions[i].localvar.pstr)
-           *configoptions[i].localvar.pstr = configoptions[i].value;
+          *configoptions[i].localvar.pstr = configoptions[i].value;
       } else if (configoptions[i].type == CO_INT) {
         configoptions[i].value = (char *)(uintptr_t)atoi(string);
         if (configoptions[i].localvar.pint)
-           *configoptions[i].localvar.pint = (uintptr_t)configoptions[i].value;
+          *configoptions[i].localvar.pint = (uintptr_t)configoptions[i].value;
       }
     }
 }
 
 /* get-integer-option, fetches int-value of variable named by option */
-int
-getintoption (confopt option)
-{
+int getintoption(confopt option) {
   int i;
 #ifdef DEBUG
-  fprintf(stderr,"getintoption: %d\n",option);
+  fprintf(stderr, "getintoption: %d\n", option);
 #endif
   for (i = 0; configoptions[i].type != CO_NIL; i++)
     if ((configoptions[i].id == option) && (configoptions[i].type == CO_INT)) {
       if ((intptr_t)configoptions[i].value == -1)
-         return (intptr_t) configoptions[i].defaultvalue;
-       else
-         return (intptr_t) configoptions[i].value;
+        return (intptr_t)configoptions[i].defaultvalue;
+      else
+        return (intptr_t)configoptions[i].value;
     }
   return 0;
 }
 
 /* set-integer-option, puts int-value to variable named by option */
-void
-setintoption (confopt option, int value)
-{
+void setintoption(confopt option, int value) {
   int i;
 #ifdef DEBUG
-  fprintf(stderr,"setintoption: %d to %d\n",option,value);
+  fprintf(stderr, "setintoption: %d to %d\n", option, value);
 #endif
   for (i = 0; configoptions[i].type != CO_NIL; i++)
     if ((configoptions[i].id == option) && (configoptions[i].type == CO_INT)) {
-       configoptions[i].value = (char *)(uintptr_t)value;
-       if (configoptions[i].localvar.pint)
-          *configoptions[i].localvar.pint = (uintptr_t)configoptions[i].value;
+      configoptions[i].value = (char *)(uintptr_t)value;
+      if (configoptions[i].localvar.pint)
+        *configoptions[i].localvar.pint = (uintptr_t)configoptions[i].value;
     }
 }
 
 int quitrequest = 0;
 
 /* cleanup-hook, for SIGINT */
-void
-cleanup (int signal)
-{
-  if( signal == SIGINT ) {
-      switch( quitrequest >> 2 ) {
-      case 0:
-          flushout( );
-          writeout( "  Press Ctrl+C twice now to confirm ");
-          showout( );
-          quitrequest+=4;
-          return;
-          break;
-      case 1:
-          flushout( );
-          writeout( "  Press Ctrl+C twice now to confirm ");
-          writeout( "  Press Ctrl+C once  now to confirm ");
-          showout( );
-          quitrequest+=4;
-          return;
-          break;
-      default:
-          break;
-      }
+void cleanup(int signal) {
+  if (signal == SIGINT) {
+    switch (quitrequest >> 2) {
+    case 0:
+      flushout();
+      writeout("  Press Ctrl+C twice now to confirm ");
+      showout();
+      quitrequest += 4;
+      return;
+      break;
+    case 1:
+      flushout();
+      writeout("  Press Ctrl+C twice now to confirm ");
+      writeout("  Press Ctrl+C once  now to confirm ");
+      showout();
+      quitrequest += 4;
+      return;
+      break;
+    default:
+      break;
+    }
   }
   /* restore terminal state */
-  exitui ();
+  exitui();
   /* clear userlist */
-  ul_clear ();
+  ul_clear();
   vc_disconnect();
 
   /* inform user if we where killed by signal */
-  if (signal > 1)
-    {
-      fprintf (stderr, "vchat-client: terminated with signal %d.\n", signal);
-    } else if (errstr[0])
-      fputs   (errstr, stderr);
+  if (signal > 1) {
+    fprintf(stderr, "vchat-client: terminated with signal %d.\n", signal);
+  } else if (errstr[0])
+    fputs(errstr, stderr);
   /* end of story */
-  exit (0);
+  exit(0);
 }
 
 static int oldseconds = 0;
 
-void calleverysecond( void ) {
+void calleverysecond(void) {
   /* timetriggered execution, don't rely on being called every 1000us */
   /* rather see it as a chance for being called 9 times in 10 seconds */
   /* so check time() */
-  time_t now        = time( NULL );
-  struct tm *mytime = localtime( &now );
-  if( mytime->tm_sec < oldseconds ) {
-      consoleline( NULL );
+  time_t now = time(NULL);
+  struct tm *mytime = localtime(&now);
+  if (mytime->tm_sec < oldseconds) {
+    consoleline(NULL);
   }
   oldseconds = mytime->tm_sec;
 
-  if(quitrequest)
-      quitrequest--;
-  if(outputcountdown && !--outputcountdown)
-      hideout( );
-  if( reconnect_time && ( time( NULL ) > reconnect_time ) )
-      status = 0;
+  if (quitrequest)
+    quitrequest--;
+  if (outputcountdown && !--outputcountdown)
+    hideout();
+  if (reconnect_time && (time(NULL) > reconnect_time))
+    status = 0;
 }
 
 /* this function is called in the master loop */
-void
-eventloop (void)
-{
-  int poll_result = vc_poll( 1 /* second timeout */ );
+void eventloop(void) {
+  int poll_result = vc_poll(1 /* second timeout */);
 
   switch (poll_result) {
   case -1:
-      /* EINTR is most likely a SIGWINCH - ignore for now */
-      if (errno != EINTR)
-      {
-          snprintf (tmpstr, TMPSTRSIZE, "Select fails, %s.", strerror(errno));
-          strncpy(errstr,tmpstr,TMPSTRSIZE-2);
-          errstr[TMPSTRSIZE-2] = '\0';
-          strcat(errstr,"\n");
-          writecf (FS_ERR,tmpstr);
-          /* see this as an error condition and bail out */
-          status = 0;
-      }
-      break;
+    /* EINTR is most likely a SIGWINCH - ignore for now */
+    if (errno != EINTR) {
+      snprintf(tmpstr, TMPSTRSIZE, "Select fails, %s.", strerror(errno));
+      strncpy(errstr, tmpstr, TMPSTRSIZE - 2);
+      errstr[TMPSTRSIZE - 2] = '\0';
+      strcat(errstr, "\n");
+      writecf(FS_ERR, tmpstr);
+      /* see this as an error condition and bail out */
+      status = 0;
+    }
+    break;
   case 0:
-      /* time out reached */
-      calleverysecond();
-      break;
+    /* time out reached */
+    calleverysecond();
+    break;
   default:
-      /* something to read from user & we're logged in or have a cert? */
-      if (poll_result & 1)
-        userinput ();
+    /* something to read from user & we're logged in or have a cert? */
+    if (poll_result & 1)
+      userinput();
 
-      /* something to read from server? */
-      if (poll_result & 2)
-        vc_receive ();
-      break;
+    /* something to read from server? */
+    if (poll_result & 2)
+      vc_receive();
+    break;
   }
 }
 
-void usage( char *name) {
-    printf   ("usage: %s [-C config-file] [-F formats] [-l] [-z] [-s host] [-p port] [-c channel] [-n nickname]\n",name);
-    puts     ("   -C   load a second config-file, overriding the first one");
-    puts     ("   -F   load format strings (skins) from this file");
-    puts     ("   -l   local connect (no SSL)");
-    puts     ("   -z   don't use certificate files");
-    printf   ("   -s   set server (default \"%s\")\n",getstroption(CF_SERVERHOST));
-    printf   ("   -p   set port (default %s)\n",getstroption(CF_SERVERPORT));
-    printf   ("   -c   set channel (default %d)\n",getintoption(CF_CHANNEL));
-    if (own_nick_get())
-       printf("   -n   set nickname (default \"%s\")\n",own_nick_get());
-    else
-       puts  ("   -n   set nickname");
-    printf   ("   -f   set from (default \"%s\")\n",getstroption(CF_FROM));
-    puts     ("   -h   gives this help");
-    puts     ("   -v   show module versions");
+void usage(char *name) {
+  printf("usage: %s [-C config-file] [-F formats] [-l] [-z] [-s host] [-p "
+         "port] [-c channel] [-n nickname]\n",
+         name);
+  puts("   -C   load a second config-file, overriding the first one");
+  puts("   -F   load format strings (skins) from this file");
+  puts("   -l   local connect (no SSL)");
+  puts("   -z   don't use certificate files");
+  printf("   -s   set server (default \"%s\")\n", getstroption(CF_SERVERHOST));
+  printf("   -p   set port (default %s)\n", getstroption(CF_SERVERPORT));
+  printf("   -c   set channel (default %d)\n", getintoption(CF_CHANNEL));
+  if (own_nick_get())
+    printf("   -n   set nickname (default \"%s\")\n", own_nick_get());
+  else
+    puts("   -n   set nickname");
+  printf("   -f   set from (default \"%s\")\n", getstroption(CF_FROM));
+  puts("   -h   gives this help");
+  puts("   -v   show module versions");
 }
 
 void versions() {
-  puts (vchat_cl_version);
-  puts (vchat_ui_version);
-  puts (vchat_io_version);
-  puts (vchat_us_version);
-  puts (vchat_cm_version);
-  puts (vchat_tls_version);
-  puts (vchat_tls_version_external);
+  puts(vchat_cl_version);
+  puts(vchat_ui_version);
+  puts(vchat_io_version);
+  puts(vchat_us_version);
+  puts(vchat_cm_version);
+  puts(vchat_tls_version);
+  puts(vchat_tls_version_external);
 }
 
 /* main - d'oh */
-int
-main (int argc, char **argv)
-{
+int main(int argc, char **argv) {
   int pchar;
   int cmdsunparsed = 1;
 
-  setlocale(LC_ALL,"");
+  setlocale(LC_ALL, "");
 
-  loadconfig (GLOBAL_CONFIG_FILE);
-  loadconfig (getstroption (CF_CONFIGFILE));
+  loadconfig(GLOBAL_CONFIG_FILE);
+  loadconfig(getstroption(CF_CONFIGFILE));
 
   /* make SSL version used visible */
   vchat_tls_get_version_external();
 
   /* parse commandline */
   while (cmdsunparsed) {
-      pchar = getopt(argc,argv,"C:F:lzs:p:c:n:f:kKL:hv");
+    pchar = getopt(argc, argv, "C:F:lzs:p:c:n:f:kKL:hv");
 #ifdef DEBUG
-      fprintf(stderr,"parse commandline: %d ('%c'): %s\n",pchar,pchar,optarg);
+    fprintf(stderr, "parse commandline: %d ('%c'): %s\n", pchar, pchar, optarg);
 #endif
 
-      switch (pchar) {
-          case -1 : cmdsunparsed = 0; break;
-          case 'C': loadconfig(optarg); break;
-          case 'F': setstroption(CF_FORMFILE,optarg); break;
-          case 'l': setintoption(CF_USESSL,0); break;
-          case 'z': setintoption(CF_USECERT,0); break;
-          case 's': setstroption(CF_SERVERHOST,optarg); break;
-          case 'p': setstroption(CF_SERVERPORT,optarg); break;
-          case 'c': setintoption(CF_CHANNEL,strtol(optarg,NULL,10)); break;
-          case 'n': own_nick_set(optarg);  break;
-          case 'f': setstroption(CF_FROM,optarg); break;
-          case 'h': usage(argv[0]); exit(0); break;
-          case 'v': versions(); exit(0); break;
-          default : usage(argv[0]); exit(1);
-      }
+    switch (pchar) {
+    case -1:
+      cmdsunparsed = 0;
+      break;
+    case 'C':
+      loadconfig(optarg);
+      break;
+    case 'F':
+      setstroption(CF_FORMFILE, optarg);
+      break;
+    case 'l':
+      setintoption(CF_USESSL, 0);
+      break;
+    case 'z':
+      setintoption(CF_USECERT, 0);
+      break;
+    case 's':
+      setstroption(CF_SERVERHOST, optarg);
+      break;
+    case 'p':
+      setstroption(CF_SERVERPORT, optarg);
+      break;
+    case 'c':
+      setintoption(CF_CHANNEL, strtol(optarg, NULL, 10));
+      break;
+    case 'n':
+      own_nick_set(optarg);
+      break;
+    case 'f':
+      setstroption(CF_FROM, optarg);
+      break;
+    case 'h':
+      usage(argv[0]);
+      exit(0);
+      break;
+    case 'v':
+      versions();
+      exit(0);
+      break;
+    default:
+      usage(argv[0]);
+      exit(1);
+    }
   }
 
-  if (optind < argc) { usage(argv[0]); exit(1); }
+  if (optind < argc) {
+    usage(argv[0]);
+    exit(1);
+  }
 
   loadformats(GLOBAL_FORMAT_FILE);
-  loadformats(getstroption (CF_FORMFILE));
+  loadformats(getstroption(CF_FORMFILE));
 
   /* install signal handler */
-  signal (SIGINT, cleanup);
-  signal (SIGHUP, cleanup);
-  signal (SIGTERM, cleanup);
-  signal (SIGQUIT, SIG_IGN);
+  signal(SIGINT, cleanup);
+  signal(SIGHUP, cleanup);
+  signal(SIGTERM, cleanup);
+  signal(SIGQUIT, SIG_IGN);
 
   /* initialize userinterface */
-  initui ();
+  initui();
 
-  while( status ) {
+  while (status) {
     /* attempt connection */
-    if (vc_connect (getstroption(CF_SERVERHOST), getstroption(CF_SERVERPORT))) {
-       snprintf (tmpstr, TMPSTRSIZE, "Could not connect to server, %s.", strerror(errno));
-       strncpy(errstr,tmpstr,TMPSTRSIZE-2);
-       errstr[TMPSTRSIZE-2] = '\0';
-       strcat(errstr,"\n");
-       writecf (FS_ERR,tmpstr);
+    if (vc_connect(getstroption(CF_SERVERHOST), getstroption(CF_SERVERPORT))) {
+      snprintf(tmpstr, TMPSTRSIZE, "Could not connect to server, %s.",
+               strerror(errno));
+      strncpy(errstr, tmpstr, TMPSTRSIZE - 2);
+      errstr[TMPSTRSIZE - 2] = '\0';
+      strcat(errstr, "\n");
+      writecf(FS_ERR, tmpstr);
 
-      if( getintoption( CF_AUTORECONN ) ) {
-        snprintf (tmpstr, TMPSTRSIZE, "reconnecting in %d seconds", reconnect_delay );
-        writecf (FS_ERR, tmpstr);
-        reconnect_delay = ( reconnect_delay * 15 ) / 10;
-        reconnect_time = time( NULL ) + reconnect_delay;
+      if (getintoption(CF_AUTORECONN)) {
+        snprintf(tmpstr, TMPSTRSIZE, "reconnecting in %d seconds",
+                 reconnect_delay);
+        writecf(FS_ERR, tmpstr);
+        reconnect_delay = (reconnect_delay * 15) / 10;
+        reconnect_time = time(NULL) + reconnect_delay;
       } else
         status = 0;
     } else {
       /* reset reconnect delay */
       reconnect_delay = 6;
-      reconnect_time  = 0;
+      reconnect_time = 0;
     }
 
     while (status)
-      eventloop ();
+      eventloop();
 
     /* sanely close connection to server */
-    vc_disconnect ();
+    vc_disconnect();
 
-    if( !ownquit && ( getintoption( CF_AUTORECONN ) || wantreconnect ) )
+    if (!ownquit && (getintoption(CF_AUTORECONN) || wantreconnect))
       status = 1;
 
     wantreconnect = 0;
   }
 
   /* call cleanup-hook without signal */
-  cleanup (0);
+  cleanup(0);
   return 0;
 }
