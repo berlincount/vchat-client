@@ -101,7 +101,7 @@ overridden in the configfile.</para></listitem>
 
 <varlistentry>
 <term><option>-f</option> <replaceable>from</replaceable></term>
-<listitem><para>set from (default "vc-alpha-0.19")</para></listitem>
+<listitem><para>set from (default "vc-alpha-0.20")</para></listitem>
 </varlistentry>
 
 <varlistentry>

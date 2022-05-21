@@ -39,7 +39,7 @@ const char *vchat_ui_version = "vchat-ui.c       $Id$";
 
 /* externally used variables */
 /*   current string in topic window */
-char topicstr[TOPICSTRSIZE] = "[] VChat 0.19";
+char topicstr[TOPICSTRSIZE] = "[] VChat 0.20";
 /*   current string in console window */
 char consolestr[CONSOLESTRSIZE] = "[ Get help: .h for server /h for client commands";
 
