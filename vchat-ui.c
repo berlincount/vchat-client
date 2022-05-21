@@ -845,23 +845,26 @@ resize (int signal)
    ******/
 
   /* pub channel is always there, paint scrollback buffers */
-                  drawwin(channel, sb_pub);
+  drawwin(channel, sb_pub);
   /* if priv exists and is visible, paint scrollback buffers */
   if(private && !privwinhidden)
-                  drawwin(private, sb_priv);
+      drawwin(private, sb_priv);
   /* Send window's contents to curses virtual buffers */
-                  wnoutrefresh(channel);
+  wnoutrefresh(channel);
   if(private && !privwinhidden)
-                  wnoutrefresh(private);
+      wnoutrefresh(private);
 
   togglequery();
 
   /* Resize and draw our message window, render topic and
      console line */
-  if(outputshown) resize_output();
-  if(topic)       topicline(NULL);
-                  consoleline(NULL);
-  if(loggedin)    vciredraw();
+  if(outputshown)
+      resize_output();
+  if(topic)
+      topicline(NULL);
+  consoleline(NULL);
+  if(loggedin)
+      vciredraw();
 }
 
 static int
