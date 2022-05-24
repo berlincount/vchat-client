@@ -283,9 +283,9 @@ int vc_openssl_connect(int serverfd, vc_x509store_t *vc_store) {
              SSL_CIPHER_description(cipher, cipher_desc, TMPSTRSIZE));
     writecf(FS_SERV, tmpstr);
   } else {
-    snprintf(
-        tmpstr, TMPSTRSIZE,
-        "[SSL ERROR           ] Cipher not known / SSL object can't be queried!");
+    snprintf(tmpstr, TMPSTRSIZE,
+             "[SSL ERROR           ] Cipher not known / SSL object can't be "
+             "queried!");
     writecf(FS_ERR, tmpstr);
   }
 
