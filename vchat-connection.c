@@ -197,7 +197,7 @@ void vc_sendmessage(const char *msg) {
 
 
 /* get data from servers connection */
-void vc_receive(void) {
+int vc_receive(void) {
 /* offset in buffer (for linebreaks at packet borders) */
   static char buf[RECEIVEBUF_SIZE];
   static size_t buf_fill;
