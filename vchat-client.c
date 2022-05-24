@@ -397,8 +397,8 @@ void eventloop(void) {
       userinput();
 
     /* something to read from server? */
-    if (poll_result & 2)
-      vc_receive();
+    if ((poll_result & 2) && vc_receive())
+      status = 0;
     break;
   }
 }

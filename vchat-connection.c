@@ -35,10 +35,6 @@
 static int serverfd = -1;
 unsigned int want_tcp_keepalive = 0;
 
-/* TODO: NEEDS TO GO. status-variable from vchat-client.c
- * eventloop is done as long as this is true */
-extern int status;
-
 /* Generic tcp connector, blocking */
 static int connect_tcp_socket(const char *server, const char *port) {
   struct addrinfo hints, *res, *res0;
@@ -215,15 +211,14 @@ void vc_receive(void) {
   /* Our tls functions may require retries with handshakes etc, this is
    * signalled by -2 */
   if (bytes == -2)
-    return;
+    return 0;
 
   /* Error on the socket read? raise error message, bail out */
   if (bytes == -1) {
     snprintf(tmpstr, TMPSTRSIZE, "Receive fails, %s.", strerror(errno));
     snprintf(errstr, ERRSTRSIZE, "Receive fails, %s.\n", strerror(errno));
     writecf(FS_ERR, tmpstr);
-    status = 0;
-    return;
+    return -1;
   }
 
   /* end of file from server? */
@@ -231,8 +226,7 @@ void vc_receive(void) {
     /* inform user, bail out */
     writecf(FS_SERV, "* EOF from server.");
     snprintf(errstr, ERRSTRSIZE, "* EOF from server.\n");
-    status = 0;
-    return;
+    return -1;
   }
 
   buf_fill += bytes;
@@ -257,4 +251,5 @@ void vc_receive(void) {
     buf_fill -= 1 + endmsg - buf;
     memmove(buf, endmsg + 1, buf_fill);
   }
+  return 0;
 }
