@@ -197,21 +197,20 @@ void vc_sendmessage(const char *msg) {
     writecf(FS_ERR, "Message sending fuzzy.");
 }
 
-/* offset in buffer (for linebreaks at packet borders) */
-#define BUFSIZE 4096
-static char _buf[BUFSIZE];
-static size_t _buf_fill;
 
 /* get data from servers connection */
 void vc_receive(void) {
+/* offset in buffer (for linebreaks at packet borders) */
+  static char buf[4096];
+  static size_t buf_fill;
   char *endmsg;
-  size_t freebytes = BUFSIZE - _buf_fill;
+  size_t freebytes = sizeof(buf) - buf_fill;
   ssize_t bytes;
 
   if (!getintoption(CF_USESSL))
-    bytes = read(serverfd, _buf + _buf_fill, freebytes);
+    bytes = read(serverfd, buf + buf_fill, freebytes);
   else
-    bytes = vc_tls_receivemessage(_buf + _buf_fill, freebytes);
+    bytes = vc_tls_receivemessage(buf + buf_fill, freebytes);
 
   /* Our tls functions may require retries with handshakes etc, this is
    * signalled by -2 */
@@ -236,26 +235,26 @@ void vc_receive(void) {
     return;
   }
 
-  _buf_fill += bytes;
+  buf_fill += bytes;
 
   /* as long as there are lines .. */
-  while ((endmsg = memchr(_buf, '\n', _buf_fill)) != NULL) {
-    if (endmsg > _buf) {
+  while ((endmsg = memchr(buf, '\n', buf_fill)) != NULL) {
+    if (endmsg > buf) {
       /* Zero terminate message, optionally chomp CR */
       endmsg[0] = 0;
       if (endmsg[-1] == '\r')
         endmsg[-1] = 0;
       /* If terminating and chomping left us with a message, give it to line
        * handler */
-      if (_buf[0]) {
+      if (buf[0]) {
 #ifdef DEBUG
         /* debugging? log network input! */
-        fprintf(stderr, "<| %s\n", _buf);
+        fprintf(stderr, "<| %s\n", buf);
 #endif
-        protocol_parsemsg(_buf);
+        protocol_parsemsg(buf);
       }
     }
-    _buf_fill -= 1 + endmsg - _buf;
-    memmove(_buf, endmsg + 1, _buf_fill);
+    buf_fill -= 1 + endmsg - buf;
+    memmove(buf, endmsg + 1, buf_fill);
   }
 }
