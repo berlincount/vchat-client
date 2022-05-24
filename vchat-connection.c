@@ -35,6 +35,9 @@
 static int serverfd = -1;
 unsigned int want_tcp_keepalive = 0;
 
+#define STAGING_SIZE 16384
+#define RECEIVEBUF_SIZE 4096
+
 /* Generic tcp connector, blocking */
 static int connect_tcp_socket(const char *server, const char *port) {
   struct addrinfo hints, *res, *res0;
@@ -176,19 +179,18 @@ void vc_disconnect() {
   loggedin = 0;
 }
 
-#define STAGINGSIZE 16384
-static char _staging[STAGINGSIZE];
 void vc_sendmessage(const char *msg) {
-  size_t sent, len = snprintf(_staging, sizeof(_staging), "%s\r\n", msg);
+  static char staging[STAGING_SIZE];
+  size_t sent, len = snprintf(staging, sizeof(staging), "%s\r\n", msg);
 #ifdef DEBUG
   /* debugging? log network output! */
   fprintf(dumpfile, ">| (%zd) %s\n", len - 2, msg);
 #endif
 
   if (getintoption(CF_USESSL))
-    sent = vc_tls_sendmessage(_staging, len);
+    sent = vc_tls_sendmessage(staging, len);
   else
-    sent = write(serverfd, _staging, len);
+    sent = write(serverfd, staging, len);
   if (sent != len)
     writecf(FS_ERR, "Message sending fuzzy.");
 }
@@ -197,7 +199,7 @@ void vc_sendmessage(const char *msg) {
 /* get data from servers connection */
 void vc_receive(void) {
 /* offset in buffer (for linebreaks at packet borders) */
-  static char buf[4096];
+  static char buf[RECEIVEBUF_SIZE];
   static size_t buf_fill;
   char *endmsg;
   size_t freebytes = sizeof(buf) - buf_fill;
