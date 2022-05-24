@@ -119,12 +119,14 @@ int vc_connect(const char *server, const char *port) {
   }
 
   if (want_openssl && _engine == TLS_ENGINE_MBEDTLS)
-    writecf(FS_SERV, "Warning: tls engine openssl requested but openssl engine not compiled in. Using mbedtls");
+    writecf(FS_SERV, "Warning: tls engine openssl requested but openssl engine "
+                     "not compiled in. Using mbedtls");
 
   if (!want_openssl && _engine == TLS_ENGINE_OPENSSL)
-    writecf(FS_SERV, "Warning: tls engine mbedtls requested but mbedts engine not compiled in. Using openssl");
+    writecf(FS_SERV, "Warning: tls engine mbedtls requested but mbedts engine "
+                     "not compiled in. Using openssl");
 
-  /* If SSL is requested, get our ssl-BIO running */
+    /* If SSL is requested, get our ssl-BIO running */
 #ifdef TLS_LIB_OPENSSL
   if (_engine == TLS_ENGINE_OPENSSL)
     vc_openssl_init_x509store(&vc_store);
@@ -260,7 +262,7 @@ void vc_sendmessage(const char *msg) {
 
 /* get data from servers connection */
 int vc_receive(void) {
-/* offset in buffer (for linebreaks at packet borders) */
+  /* offset in buffer (for linebreaks at packet borders) */
   static char buf[RECEIVEBUF_SIZE];
   static size_t buf_fill;
   char *endmsg;
@@ -337,7 +339,10 @@ const char *vchat_tls_version_external() {
   char *mbedtls_version = strdup("not installed");
 #endif
 
-  snprintf(tmpstr, TMPSTRSIZE, "Module plain v0.1\nModule openssl version: %s\nModule mbedtls version: %s", openssl_version, mbedtls_version);
+  snprintf(tmpstr, TMPSTRSIZE,
+           "Module plain v0.1\nModule openssl version: %s\nModule mbedtls "
+           "version: %s",
+           openssl_version, mbedtls_version);
 
   free(openssl_version);
   free(mbedtls_version);
