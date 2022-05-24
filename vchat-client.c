@@ -430,7 +430,7 @@ void versions() {
   puts(vchat_us_version);
   puts(vchat_cm_version);
   puts(vchat_tls_version);
-  puts(vchat_tls_version_external);
+  puts(vchat_tls_version_external());
 }
 
 /* main - d'oh */
@@ -442,9 +442,6 @@ int main(int argc, char **argv) {
 
   loadconfig(GLOBAL_CONFIG_FILE);
   loadconfig(getstroption(CF_CONFIGFILE));
-
-  /* make SSL version used visible */
-  vchat_tls_get_version_external();
 
   /* parse commandline */
   while (cmdsunparsed) {

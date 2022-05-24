@@ -28,8 +28,6 @@
 
 const char *vchat_tls_version =
     "vchat-tls.c      $Id$";
-const char *vchat_tls_version_external =
-    "Unknown implementation; version unknown";
 
 /* Helpers to work with vc_x509store_t used by all tls libs */
 void vc_cleanup_x509store(vc_x509store_t *store) {
@@ -133,15 +131,6 @@ cleanup_happy:
   return 0;
 }
 
-#if defined(TLS_LIB_OPENSSL) && defined(TLS_LIB_MBEDTLS)
-#error                                                                         \
-    "Both TLS_LIB_OPENSSL and TLS_LIB_MBEDTLS are defined. Please select only one."
-#endif
-#if !defined(TLS_LIB_OPENSSL) && !defined(TLS_LIB_MBEDTLS)
-#error                                                                         \
-    "Neither TLS_LIB_OPENSSL nor TLS_LIB_MBEDTLS are defined. Please select exactly one."
-#endif
-
 #ifdef TLS_LIB_OPENSSL
 
 #include <openssl/bio.h>
@@ -152,13 +141,13 @@ cleanup_happy:
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
 
-void vchat_tls_get_version_external() {
+char *vc_openssl_version() {
   snprintf(tmpstr, sizeof(tmpstr), "OpenSSL %s with %s",
            SSLeay_version(SSLEAY_VERSION), SSLeay_version(SSLEAY_CFLAGS));
-  vchat_tls_version_external = strdup(tmpstr);
+  return strdup(tmpstr);
 }
 
-void vc_init_x509store(vc_x509store_t *store) {
+void vc_openssl_init_x509store(vc_x509store_t *store) {
   static int sslinit;
   if (!sslinit++) {
     SSL_library_init();
@@ -243,7 +232,7 @@ static SSL_CTX *vc_create_sslctx(vc_x509store_t *vc_store) {
   return (ctx);
 }
 
-int vc_tls_connect(int serverfd, vc_x509store_t *vc_store) {
+int vc_openssl_connect(int serverfd, vc_x509store_t *vc_store) {
   SSL_CTX *ctx = vc_create_sslctx(vc_store);
   X509 *peercert = NULL;
   BIO *ssl_conn = NULL;
@@ -260,6 +249,10 @@ int vc_tls_connect(int serverfd, vc_x509store_t *vc_store) {
   char *fp = fingerprint;
 
   long j;
+
+  writecf(FS_SERV, "[SOCKET CONNECTED    ]");
+  writecf(FS_SERV, "[UPGRADING TO TLS    ]");
+  writecf(FS_SERV, "[TLS ENGINE OPENSSL  ]");
 
   if (!ctx)
     goto all_errors;
@@ -286,13 +279,13 @@ int vc_tls_connect(int serverfd, vc_x509store_t *vc_store) {
   cipher = SSL_get_current_cipher(sslp);
   if (cipher) {
     char cipher_desc[TMPSTRSIZE];
-    snprintf(tmpstr, TMPSTRSIZE, "[SSL CIPHER       ] %s",
+    snprintf(tmpstr, TMPSTRSIZE, "[SSL CIPHER          ] %s",
              SSL_CIPHER_description(cipher, cipher_desc, TMPSTRSIZE));
     writecf(FS_SERV, tmpstr);
   } else {
     snprintf(
         tmpstr, TMPSTRSIZE,
-        "[SSL ERROR        ] Cipher not known / SSL object can't be queried!");
+        "[SSL ERROR           ] Cipher not known / SSL object can't be queried!");
     writecf(FS_ERR, tmpstr);
   }
 
@@ -302,10 +295,10 @@ int vc_tls_connect(int serverfd, vc_x509store_t *vc_store) {
     goto ssl_error;
 
   /* show basic information about peer cert */
-  snprintf(tmpstr, TMPSTRSIZE, "[SSL SUBJECT      ] %s",
+  snprintf(tmpstr, TMPSTRSIZE, "[SSL SUBJECT         ] %s",
            X509_NAME_oneline(X509_get_subject_name(peercert), 0, 0));
   writecf(FS_SERV, tmpstr);
-  snprintf(tmpstr, TMPSTRSIZE, "[SSL ISSUER       ] %s",
+  snprintf(tmpstr, TMPSTRSIZE, "[SSL ISSUER          ] %s",
            X509_NAME_oneline(X509_get_issuer_name(peercert), 0, 0));
   writecf(FS_SERV, tmpstr);
 
@@ -318,7 +311,7 @@ int vc_tls_connect(int serverfd, vc_x509store_t *vc_store) {
     fp += sprintf(fp, "%02X:", fingerprint_bin[j]);
   assert(fp > fingerprint);
   fp[-1] = 0;
-  snprintf(tmpstr, TMPSTRSIZE, "[SSL FINGERPRINT  ] %s (from server)",
+  snprintf(tmpstr, TMPSTRSIZE, "[SSL FINGERPRINT     ] %s (from server)",
            fingerprint);
   writecf(FS_SERV, tmpstr);
 
@@ -333,12 +326,12 @@ int vc_tls_connect(int serverfd, vc_x509store_t *vc_store) {
     return 0;
 
   if (getintoption(CF_IGNSSL)) {
-    writecf(FS_ERR, "[SSL VERIFY ERROR ] FAILURE IGNORED!!!");
+    writecf(FS_ERR, "[SSL VERIFY ERROR    ] FAILURE IGNORED!!!");
     return 0;
   }
 
 ssl_error:
-  snprintf(tmpstr, TMPSTRSIZE, "[SSL CONNECT ERROR] %s",
+  snprintf(tmpstr, TMPSTRSIZE, "[SSL CONNECT ERROR   ] %s",
            ERR_error_string(ERR_get_error(), NULL));
   writecf(FS_ERR, tmpstr);
 all_errors:
@@ -396,18 +389,18 @@ X509_STORE *vc_x509store_create(vc_x509store_t *vc_store) {
 
 int vc_verify_callback(int ok, X509_STORE_CTX *store) {
   if (!ok) {
-    snprintf(tmpstr, TMPSTRSIZE, "[SSL VERIFY ERROR ] %s",
+    snprintf(tmpstr, TMPSTRSIZE, "[SSL VERIFY ERROR    ] %s",
              X509_verify_cert_error_string(X509_STORE_CTX_get_error(store)));
     writecf(FS_ERR, tmpstr);
   }
   return (ok | getintoption(CF_IGNSSL));
 }
 
-ssize_t vc_tls_sendmessage(const void *buf, size_t size) {
+ssize_t vc_openssl_sendmessage(const void *buf, size_t size) {
   return BIO_write(server_conn, buf, size);
 }
 
-ssize_t vc_tls_receivemessage(void *buf, size_t size) {
+ssize_t vc_openssl_receivemessage(void *buf, size_t size) {
   ssize_t received = (ssize_t)BIO_read(server_conn, buf, size);
   if (received != 0)
     return received;
@@ -416,7 +409,7 @@ ssize_t vc_tls_receivemessage(void *buf, size_t size) {
   return 0;
 }
 
-void vc_tls_cleanup() {
+void vc_openssl_cleanup() {
   BIO_free_all(server_conn);
   server_conn = NULL;
 }
@@ -451,9 +444,9 @@ typedef struct {
 } mbedstate;
 static mbedstate _mbedtls_state;
 
-void vchat_tls_get_version_external() {
+char *vc_mbedtls_version() {
   snprintf(tmpstr, sizeof(tmpstr), "%s", MBEDTLS_VERSION_STRING_FULL);
-  vchat_tls_version_external = strdup(tmpstr);
+  return strdup(tmpstr);
 }
 
 static int static_tcp_recv(void *ctx, unsigned char *buf, size_t len) {
@@ -463,16 +456,13 @@ static int static_tcp_send(void *ctx, const unsigned char *buf, size_t len) {
   return send((int)(intptr_t)ctx, buf, len, 0);
 }
 static int map_openssl_suite(char *openssl_name);
-void vc_init_x509store(vc_x509store_t *store) {
-  static int sslinit;
-  if (!sslinit++) {
-    mbedtls_entropy_init(&_mbedtls_state._entropy);
-    mbedtls_ctr_drbg_init(&_mbedtls_state._ctr_drbg);
+void vc_mbedtls_init_x509store(vc_x509store_t *store) {
+  mbedtls_entropy_init(&_mbedtls_state._entropy);
+  mbedtls_ctr_drbg_init(&_mbedtls_state._ctr_drbg);
 
-    mbedtls_ctr_drbg_seed(&_mbedtls_state._ctr_drbg, mbedtls_entropy_func,
-                          &_mbedtls_state._entropy,
-                          (const unsigned char *)DRBG_PERS, sizeof(DRBG_PERS));
-  }
+  mbedtls_ctr_drbg_seed(&_mbedtls_state._ctr_drbg, mbedtls_entropy_func,
+                        &_mbedtls_state._entropy,
+                        (const unsigned char *)DRBG_PERS, sizeof(DRBG_PERS));
   memset(store, 0, sizeof(vc_x509store_t));
 
   /* We want to make verifying the peer the default */
@@ -485,7 +475,7 @@ static void vc_tls_report_error(int error, char *message) {
   writecf(FS_ERR, tmpstr);
 }
 
-int vc_tls_connect(int serverfd, vc_x509store_t *vc_store) {
+int vc_mbedtls_connect(int serverfd, vc_x509store_t *vc_store) {
   /* Some aliases for shorter references */
   mbedstate *s = &_mbedtls_state;
   mbedtls_ssl_config *conf = &_mbedtls_state._conf;
@@ -502,6 +492,7 @@ int vc_tls_connect(int serverfd, vc_x509store_t *vc_store) {
 
   writecf(FS_SERV, "[SOCKET CONNECTED    ]");
   writecf(FS_SERV, "[UPGRADING TO TLS    ]");
+  writecf(FS_SERV, "[TLS ENGINE MBEDTLS  ]");
 
   if ((ret = mbedtls_ssl_config_defaults(conf, MBEDTLS_SSL_IS_CLIENT,
                                          MBEDTLS_SSL_TRANSPORT_STREAM,
@@ -688,11 +679,11 @@ int vc_tls_connect(int serverfd, vc_x509store_t *vc_store) {
   return 0;
 }
 
-ssize_t vc_tls_sendmessage(const void *buf, size_t size) {
+ssize_t vc_mbedtls_sendmessage(const void *buf, size_t size) {
   return mbedtls_ssl_write(&_mbedtls_state._ssl, buf, size);
 }
 
-ssize_t vc_tls_receivemessage(void *buf, size_t size) {
+ssize_t vc_mbedtls_receivemessage(void *buf, size_t size) {
   ssize_t received = (ssize_t)mbedtls_ssl_read(&_mbedtls_state._ssl, buf, size);
   switch (received) {
   case MBEDTLS_ERR_SSL_WANT_READ:
@@ -709,7 +700,7 @@ ssize_t vc_tls_receivemessage(void *buf, size_t size) {
   }
 }
 
-void vc_tls_cleanup() {
+void vc_mbedtls_cleanup() {
   mbedtls_x509_crt_free(&_mbedtls_state._cacert);
   mbedtls_x509_crt_free(&_mbedtls_state._cert);
   mbedtls_pk_free(&_mbedtls_state._key);

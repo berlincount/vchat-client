@@ -449,7 +449,7 @@ void command_version(char *tail) {
   writeout(vchat_us_version);
   writeout(vchat_cm_version);
   writeout(vchat_tls_version);
-  writeout(vchat_tls_version_external);
+  writeout(vchat_tls_version_external());
   showout();
 }
 

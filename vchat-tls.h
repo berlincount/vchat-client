@@ -14,7 +14,6 @@ struct vc_x509store_t {
 };
 typedef struct vc_x509store_t vc_x509store_t;
 
-void vc_init_x509store(vc_x509store_t *);
 void vc_x509store_set_pkeycb(vc_x509store_t *, vc_askpass_cb_t);
 void vc_x509store_setflags(vc_x509store_t *, int);
 void vc_x509store_setkeyfile(vc_x509store_t *, char *);
@@ -25,10 +24,28 @@ void vc_x509store_setcapath(vc_x509store_t *, char *);
 void vc_x509store_setcrlfile(vc_x509store_t *, char *);
 void vc_cleanup_x509store(vc_x509store_t *s);
 
-int vc_tls_connect(int serverfd, vc_x509store_t *);
-ssize_t vc_tls_sendmessage(const void *buf, size_t size);
-ssize_t vc_tls_receivemessage(void *buf, size_t size);
-void vc_tls_cleanup();
+#if !defined(TLS_LIB_OPENSSL) && !defined(TLS_LIB_MBEDTLS)
+#error                                                                         \
+    "Neither TLS_LIB_OPENSSL nor TLS_LIB_MBEDTLS are defined. Please select exactly one."
+#endif
+
+#ifdef TLS_LIB_OPENSSL
+void vc_openssl_init_x509store(vc_x509store_t *);
+int vc_openssl_connect(int serverfd, vc_x509store_t *);
+ssize_t vc_openssl_sendmessage(const void *buf, size_t size);
+ssize_t vc_openssl_receivemessage(void *buf, size_t size);
+void vc_openssl_cleanup();
+char *vc_openssl_version();
+#endif
+
+#ifdef TLS_LIB_MBEDTLS
+void vc_mbedtls_init_x509store(vc_x509store_t *);
+int vc_mbedtls_connect(int serverfd, vc_x509store_t *);
+ssize_t vc_mbedtls_sendmessage(const void *buf, size_t size);
+ssize_t vc_mbedtls_receivemessage(void *buf, size_t size);
+void vc_mbedtls_cleanup();
+char *vc_mbedtls_version();
+#endif
 
 #define VC_X509S_USE_CAFILE                        0x01
 #define VC_X509S_USE_CAPATH                        0x02

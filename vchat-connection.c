@@ -35,6 +35,9 @@
 static int serverfd = -1;
 unsigned int want_tcp_keepalive = 0;
 
+enum { TLS_ENGINE_UNSET, TLS_ENGINE_OPENSSL, TLS_ENGINE_MBEDTLS };
+static int _engine = TLS_ENGINE_UNSET;
+
 #define STAGING_SIZE 16384
 #define RECEIVEBUF_SIZE 4096
 
@@ -87,6 +90,7 @@ int vc_connect(const char *server, const char *port) {
 
   /* pointer to tilde-expanded certificate/keyfile-names */
   char *certfile, *cafile;
+  int result = -1, want_openssl = !strcmp(getstroption(CF_TLSLIB), "openssl");
 
   /* Connect to the server */
   serverfd = connect_tcp_socket(server, port);
@@ -100,8 +104,35 @@ int vc_connect(const char *server, const char *port) {
   if (!getintoption(CF_USESSL))
     return 0;
 
+#ifdef TLS_LIB_OPENSSL
+  _engine = TLS_ENGINE_OPENSSL;
+#endif
+#ifdef TLS_LIB_MBEDTLS
+  /* Make mbedtls default unless mbedtls is configured */
+  if (!want_openssl || _engine == TLS_ENGINE_UNSET)
+    _engine = TLS_ENGINE_MBEDTLS;
+#endif
+
+  if (_engine == TLS_ENGINE_UNSET) {
+    writecf(FS_ERR, "Error: tls requested but no tls engine compiled in.");
+    return -1;
+  }
+
+  if (want_openssl && _engine == TLS_ENGINE_MBEDTLS)
+    writecf(FS_SERV, "Warning: tls engine openssl requested but openssl engine not compiled in. Using mbedtls");
+
+  if (!want_openssl && _engine == TLS_ENGINE_OPENSSL)
+    writecf(FS_SERV, "Warning: tls engine mbedtls requested but mbedts engine not compiled in. Using openssl");
+
   /* If SSL is requested, get our ssl-BIO running */
-  vc_init_x509store(&vc_store);
+#ifdef TLS_LIB_OPENSSL
+  if (_engine == TLS_ENGINE_OPENSSL)
+    vc_openssl_init_x509store(&vc_store);
+#endif
+#ifdef TLS_LIB_MBEDTLS
+  if (_engine == TLS_ENGINE_MBEDTLS)
+    vc_mbedtls_init_x509store(&vc_store);
+#endif
 
   /* get name of certificate file */
   certfile = get_tilde_expanded(CF_CERTFILE);
@@ -127,14 +158,30 @@ int vc_connect(const char *server, const char *port) {
   free(cafile);
 
   /* upgrade our plain BIO to ssl */
-  int result = vc_tls_connect(serverfd, &vc_store);
+#ifdef TLS_LIB_OPENSSL
+  if (_engine == TLS_ENGINE_OPENSSL)
+    result = vc_openssl_connect(serverfd, &vc_store);
+#endif
+#ifdef TLS_LIB_MBEDTLS
+  if (_engine == TLS_ENGINE_MBEDTLS)
+    result = vc_mbedtls_connect(serverfd, &vc_store);
+#endif
   vc_cleanup_x509store(&vc_store);
 
   if (result) {
     close(serverfd);
     serverfd = -1;
     errno = EIO;
-    vc_tls_cleanup();
+#ifdef TLS_LIB_OPENSSL
+    if (_engine == TLS_ENGINE_OPENSSL)
+      vc_openssl_cleanup();
+#endif
+#ifdef TLS_LIB_MBEDTLS
+    if (_engine == TLS_ENGINE_MBEDTLS)
+      vc_mbedtls_cleanup();
+#endif
+
+    _engine = TLS_ENGINE_UNSET;
     snprintf(tmpstr, TMPSTRSIZE, getformatstr(FS_CANTCONNECT), server, port);
     writechan(tmpstr);
     return -1;
@@ -175,26 +222,41 @@ void vc_disconnect() {
     close(serverfd);
     serverfd = -1;
   }
-  vc_tls_cleanup();
+#ifdef TLS_LIB_OPENSSL
+  if (_engine == TLS_ENGINE_OPENSSL)
+    vc_openssl_cleanup();
+#endif
+#ifdef TLS_LIB_MBEDTLS
+  if (_engine == TLS_ENGINE_MBEDTLS)
+    vc_mbedtls_cleanup();
+#endif
+
+  _engine = TLS_ENGINE_UNSET;
   loggedin = 0;
 }
 
 void vc_sendmessage(const char *msg) {
   static char staging[STAGING_SIZE];
-  size_t sent, len = snprintf(staging, sizeof(staging), "%s\r\n", msg);
+  size_t sent = 0, len = snprintf(staging, sizeof(staging), "%s\r\n", msg);
 #ifdef DEBUG
   /* debugging? log network output! */
   fprintf(dumpfile, ">| (%zd) %s\n", len - 2, msg);
 #endif
 
-  if (getintoption(CF_USESSL))
-    sent = vc_tls_sendmessage(staging, len);
-  else
+  if (getintoption(CF_USESSL)) {
+#ifdef TLS_LIB_OPENSSL
+    if (_engine == TLS_ENGINE_OPENSSL)
+      sent = vc_openssl_sendmessage(staging, len);
+#endif
+#ifdef TLS_LIB_MBEDTLS
+    if (_engine == TLS_ENGINE_MBEDTLS)
+      sent = vc_mbedtls_sendmessage(staging, len);
+#endif
+  } else
     sent = write(serverfd, staging, len);
   if (sent != len)
     writecf(FS_ERR, "Message sending fuzzy.");
 }
-
 
 /* get data from servers connection */
 int vc_receive(void) {
@@ -203,12 +265,19 @@ int vc_receive(void) {
   static size_t buf_fill;
   char *endmsg;
   size_t freebytes = sizeof(buf) - buf_fill;
-  ssize_t bytes;
+  ssize_t bytes = 0;
 
   if (!getintoption(CF_USESSL))
     bytes = read(serverfd, buf + buf_fill, freebytes);
   else
-    bytes = vc_tls_receivemessage(buf + buf_fill, freebytes);
+#ifdef TLS_LIB_OPENSSL
+    if (_engine == TLS_ENGINE_OPENSSL)
+      bytes = vc_openssl_receivemessage(buf + buf_fill, freebytes);
+#endif
+#ifdef TLS_LIB_MBEDTLS
+   if (_engine == TLS_ENGINE_MBEDTLS)
+      bytes = vc_mbedtls_receivemessage(buf + buf_fill, freebytes);
+#endif
 
   /* Our tls functions may require retries with handshakes etc, this is
    * signalled by -2 */
@@ -254,4 +323,23 @@ int vc_receive(void) {
     memmove(buf, endmsg + 1, buf_fill);
   }
   return 0;
+}
+
+const char *vchat_tls_version_external() {
+#ifdef TLS_LIB_OPENSSL
+  char *openssl_version = vc_openssl_version();
+#else
+  char *openssl_version = strdup("not installed");
+#endif
+#ifdef TLS_LIB_MBEDTLS
+  char *mbedtls_version = vc_mbedtls_version();
+#else
+  char *mbedtls_version = strdup("not installed");
+#endif
+
+  snprintf(tmpstr, TMPSTRSIZE, "Module plain v0.1\nModule openssl version: %s\nModule mbedtls version: %s", openssl_version, mbedtls_version);
+
+  free(openssl_version);
+  free(mbedtls_version);
+  return tmpstr;
 }

@@ -7,3 +7,5 @@ void vc_sendmessage(const char *message);
 int vc_receive();
 int vc_poll();
 void vc_disconnect();
+
+const char *vchat_tls_version_external();

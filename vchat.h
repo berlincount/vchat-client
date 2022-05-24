@@ -44,6 +44,7 @@ typedef enum {
   CF_FINGERPRINT,
   CF_PINFINGER,
   CF_USESSL,
+  CF_TLSLIB,
   CF_IGNSSL,
   CF_VERIFYSSL,
   CF_USECERT,
@@ -243,5 +244,3 @@ typedef struct {
 
 /* vchat-tls.c */
 extern const char *vchat_tls_version;
-extern const char *vchat_tls_version_external;
-void vchat_tls_get_version_external();
