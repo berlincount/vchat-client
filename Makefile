@@ -15,6 +15,8 @@ LIBS = -lncurses
 LIBS += -lreadline
 
 CFLAGS += -Wall -Os
+CFLAGS += -I/usr/local/include
+LDFLAGS += -L/usr/local/lib
 
 ## use this line when you've got an readline before 4.(x|2)
 #CFLAGS += -DOLDREADLINE
@@ -23,11 +25,11 @@ CFLAGS += -Wall -Os
 # if you can't modify this Makefile
 CFLAGS += $(OLDREADLINE)
 
-##### Enable this for using the OpenSSL library
+##### Enable this for enabling the OpenSSL library
 CFLAGS += -DTLS_LIB_OPENSSL
 LIBS += -lssl -lcrypto
 
-##### Enable this for using the mbedTLS library
+##### Enable this for enabling the mbedTLS library
 #CFLAGS += -DTLS_LIB_MBEDTLS
 #LIBS += -lmbedx509 -lmbedtls -lmbedcrypto
 
@@ -36,7 +38,6 @@ LIBS += -lssl -lcrypto
 #CFLAGS+= -arch x86_64 -Wno-deprecated-declarations
 #CFLAGS+= -arch i386 -Wno-deprecated-declarations
 #CFLAGS += -I/usr/local/ssl/include -L/usr/local/ssl/lib
-#CFLAGS += -I/usr/local/include -L/usr/local/lib
 #CFLAGS += -I/usr/pkg/include -L/usr/pkg/lib
 #LDFLAGS += -L"/usr/local/opt/openssl@1.1/lib"
 #CFLAGS += -I../readline-6.3
