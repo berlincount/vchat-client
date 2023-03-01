@@ -26,7 +26,7 @@ void vc_cleanup_x509store(vc_x509store_t *s);
 
 #if !defined(TLS_LIB_OPENSSL) && !defined(TLS_LIB_MBEDTLS)
 #error                                                                         \
-    "Neither TLS_LIB_OPENSSL nor TLS_LIB_MBEDTLS are defined. Please select exactly one."
+    "Neither TLS_LIB_OPENSSL nor TLS_LIB_MBEDTLS are defined. Please select at least one."
 #endif
 
 #ifdef TLS_LIB_OPENSSL
