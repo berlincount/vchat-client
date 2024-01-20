@@ -195,6 +195,9 @@ void flushout(void);
   }
 void hideout(void);
 int writecf(formtstr id, char *str);
+/*   dumps aggregated connect output in case of a connection error */
+void dumpconnect();
+void flushconnect();
 
 extern int outputcountdown;
 

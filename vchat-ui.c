@@ -91,6 +91,7 @@ struct sb_data {
 static struct sb_data *sb_pub = NULL;
 static struct sb_data *sb_priv = NULL;
 static struct sb_data *sb_out = NULL;
+static struct sb_data *sb_connect = NULL;
 
 /* Tells, which window is active */
 static int sb_win = 0; /* 0 for pub, 1 for priv */
@@ -310,14 +311,18 @@ static void sb_flush(struct sb_data *sb) {
     now = tmp;
   }
   sb->entries = NULL;
+  sb->last = NULL;
+  sb->count = 0;
+  sb->scroll = 0;
 }
 
-/*static void
-sb_clear ( struct sb_data **sb ) {
+/*
+static void sb_clear ( struct sb_data **sb ) {
   sb_flush(*sb);
   free( *sb );
   *sb = NULL;
-}*/
+}
+*/
 
 static struct sb_entry *sb_add(struct sb_data *sb, const char *line,
                                time_t when) {
@@ -407,7 +412,25 @@ int writecf(formtstr id, char *str) {
   else
     consoleline(NULL);
 
+  if (!loggedin)
+    sb_add(sb_connect, str, now);
+
   return i;
+}
+
+void dumpconnect() {
+  struct sb_entry *now = sb_connect->entries, *prev = NULL, *tmp;
+  while (now) {
+    tmp = (struct sb_entry *)((unsigned long)prev ^ (unsigned long)now->link);
+    fputs(now->what, stderr);
+    fputc(10, stderr);
+    prev = now;
+    now = tmp;
+  }
+}
+
+void flushconnect() {
+  sb_flush(sb_connect);
 }
 
 int writepriv(char *str, int maybeep) {
@@ -1222,6 +1245,7 @@ void initui(void) {
   /* Prepare our scrollback buffers */
   sb_pub = (struct sb_data *)malloc(sizeof(struct sb_data));
   sb_out = (struct sb_data *)malloc(sizeof(struct sb_data));
+  sb_connect = (struct sb_data *)malloc(sizeof(struct sb_data));
   if (privheight)
     sb_priv = (struct sb_data *)malloc(sizeof(struct sb_data));
   else
@@ -1230,6 +1254,7 @@ void initui(void) {
   memset(sb_pub, 0, sizeof(struct sb_data));
   memset(sb_priv, 0, sizeof(struct sb_data));
   memset(sb_out, 0, sizeof(struct sb_data));
+  memset(sb_connect, 0, sizeof(struct sb_data));
 
   /* set colors for windows */
   if (has_colors()) {

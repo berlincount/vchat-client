@@ -343,8 +343,13 @@ void cleanup(int signal) {
   /* inform user if we where killed by signal */
   if (signal > 1) {
     fprintf(stderr, "vchat-client: terminated with signal %d.\n", signal);
-  } else if (errstr[0])
+    if (!loggedin)
+      dumpconnect();
+  } else if (errstr[0]) {
     fputs(errstr, stderr);
+    if (!loggedin)
+      dumpconnect();
+  }
   /* end of story */
   exit(0);
 }

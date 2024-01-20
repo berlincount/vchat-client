@@ -235,6 +235,7 @@ static void justloggedin(char *message) {
     loadcfg(getstroption(CF_LOGINSCRIPT), 0, handleline);
     handleline(".S");
     loggedin = 1;
+    flushconnect();
   }
 }
 
