@@ -510,7 +510,7 @@ int vc_mbedtls_connect(const char *servername, int serverfd, vc_x509store_t *vc_
 
   char *ciphers = getstroption(CF_CIPHERSUITE);
   if (!ciphers)
-    ciphers = "ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-SHA";
+    ciphers = "TLS1-3-AES-256-GCM-SHA384:TLS1-3-AES-128-GCM-SHA256:TLS1-3-AES-128-CCM-SHA256:TLS1-3-AES-128-CCM-8-SHA256:TLS1-3-CHACHA20-POLY1305-SHA256:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-SHA";
   ciphers = strdup(ciphers);
   for (token = strtok(ciphers, ":"); token && suitecount < MAX_SUITES - 1;
        token = strtok(NULL, ":")) {
