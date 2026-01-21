@@ -166,7 +166,7 @@ int vc_connect(const char *server, const char *port) {
 #endif
 #ifdef TLS_LIB_MBEDTLS
   if (_engine == TLS_ENGINE_MBEDTLS)
-    result = vc_mbedtls_connect(serverfd, &vc_store);
+    result = vc_mbedtls_connect(server, serverfd, &vc_store);
 #endif
   vc_cleanup_x509store(&vc_store);
 

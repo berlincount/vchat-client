@@ -475,7 +475,7 @@ static void vc_tls_report_error(int error, char *message) {
   writecf(FS_ERR, tmpstr);
 }
 
-int vc_mbedtls_connect(int serverfd, vc_x509store_t *vc_store) {
+int vc_mbedtls_connect(const char *servername, int serverfd, vc_x509store_t *vc_store) {
   /* Some aliases for shorter references */
   mbedstate *s = &_mbedtls_state;
   mbedtls_ssl_config *conf = &_mbedtls_state._conf;
@@ -601,7 +601,7 @@ int vc_mbedtls_connect(int serverfd, vc_x509store_t *vc_store) {
         ret, "Can not configure parameters on tls context, mbedtls reports: ");
     return -1;
   }
-  /* TODO: mbedtls_ssl_set_hostname(&ssl, SERVER_NAME) */
+  mbedtls_ssl_set_hostname(ssl, strdup(servername));
 
   mbedtls_ssl_set_bio(ssl, (void *)(intptr_t)serverfd, static_tcp_send,
                       static_tcp_recv, NULL);

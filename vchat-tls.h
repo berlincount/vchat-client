@@ -40,7 +40,7 @@ char *vc_openssl_version();
 
 #ifdef TLS_LIB_MBEDTLS
 void vc_mbedtls_init_x509store(vc_x509store_t *);
-int vc_mbedtls_connect(int serverfd, vc_x509store_t *);
+int vc_mbedtls_connect(const char* servername, int serverfd, vc_x509store_t *);
 ssize_t vc_mbedtls_sendmessage(const void *buf, size_t size);
 ssize_t vc_mbedtls_receivemessage(void *buf, size_t size);
 void vc_mbedtls_cleanup();
