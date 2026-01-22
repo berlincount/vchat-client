@@ -305,9 +305,9 @@ static void sb_flush(struct sb_data *sb) {
   struct sb_entry *now = sb->entries, *prev = NULL, *tmp;
   while (now) {
     tmp = (struct sb_entry *)((unsigned long)prev ^ (unsigned long)now->link);
+    prev = now;
     free(now->what);
     free(now);
-    prev = now;
     now = tmp;
   }
   sb->entries = NULL;
