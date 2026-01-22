@@ -398,7 +398,8 @@ int writecf(formtstr id, char *str) {
   struct sb_entry *tmp;
   int i = 0;
   time_t now = time(NULL);
-  snprintf(tmpstr, TMPSTRSIZE, getformatstr(id), str);
+  if (snprintf(tmpstr, TMPSTRSIZE, getformatstr(id), str) < 0)
+    return 0;
   tmp = sb_add(sb_pub, tmpstr, now);
 
   if ((sb_pub->scroll == sb_pub->count) &&
@@ -1369,15 +1370,17 @@ void consoleline(char *message) {
     char date[10];
     time_t now = time(NULL);
     strftime(date, sizeof(date), getformatstr(FS_CONSOLETIME), localtime(&now));
-    snprintf(tmpstr, TMPSTRSIZE, "%s%s", date, consolestr);
+    if (snprintf(tmpstr, TMPSTRSIZE, "%s%s", date, consolestr) < 0)
+        return;
     mvwaddnstr(console, 0, 0, tmpstr, getmaxx(console) - 1);
   } else {
     mvwaddnstr(console, 0, 0, message ? message : consolestr,
                getmaxx(console) - 1);
   }
 
-  snprintf(tmpstr, TMPSTRSIZE, getformatstr(FS_SBINF), sb_pub->scroll,
-           sb_pub->count);
+  if (snprintf(tmpstr, TMPSTRSIZE, getformatstr(FS_SBINF), sb_pub->scroll,
+           sb_pub->count) < 0)
+    return;
   mvwaddstr(console, 0, getmaxx(console) - 1 - (strlen(tmpstr) - 1), tmpstr);
   if (sb_win == 0)
     mvwaddch(console, 0, getmaxx(console) - 1, '*');
