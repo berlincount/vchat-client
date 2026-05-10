@@ -59,7 +59,11 @@ PREFIX=/usr/local
 ##############################################
 
 
-all: vchat-client #vchat-client.1
+ifdef MANPAGE
+all: vchat-client vchat-client.1
+else
+all: vchat-client
+endif
 
 install: vchat-client vchat-keygen vchatrc.ex
 	install -d $(DESTDIR)/etc
@@ -67,8 +71,10 @@ install: vchat-client vchat-keygen vchatrc.ex
 	install -d $(DESTDIR)$(PREFIX)/share/man/man1
 	install -m 0755 ./vchat-client $(DESTDIR)$(PREFIX)/bin
 	install -m 0755 ./vchat-keygen $(DESTDIR)$(PREFIX)/bin
-#	install -m 0644 ./vchat-client.1 $(DESTDIR)$(PREFIX)/share/man/man1
 	install -m 0644 ./vchatrc.ex $(DESTDIR)/etc/vchatrc
+ifdef MANPAGE
+	install -m 0644 ./vchat-client.1 $(DESTDIR)$(PREFIX)/share/man/man1
+endif
 
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/vchat-client
@@ -110,5 +116,7 @@ vchat-tls.o: vchat-tls.c vchat-tls.h
 vchat-connection.o: vchat-connection.c vchat-connection.h
 	$(CC) $(CFLAGS) -o vchat-connection.o -c vchat-connection.c
 
-#vchat-client.1: vchat-client.sgml
-#	docbook2man vchat-client.sgml
+ifdef MANPAGE
+vchat-client.1: vchat-client.sgml
+	docbook2man vchat-client.sgml
+endif
