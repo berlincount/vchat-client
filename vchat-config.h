@@ -26,7 +26,7 @@
 extern unsigned int usetime;
 extern unsigned int hscroll;
 
-static volatile configoption configoptions[] = {
+static configoption configoptions[] = {
 /* config-option   type    name in file  default value           value       localvar  */
   {CF_NICK,        CO_STR, "nick",       NULL,                   NULL,       { NULL }  },
   {CF_FROM,        CO_STR, "from",       "vc-beta-0.22",         NULL,       { NULL }  },
