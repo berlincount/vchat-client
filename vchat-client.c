@@ -47,7 +47,9 @@ int ownquit = 0;
 /*   we set this, we DONT want to quit */
 int wantreconnect = 0;
 
-static int reconnect_delay = 6;
+#define RECONNECT_DELAY_INITIAL 6
+#define RECONNECT_DELAY_MAX 600
+static int reconnect_delay = RECONNECT_DELAY_INITIAL;
 static time_t reconnect_time = 0;
 
 /*   error string to show after exit */
@@ -531,13 +533,15 @@ int main(int argc, char **argv) {
         snprintf(tmpstr, TMPSTRSIZE, "reconnecting in %d seconds",
                  reconnect_delay);
         writecf(FS_ERR, tmpstr);
-        reconnect_delay = (reconnect_delay * 15) / 10;
         reconnect_time = time(NULL) + reconnect_delay;
+        reconnect_delay = (reconnect_delay * 15) / 10;
+        if (reconnect_delay > RECONNECT_DELAY_MAX)
+          reconnect_delay = RECONNECT_DELAY_MAX;
       } else
         status = 0;
     } else {
       /* reset reconnect delay */
-      reconnect_delay = 6;
+      reconnect_delay = RECONNECT_DELAY_INITIAL;
       reconnect_time = 0;
     }
 
