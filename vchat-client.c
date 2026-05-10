@@ -311,7 +311,12 @@ void setintoption(confopt option, int value) {
     }
 }
 
-int quitrequest = 0;
+/* Touched by the SIGINT handler (cleanup) and decremented by the main
+ * eventloop in calleverysecond().  Must be sig_atomic_t so the read-
+ * modify-write in the handler races safely against the main loop's
+ * decrement, and volatile so the compiler doesn't cache the value
+ * across the signal-handler boundary. */
+volatile sig_atomic_t quitrequest = 0;
 
 /* cleanup-hook, for SIGINT */
 void cleanup(int signal) {
