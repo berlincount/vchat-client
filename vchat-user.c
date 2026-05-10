@@ -112,10 +112,12 @@ int ul_add(char *name, int in_my_chan_flag) {
     if (!new_users)
       return -1;
 
-    /* Copy the tail */
+    /* The list is *not* kept sorted - ul_nick_lookup() linear-scans
+     * and returns g_users_count on miss, so 'base' here is always the
+     * end of the array and the previous memmove() always copied zero
+     * bytes.  Append in place; ul_complete_user() qsort()s when it
+     * needs an ordering. */
     g_users = new_users;
-    memmove(g_users + base + 1, g_users + base,
-            (g_users_count - base) * sizeof(user));
     g_users[base].nick = strdup(name);
     g_users[base].flags = UL_NONE;
     g_users[base].last_public = 0;
