@@ -12,8 +12,8 @@
 # Port on Server
 #port = 2325
 
-# Type of ciphers at the SSL-handshake; 
-# further information in the 
+# Type of ciphers at the SSL-handshake;
+# further information in the
 # OpenSSL/mod_ssl/Apache-documentation
 # default used before OpenSSL 1.0.0:
 #ciphers = DHE-RSA-AES256-SHA
@@ -29,7 +29,7 @@
 # Location of the key
 #keyfile = ~/.vchat/key
 
-# File with special Formats of messages, 
+# File with special Formats of messages,
 # colours etc
 #formatfile = ~/.vchat/formats
 
