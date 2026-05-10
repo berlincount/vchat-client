@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
-#include <sys/time.h>
+#include <time.h>
 
 #include <readline/readline.h>
 
@@ -51,9 +51,15 @@ static int ul_nick_lookup(const char *nick, int *exact_match) {
 }
 
 static int64_t ul_now() {
-  struct timeval now;
-  gettimeofday(&now, (struct timezone *)0);
-  return ((uint64_t)now.tv_sec * 1000) + ((uint64_t)now.tv_usec / 1000);
+  /* CLOCK_MONOTONIC is unaffected by NTP / suspend / clock changes,
+   * which the previous gettimeofday(2) was not.  ul_now() only feeds
+   * relative-recency comparisons (last_public, last_private), so a
+   * monotonic source matches the intent better and avoids the
+   * occasional "user X just spoke 17 hours ago" glitches after the
+   * machine resumes from sleep. */
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  return ((uint64_t)ts.tv_sec * 1000) + ((uint64_t)ts.tv_nsec / 1000000);
 }
 
 /* own nick and channel setters/getters */
