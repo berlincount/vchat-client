@@ -314,16 +314,18 @@ static void command_format(char *line) {
   flushout();
   while (*line == ' ')
     line++;
-  if (line) {
+  if (*line) {
+    /* First try the literal path the user gave us. */
     tildex = tilde_expand(line);
-    if (tildex && !stat(tildex, &testexist))
+    if (tildex && !stat(tildex, &testexist)) {
       loadformats(tildex);
-    else {
-#define BUFSIZE 4096
-      char buf[BUFSIZE];
-      snprintf(buf, BUFSIZE, "~/.vchat/sample-%s.fmt", line);
+    } else {
+      /* Fall back to ~/.vchat/sample-<arg>.fmt as a convenience for
+       * the bundled sample-*.fmt files. */
+      char buf[4096];
       free(tildex);
-      tildex = tilde_expand(line);
+      snprintf(buf, sizeof(buf), "~/.vchat/sample-%s.fmt", line);
+      tildex = tilde_expand(buf);
       if (tildex && !stat(tildex, &testexist))
         loadformats(tildex);
     }
