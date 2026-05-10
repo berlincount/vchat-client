@@ -1484,6 +1484,12 @@ void nickprompt(void) {
 static void vcnredraw(void) {
   int i;
   char *passbof = "-*-*-*-*-*-*-";
+  /* rl_point can briefly be negative during certain key sequences
+   * (e.g. some readline editing commands set it before the next
+   * normalisation pass).  '%' on a negative operand is implementation
+   * -defined in C99 and yields a negative remainder under most ABIs,
+   * which would then index passbof[-1] - an OOB read.  Clamp first. */
+  int point = rl_point < 0 ? 0 : rl_point;
 
   /* wipe input line and reset cursor */
   wmove(input, 0, 0);
@@ -1492,7 +1498,7 @@ static void vcnredraw(void) {
   wmove(input, 0, 0);
 
   /* draw as many stars as there are characters */
-  mvwaddnstr(input, 0, 0, &passbof[rl_point % 2], 12);
+  mvwaddnstr(input, 0, 0, &passbof[point % 2], 12);
   wmove(input, 0, getmaxx(input) - 1);
   wrefresh(input);
 }
