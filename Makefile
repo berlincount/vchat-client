@@ -18,6 +18,19 @@ CFLAGS += -Wall -Os
 CFLAGS += -I/usr/local/include
 LDFLAGS += -L/usr/local/lib
 
+## Default hardening for a network-facing client.  Cheap to enable,
+## near-zero source impact, catch & contain a useful subset of memory
+## corruption and format-string mistakes.  Comment out individual lines
+## if your toolchain doesn't support them.
+CFLAGS += -D_FORTIFY_SOURCE=2
+CFLAGS += -fstack-protector-strong
+CFLAGS += -Wformat -Wformat-security
+## RELRO + immediate-bind is Linux/glibc-specific; harmless on others
+## that ignore unknown -z options, but Apple ld will warn.
+ifneq ($(shell uname),Darwin)
+LDFLAGS += -Wl,-z,relro,-z,now
+endif
+
 ## use this line when you've got an readline before 4.(x|2)
 #CFLAGS += -DOLDREADLINE
 
