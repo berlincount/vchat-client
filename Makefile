@@ -14,7 +14,7 @@ LIBS = -lncursesw
 
 LIBS += -lreadline
 
-CFLAGS += -Wall -Os
+CFLAGS += -Wall -Wextra -Werror -Os
 CFLAGS += -I/usr/local/include
 LDFLAGS += -L/usr/local/lib
 

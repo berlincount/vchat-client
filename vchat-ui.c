@@ -270,14 +270,14 @@ static void vciredraw(void) {
 
   /* Case 1: readline is left of current scroll offset: Adjust to left to reveal
    * more text */
-  if (readline_point < scroff)
+  if ((int)readline_point < scroff)
     scroff = readline_point - hscroll;
   if (scroff < 1)
     scroff = 0;
 
   /* Case 2: readline just hit the last char on the line: Adjust to right to
    * leave more space on screen */
-  if (readline_point >= scroff + getmaxx(input) - 1)
+  if ((int)readline_point >= scroff + getmaxx(input) - 1)
     scroff = readline_point - getmaxx(input) + hscroll;
 
   /* wipe input line */
@@ -756,7 +756,7 @@ void shrinkprivwin(void) {
 }
 
 /* clear message window */
-void clearpriv() {
+int clearpriv(__attribute__ ((unused)) int ign_a, __attribute__ ((unused)) int ign_b) {
   WINDOW *dest = NULL;
   /* do we have a private window? */
   if (priv && !privwinhidden)
@@ -768,14 +768,20 @@ void clearpriv() {
   wclear(dest);
   wmove(dest, getmaxy(dest) - 1, getmaxx(dest) - 1);
   wrefresh(dest);
+
+  // ignored
+  return 0;
 }
 
 /* clear channel window */
-void clearchan() {
+int clearchan(__attribute__ ((unused)) int ign_a, __attribute__ ((unused)) int ign_b) {
   /* clear window, move cursor to bottom, redraw */
   wclear(channel);
   wmove(channel, getmaxy(channel) - 1, getmaxx(channel) - 1);
   wrefresh(channel);
+
+  // ignored
+  return 0;
 }
 
 /* Get window size */
@@ -1599,6 +1605,7 @@ static int removefromfilterlist(int (*test)(filt *flt, void *data, char colour),
     switch (test(*flt, data, colour)) {
     case RMFILTER_RMANDSTOP: /* remove */
       stop = 1;
+      __attribute__ ((fallthrough));
     case RMFILTER_RMANDCONT:
       snprintf(tmpstr, TMPSTRSIZE,
                "  Removed ID: [% 3d] Color: [%c] Regex: [%s] ", (*flt)->id,

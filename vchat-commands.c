@@ -256,7 +256,8 @@ void handleline(char *line) {
     case 'x':
       /* inform vchat-client, that the following connection
          drop was intentional */
-      ownquit = 1; /* fallthrough intended */
+      ownquit = 1;
+      __attribute__ ((fallthrough));
     default:
       /* generic server command, send to server, show to user */
       snprintf(tmpstr, TMPSTRSIZE, getformatstr(FS_COMMAND), line);

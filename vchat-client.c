@@ -155,6 +155,7 @@ static void parseformats(char *line) {
                   k--;
                 else
                   stringends = 1;
+                __attribute__ ((fallthrough));
               default:
                 tmpstr[k++] = tail[j];
                 backslash = 0;

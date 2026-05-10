@@ -54,7 +54,7 @@ static char **g_dict;
 static size_t g_dict_len;
 
 static int ul_nick_lookup(const char *nick, int *exact_match) {
-  int i;
+  size_t i;
 
   *exact_match = 1;
   for (i = 0; i < g_users_count; ++i)
@@ -97,8 +97,7 @@ void own_nick_set(char *nick) {
 void own_channel_set(int channel) {
   if (channel != g_channel) {
     /* Remove all users from my chan, will be re-set on join message */
-    int i;
-    for (i = 0; i < g_users_count; ++i)
+    for (size_t i = 0; i < g_users_count; ++i)
       g_users[i].flags &= ~UL_IN_MY_CHAN;
   }
 
@@ -191,22 +190,19 @@ int ul_rename(char *oldname, char *newname) {
 }
 
 void ul_clear() {
-  int i;
-  for (i = 0; i < g_users_count; ++i)
+  for (size_t i = 0; i < g_users_count; ++i)
     free(g_users[i].nick);
   free(g_users);
   g_nick = 0;
 }
 
 void ul_rebuild_list() {
-  int i;
-  for (i = 0; i < g_users_count; ++i)
+  for (size_t i = 0; i < g_users_count; ++i)
     g_users[i].flags |= UL_NOT_IN_LIST;
 }
 
 void ul_clean() {
-  int i;
-  for (i = 0; i < g_users_count; ++i) {
+  for (size_t i = 0; i < g_users_count; ++i) {
     if (g_users[i].flags & UL_NOT_IN_LIST) {
       ul_del(g_users[i].nick);
       --i;
@@ -259,13 +255,12 @@ void ul_add_to_dict(char *dict_items) {
 char *ul_match_user(char *regex) {
   char *dest = tmpstr;
   size_t left = TMPSTRSIZE;
-  int i;
   regex_t preg;
 
   *dest = 0;
   if (!regcomp(&preg, regex, REG_ICASE | REG_EXTENDED | REG_NEWLINE)) {
     /* does the username match? */
-    for (i = 0; i < g_users_count; ++i) {
+    for (size_t i = 0; i < g_users_count; ++i) {
       if (regexec(&preg, g_users[i].nick, 0, NULL, 0))
         continue;
       /* snprintf returns the number of bytes that *would* have been
@@ -412,14 +407,14 @@ static int ul_compare_middle_case(const void *a, const void *b) {
 /* Nick completion function for readline */
 char **ul_complete_user(char *text, int start, int end) {
   char **result = 0;
-  int i, result_count = 0, dict_result_count = 0;
+  int result_count = 0, dict_result_count = 0;
 
   /* Never want readline to complete filenames */
   rl_attempted_completion_over = 1;
 
   /* Check for amount of custom dict matches */
   if (end && (start != end))
-    for (i = 0; i < g_dict_len; ++i)
+    for (size_t i = 0; i < g_dict_len; ++i)
       if (!strncasecmp(g_dict[i], text + start, end - start))
         ++dict_result_count;
 
@@ -434,7 +429,7 @@ char **ul_complete_user(char *text, int start, int end) {
     /* Completion on begin of line yields list of everyone we
        were in private conversation, sorted by time of last .m */
     qsort(g_users, g_users_count, sizeof(user), ul_compare_private);
-    for (i = 0; i < g_users_count; ++i)
+    for (size_t i = 0; i < g_users_count; ++i)
       if (g_users[i].last_private) {
         snprintf(tmpstr, TMPSTRSIZE, ".m %s", g_users[i].nick);
         result[++result_count] = strdup(tmpstr);
@@ -455,7 +450,7 @@ char **ul_complete_user(char *text, int start, int end) {
       qsort(g_users, g_users_count, sizeof(user),
             ul_compare_begin_of_line_ncase);
 
-    for (i = 0; i < g_users_count; ++i)
+    for (size_t i = 0; i < g_users_count; ++i)
       if ((g_users[i].flags & UL_IN_MY_CHAN) &&
           !strncasecmp(g_users[i].nick, tmpstr, end)) {
         snprintf(tmpstr, TMPSTRSIZE, "%s:", g_users[i].nick);
@@ -463,7 +458,7 @@ char **ul_complete_user(char *text, int start, int end) {
       }
 
     /* Copy matches from personal dict to the end */
-    for (i = 0; i < g_dict_len; ++i)
+    for (size_t i = 0; i < g_dict_len; ++i)
       if (!strncasecmp(g_dict[i], tmpstr, end - start)) {
         snprintf(tmpstr, TMPSTRSIZE, "%s:", g_dict[i]);
         result[++result_count] = strdup(tmpstr);
@@ -482,12 +477,12 @@ char **ul_complete_user(char *text, int start, int end) {
     else
       qsort(g_users, g_users_count, sizeof(user), ul_compare_middle_ncase);
 
-    for (i = 0; i < g_users_count; ++i)
+    for (size_t i = 0; i < g_users_count; ++i)
       if (!strncasecmp(g_users[i].nick, tmpstr, end - start))
         result[++result_count] = strdup(g_users[i].nick);
 
     /* Copy matches from personal dict to the end */
-    for (i = 0; i < g_dict_len; ++i)
+    for (size_t i = 0; i < g_dict_len; ++i)
       if (!strncasecmp(g_dict[i], tmpstr, end - start))
         result[++result_count] = strdup(g_dict[i]);
 
