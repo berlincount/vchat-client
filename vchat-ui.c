@@ -1685,12 +1685,19 @@ unsigned int addfilter(char colour, char *regex) {
     return 0;
   } else {
     int len = strlen(regex) + 1;
+    /* take a copy of plain regex text for later identification by user */
+    newflt->text = malloc(len);
+    if (!newflt->text) {
+      regfree(&newflt->regex);
+      free(newflt);
+      writeout(" Out of memory adding filter. ");
+      showout();
+      return 0;
+    }
     /* grab id from ID pool an increase free ID counter */
     newflt->id = uniqueidpool++;
     newflt->colour = colour;
     newflt->next = NULL;
-    /* take a copy of plain regex text for later identification by user */
-    newflt->text = malloc(len);
     memcpy(newflt->text, regex, len);
   }
 
