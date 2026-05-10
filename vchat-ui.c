@@ -1782,21 +1782,27 @@ void listfilters(void) {
 void handlequery(char *tail) {
   if (*tail) {
     // ".m %s " -> string + 4
+    size_t need = 5 + strlen(tail);
+    char *new_qp = realloc(querypartner, need);
+    if (!new_qp) {
+      /* realloc failed - keep the old querypartner intact (it has
+       * not been freed) and abort the query update.  The window
+       * swap below intentionally only runs on success so we don't
+       * desync the UI from the data state. */
+      writecf(FS_ERR, "Out of memory updating query partner.");
+      return;
+    }
     if (querypartner && private) {
       WINDOW *tmp = private;
-    private
-      = channel;
+      private = channel;
       channel = tmp;
     }
-    querypartner = (char *)realloc(querypartner, 5 + strlen(tail));
-    if (querypartner) {
-      snprintf(querypartner, 5 + strlen(tail), ".m %s ", tail);
-      if (private) {
-        WINDOW *tmp = private;
-      private
-        = channel;
-        channel = tmp;
-      }
+    querypartner = new_qp;
+    snprintf(querypartner, need, ".m %s ", tail);
+    if (private) {
+      WINDOW *tmp = private;
+      private = channel;
+      channel = tmp;
     }
     resize(0);
   } else {
@@ -1806,8 +1812,7 @@ void handlequery(char *tail) {
       querypartner = NULL;
       if (private) {
         WINDOW *tmp = private;
-      private
-        = channel;
+        private = channel;
         channel = tmp;
       }
       resize(0);
