@@ -553,6 +553,13 @@ int vc_mbedtls_connect(const char *servername, int serverfd, vc_x509store_t *vc_
     char *password = NULL;
     char password_buf[1024];
 
+#if defined(__linux__) || defined(__OpenBSD__)
+#define VC_WIPE_PASSWORD() explicit_bzero(password_buf, sizeof(password_buf))
+#else
+#define VC_WIPE_PASSWORD()                                                     \
+  memset_s(password_buf, sizeof(password_buf), 0, sizeof(password_buf))
+#endif
+
     if ((ret = mbedtls_x509_crt_parse_file(&s->_cert, vc_store->certfile)) !=
         0) {
       vc_tls_report_error(ret, "Can not load client cert, mbedtls reports: ");
@@ -570,6 +577,9 @@ int vc_mbedtls_connect(const char *servername, int serverfd, vc_x509store_t *vc_
         break;
       if (ret != MBEDTLS_ERR_PK_PASSWORD_REQUIRED &&
           ret != MBEDTLS_ERR_PK_PASSWORD_MISMATCH) {
+        /* Wipe before bailing - on at least the second iteration of
+         * this loop password_buf already holds the user's passphrase. */
+        VC_WIPE_PASSWORD();
         vc_tls_report_error(ret, "Can not load client key, mbedtls reports: ");
         return -1;
       }
@@ -578,11 +588,8 @@ int vc_mbedtls_connect(const char *servername, int serverfd, vc_x509store_t *vc_
       vc_store->askpass_callback(password_buf, sizeof(password_buf), 0, NULL);
       password = password_buf;
     }
-#if defined(__linux__) || defined(__OpenBSD__)
-    explicit_bzero(password_buf, sizeof(password_buf));
-#else
-    memset_s(password_buf, sizeof(password_buf), 0, sizeof(password_buf));
-#endif
+    VC_WIPE_PASSWORD();
+#undef VC_WIPE_PASSWORD
     writecf(FS_SERV, "[CLIENT KEY LOADED   ]");
 
 #if MBEDTLS_VERSION_MAJOR == 3 && MBEDTLS_VERSION_MINOR == 0
