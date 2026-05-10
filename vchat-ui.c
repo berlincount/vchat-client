@@ -52,7 +52,7 @@ static WINDOW *console = NULL;
 static WINDOW *input = NULL;
 static WINDOW *topic = NULL;
 static WINDOW *channel = NULL;
-static WINDOW *private = NULL;
+static WINDOW *priv = NULL;
 static WINDOW *output = NULL;
 
 /* our screen dimensions */
@@ -152,16 +152,15 @@ enum {
 
 /* */
 static void togglequery() {
-  if (querypartner && private) {
+  if (querypartner && priv) {
     {
       struct sb_data *tmp = sb_pub;
       sb_pub = sb_priv;
       sb_priv = tmp;
     }
     {
-      WINDOW *tmp = private;
-    private
-      = channel;
+      WINDOW *tmp = priv;
+      priv = channel;
       channel = tmp;
     }
   }
@@ -397,7 +396,7 @@ int writechan(char *str) {
     wnoutrefresh(channel);
   }
 
-  if (querypartner && private)
+  if (querypartner && priv)
     topicline(NULL);
   else
     consoleline(NULL);
@@ -419,7 +418,7 @@ int writecf(formtstr id, char *str) {
     wnoutrefresh(channel);
   }
 
-  if (querypartner && private)
+  if (querypartner && priv)
     topicline(NULL);
   else
     consoleline(NULL);
@@ -441,13 +440,11 @@ void dumpconnect() {
   }
 }
 
-void flushconnect() {
-  sb_flush(sb_connect);
-}
+void flushconnect() { sb_flush(sb_connect); }
 
 int writepriv(char *str, int maybeep) {
   int i = 0;
-  if (private) {
+  if (priv) {
 
     time_t now = time(NULL);
     struct sb_entry *tmp;
@@ -455,7 +452,7 @@ int writepriv(char *str, int maybeep) {
 
     if (!privwinhidden && (sb_priv->scroll == sb_priv->count) &&
         ((filtertype == 0) || (testfilter(tmp)))) {
-      i = writescr(private, tmp);
+      i = writescr(priv, tmp);
     }
     if (privwinhidden && !querypartner) {
       if ((maybeep != 0) && (getintoption(CF_BELLPRIV) != 0))
@@ -464,9 +461,9 @@ int writepriv(char *str, int maybeep) {
       privwinhidden = 0;
       resize(0);
     }
-    wnoutrefresh(private);
+    wnoutrefresh(priv);
 
-    if (querypartner && private)
+    if (querypartner && priv)
       consoleline(NULL);
     else
       topicline(NULL);
@@ -552,7 +549,7 @@ static int writescr(WINDOW *win, struct sb_entry *entry) {
   int charcount = 0;
   int i;
   int textlen = strlen(entry->what);
-  int timelen = ((win == channel) || (win == private)) && usetime
+  int timelen = ((win == channel) || (win == priv)) && usetime
                     ? (int)strftime(tmp, 64, getformatstr(FS_TIME),
                                     localtime(&entry->when))
                     : 0;
@@ -592,7 +589,7 @@ static int writescr(WINDOW *win, struct sb_entry *entry) {
   textbuffer[charcount] = 0;
 
   /* hilite */
-  if ((win == channel) || (win == private)) { /* do not higlight bars */
+  if ((win == channel) || (win == priv)) { /* do not higlight bars */
     filt *flt = filterlist;
     char *instr = textbuffer;
     regmatch_t match;
@@ -657,8 +654,8 @@ static void resize_output() {
 static void doscroll(int up) {
   togglequery();
   {
-    WINDOW *destwin = (sb_win && private) ? private : channel;
-    struct sb_data *sb = (sb_win && private) ? sb_priv : sb_pub;
+    WINDOW *destwin = (sb_win && priv) ? priv : channel;
+    struct sb_data *sb = (sb_win && priv) ? sb_priv : sb_pub;
     struct sb_entry *now = sb->entries, *prev = NULL, *tmp;
     int lines = (getmaxy(destwin) - 1) >> 1;
 
@@ -698,7 +695,7 @@ static void doscroll(int up) {
 
     togglequery();
 
-    if (private && (destwin == channel))
+    if (priv && (destwin == channel))
       consoleline(NULL);
     else
       topicline(NULL);
@@ -710,7 +707,7 @@ void scrollup(void) { doscroll(1); }
 void scrolldown(void) { doscroll(0); }
 
 void scrollwin(void) {
-  if (!sb_win && private && !privwinhidden)
+  if (!sb_win && priv && !privwinhidden)
     sb_win = 1;
   else
     sb_win = 0;
@@ -719,7 +716,7 @@ void scrollwin(void) {
 }
 
 void growprivwin(void) {
-  if (private) {
+  if (priv) {
     if (privwinhidden)
       privwinhidden = 0;
     if (++privheight_desired > screensy - 5)
@@ -733,7 +730,7 @@ void toggleprivwin(void) {
     outputshown = 0;
     resize(0);
   } else {
-    if (private) {
+    if (priv) {
       if (privwinhidden) {
         privheight_desired = privwinhidden;
         privwinhidden = 0;
@@ -749,7 +746,7 @@ void toggleprivwin(void) {
 }
 
 void shrinkprivwin(void) {
-  if (private && !privwinhidden) {
+  if (priv && !privwinhidden) {
     if (--privheight_desired < 1)
       privheight_desired = 1;
     if (privheight_desired > screensy - 5)
@@ -762,8 +759,8 @@ void shrinkprivwin(void) {
 void clearpriv() {
   WINDOW *dest = NULL;
   /* do we have a private window? */
-  if (private && !privwinhidden)
-    dest = private;
+  if (priv && !privwinhidden)
+    dest = priv;
   else
     dest = channel;
 
@@ -818,8 +815,8 @@ static void forceredraw(void) {
     wclear(console);
   if (topic)
     wclear(topic);
-  if (private)
-    wclear(private);
+  if (priv)
+    wclear(priv);
   if (channel)
     wclear(channel);
   if (output)
@@ -888,19 +885,19 @@ void resize(int signal) {
   wresize(input, 1, screensx);
 
   /* If we got a private window and it is not hidden, set its size */
-  if (private && !privwinhidden)
-    wresize(private, privheight, screensx);
+  if (priv && !privwinhidden)
+    wresize(priv, privheight, screensx);
 
   /* If oldschool vchat is not enabled, we have a topic line */
   if (topic)
     wresize(topic, 1, screensx);
 
   /* public channel is always there and its height depends on:
-   * existence and visibility of priv window
+   * existence and visibility of private window
    * existence of a topic line (oldschool vchat style)
    */
   wresize(channel,
-          (!private || privwinhidden)
+          (!priv || privwinhidden)
               ? screensy - (topicheight + 2)
               : screensy - (privheight + (topicheight + 2)),
           screensx);
@@ -910,18 +907,17 @@ void resize(int signal) {
   mvwin(input, screensy - 1, 0);
 
   /* Private window always is top left */
-  if (private && !privwinhidden)
-    mvwin(private, 0, 0);
+  if (priv && !privwinhidden)
+    mvwin(priv, 0, 0);
 
-  /* Topic window may not exist without priv window, so it is
+  /* Topic window may not exist without private window, so it is
      safe to assume sane values for privwinhidden and privheight */
   if (topic)
     mvwin(topic, privwinhidden ? 0 : privheight, 0);
 
   /* chan window starts below private window and topic line */
   mvwin(channel,
-        (!private || privwinhidden) ? topicheight : privheight + topicheight,
-        0);
+        (!priv || privwinhidden) ? topicheight : privheight + topicheight, 0);
 
   /*******
    * Now actual redraw starts, note, that we only fill
@@ -936,12 +932,12 @@ void resize(int signal) {
   /* pub channel is always there, paint scrollback buffers */
   drawwin(channel, sb_pub);
   /* if priv exists and is visible, paint scrollback buffers */
-  if (private && !privwinhidden)
-    drawwin(private, sb_priv);
+  if (priv && !privwinhidden)
+    drawwin(priv, sb_priv);
   /* Send window's contents to curses virtual buffers */
   wnoutrefresh(channel);
-  if (private && !privwinhidden)
-    wnoutrefresh(private);
+  if (priv && !privwinhidden)
+    wnoutrefresh(priv);
 
   togglequery();
 
@@ -1108,7 +1104,7 @@ static void drawwin(WINDOW *win, struct sb_data *sb) {
       while (now && (sumlines <= getmaxy(win) - 1)) {
         sumlines +=
             getsbeheight(now, getmaxx(win) - 1,
-                         ((win == channel) || (win == private)) && usetime);
+                         ((win == channel) || (win == priv)) && usetime);
         vis[sumbuffers++] = now;
         tmp = now;
         now =
@@ -1128,7 +1124,7 @@ static void drawwin(WINDOW *win, struct sb_data *sb) {
           if ((now->stamp == (currentstamp | 0x8000)) || testfilter(now)) {
             sumlines +=
                 getsbeheight(now, getmaxx(win) - 1,
-                             ((win == channel) || (win == private)) && usetime);
+                             ((win == channel) || (win == priv)) && usetime);
             vis[sumbuffers++] = now;
           }
         }
@@ -1240,16 +1236,15 @@ void initui(void) {
   console = newwin(1, screensx, screensy - 2, 0);
   input = newwin(1, screensx, screensy - 1, 0);
   if (privheight)
-  private
-  = newwin(privheight, screensx, 0, 0);
-  if (private || getintoption(CF_USETOPIC))
+    priv = newwin(privheight, screensx, 0, 0);
+  if (priv || getintoption(CF_USETOPIC))
     topic = newwin(1, screensx, privheight, 0);
   channel = newwin(screensy - (privheight + 3), screensx, (privheight + 1), 0);
   output = newwin(1, screensx, 1, 0);
 
   /* promblems opening windows? bye! */
   if (!console || !input || (!topic && getintoption(CF_USETOPIC)) || !channel ||
-      !output || (!private && privheight)) {
+      !output || (!priv && privheight)) {
     fprintf(stderr, "vchat-client: could not open windows, bailing out.\n");
     cleanup(0);
   }
@@ -1281,8 +1276,8 @@ void initui(void) {
     wbkgd(output, COLOR_PAIR(8));
     wbkgd(channel, COLOR_PAIR(0));
     wbkgd(input, COLOR_PAIR(0));
-    if (private)
-      wbkgd(private, COLOR_PAIR(0));
+    if (priv)
+      wbkgd(priv, COLOR_PAIR(0));
     if (topic) {
       if (getintoption(CF_INVWINBAR)) {
         wbkgd(input, COLOR_PAIR(0));
@@ -1302,8 +1297,8 @@ void initui(void) {
 
   /* set some options */
   scrollok(channel, TRUE);
-  if (private)
-    scrollok(private, TRUE);
+  if (priv)
+    scrollok(priv, TRUE);
   scrollok(input, TRUE);
   scrollok(output, TRUE);
   // idlok(channel,TRUE);
@@ -1382,7 +1377,7 @@ void consoleline(char *message) {
     time_t now = time(NULL);
     strftime(date, sizeof(date), getformatstr(FS_CONSOLETIME), localtime(&now));
     if (snprintf(tmpstr, TMPSTRSIZE, "%s%s", date, consolestr) < 0)
-        return;
+      return;
     mvwaddnstr(console, 0, 0, tmpstr, getmaxx(console) - 1);
   } else {
     mvwaddnstr(console, 0, 0, message ? message : consolestr,
@@ -1390,7 +1385,7 @@ void consoleline(char *message) {
   }
 
   if (snprintf(tmpstr, TMPSTRSIZE, getformatstr(FS_SBINF), sb_pub->scroll,
-           sb_pub->count) < 0)
+               sb_pub->count) < 0)
     return;
   mvwaddstr(console, 0, getmaxx(console) - 1 - (strlen(tmpstr) - 1), tmpstr);
   if (sb_win == 0)
@@ -1426,13 +1421,13 @@ void topicline(char *message) {
   wmove(topic, 0, 0);
 
   WATTR_GET(topic, old_att);
-  if (private && (sb_priv->scroll != sb_priv->count))
+  if (priv && (sb_priv->scroll != sb_priv->count))
     WATTR_SET(topic, new_att);
 
   for (i = 0; i < getmaxx(topic) - 1; i++)
     waddch(topic, ' ');
   mvwaddnstr(topic, 0, 0, message ? message : topicstr, getmaxx(topic) - 1);
-  if (private) {
+  if (priv) {
     snprintf(tmpstr, TMPSTRSIZE, getformatstr(FS_SBINF), sb_priv->scroll,
              sb_priv->count);
     mvwaddstr(topic, 0, getmaxx(topic) - 1 - (strlen(tmpstr) - 1), tmpstr);
@@ -1837,16 +1832,16 @@ void handlequery(char *tail) {
       writecf(FS_ERR, "Out of memory updating query partner.");
       return;
     }
-    if (querypartner && private) {
-      WINDOW *tmp = private;
-      private = channel;
+    if (querypartner && priv) {
+      WINDOW *tmp = priv;
+      priv = channel;
       channel = tmp;
     }
     querypartner = new_qp;
     snprintf(querypartner, need, ".m %s ", tail);
-    if (private) {
-      WINDOW *tmp = private;
-      private = channel;
+    if (priv) {
+      WINDOW *tmp = priv;
+      priv = channel;
       channel = tmp;
     }
     resize(0);
@@ -1855,9 +1850,9 @@ void handlequery(char *tail) {
     if (querypartner) {
       free(querypartner);
       querypartner = NULL;
-      if (private) {
-        WINDOW *tmp = private;
-        private = channel;
+      if (priv) {
+        WINDOW *tmp = priv;
+        priv = channel;
         channel = tmp;
       }
       resize(0);
