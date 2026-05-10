@@ -75,14 +75,13 @@ static void pmnotsent(char *message) {
  *    vars: %s nick
  *          %s action */
 static void pubaction(char *message) {
-  char *nick = NULL, *action = NULL;
-  nick = strchr(message, ' ');
-  nick[0] = '\0';
-  nick++;
-
-  action = strchr(nick, ' ');
-  action[0] = '\0';
-  action++;
+  char *nick, *action;
+  if (!(nick = strchr(message, ' ')))
+    return;
+  *nick++ = '\0';
+  if (!(action = strchr(nick, ' ')))
+    return;
+  *action++ = '\0';
 
   ul_public_action(nick);
   snprintf(tmpstr, TMPSTRSIZE, getformatstr(FS_PUBACTION), nick, action);
@@ -94,14 +93,13 @@ static void pubaction(char *message) {
  *    vars: %s nick
  *          %s thought */
 static void pubthoughts(char *message) {
-  char *nick = NULL, *thoughts = NULL;
-  nick = strchr(message, ' ');
-  nick[0] = '\0';
-  nick++;
-
-  thoughts = strchr(nick, ' ');
-  thoughts[0] = '\0';
-  thoughts++;
+  char *nick, *thoughts;
+  if (!(nick = strchr(message, ' ')))
+    return;
+  *nick++ = '\0';
+  if (!(thoughts = strchr(nick, ' ')))
+    return;
+  *thoughts++ = '\0';
 
   ul_public_action(nick);
   snprintf(tmpstr, TMPSTRSIZE, getformatstr(FS_PUBTHOUGHT), nick, thoughts);
@@ -120,10 +118,10 @@ static void serverlogin(char *message) {
  *  format: 305
  *    vars: %s message */
 static void idleprompt(char *message) {
-  char *msg = NULL;
-  msg = strchr(message, ' ');
-  msg[0] = '\0';
-  msg++;
+  char *msg;
+  if (!(msg = strchr(message, ' ')))
+    return;
+  *msg++ = '\0';
 
   snprintf(tmpstr, TMPSTRSIZE, getformatstr(FS_IDLE), msg);
   writechan(tmpstr);
@@ -134,17 +132,18 @@ static void idleprompt(char *message) {
  *    vars: %d chan  - channel number
  *          %s topic - topic  */
 static void topicinfo(char *message) {
-  char *channel = NULL, *topic = NULL;
+  char *channel, *topic;
   int tmpchan = 0, ownchan = own_channel_get();
 
   /* search start of channel number */
-  channel = strchr(message, ' ');
+  if (!(channel = strchr(message, ' ')))
+    return;
   channel++;
 
   /* search start of topic and terminate channel number */
-  topic = strchr(channel, ' ');
-  topic[0] = '\0';
-  topic++;
+  if (!(topic = strchr(channel, ' ')))
+    return;
+  *topic++ = '\0';
 
   /* convert channel number to integer */
   tmpchan = atoi(channel);
@@ -171,26 +170,27 @@ static void topicinfo(char *message) {
  *    vars: %s nick
  *          %s topic */
 static void topicchange(char *message) {
-  char *nick = NULL, *topic = NULL;
+  char *nick, *topic;
   int len, ownchan = own_channel_get();
 
   /* search start of nickname */
-  nick = strchr(message, ' ');
+  if (!(nick = strchr(message, ' ')))
+    return;
   nick++;
 
   /* search start of message before topic, terminate nick */
-  topic = strchr(nick, ' ');
-  topic[0] = '\0';
-  topic++;
+  if (!(topic = strchr(nick, ' ')))
+    return;
+  *topic++ = '\0';
 
   /* search start of real topic and terminate channel number */
-  topic = strchr(topic, '\'');
-  topic[0] = '\0';
-  topic++;
+  if (!(topic = strchr(topic, '\'')))
+    return;
+  *topic++ = '\0';
 
   /* remove ending '\'', if there */
   len = strlen(topic);
-  if (topic[len - 1] == '\'')
+  if (len && topic[len - 1] == '\'')
     topic[len - 1] = '\0';
 
   ul_public_action(nick);
@@ -208,15 +208,16 @@ static void topicchange(char *message) {
  *    vars: %s str1 - nick used to login
  *          %s str2 - servers message */
 static void justloggedin(char *message) {
-  char *str1 = NULL, *str2 = NULL;
+  char *str1, *str2;
   /* search start of nickname */
-  str1 = strchr(message, ' ');
+  if (!(str1 = strchr(message, ' ')))
+    return;
   str1++;
 
   /* search start of message, terminate nick */
-  str2 = strchr(str1, ' ');
-  str2[0] = '\0';
-  str2++;
+  if (!(str2 = strchr(str1, ' ')))
+    return;
+  *str2++ = '\0';
 
   /* if we have a new nick, store it */
   own_nick_set(str1);
@@ -355,8 +356,9 @@ static void receivenicks(char *message) {
   } else {
     int mychan;
     str2 = str1;
-    str1 = strchr(str2, ' ');
-    str1[0] = '\0';
+    if (!(str1 = strchr(str2, ' ')))
+      return;
+    *str1 = '\0';
     mychan = atoi(str2);
     if (mychan != own_channel_get())
       return;
@@ -391,15 +393,16 @@ static void receivenicks(char *message) {
  *    vars: %s nick - who logged on
  *          %s msg  - servers message */
 static void usersignon(char *message) {
-  char *nick = NULL, *msg = NULL;
+  char *nick, *msg;
   /* search start of nickname */
-  nick = strchr(message, ' ');
+  if (!(nick = strchr(message, ' ')))
+    return;
   nick++;
 
   /* search start of message, terminate nick */
-  msg = strchr(nick, ' ');
-  msg[0] = '\0';
-  msg++;
+  if (!(msg = strchr(nick, ' ')))
+    return;
+  *msg++ = '\0';
 
   /* add this user via vchat-user.c */
   ul_add(nick, 0);
@@ -414,16 +417,16 @@ static void usersignon(char *message) {
  *    vars: %s nick - who logged off
  *          %s msg  - servers message */
 static void usersignoff(char *message) {
-  char *nick = NULL, *msg = NULL;
+  char *nick, *msg;
   /* search start of nickname */
-  nick = strchr(message, ' ');
+  if (!(nick = strchr(message, ' ')))
+    return;
   nick++;
 
   /* search start of message, terminate nick */
   msg = strchr(nick, ' ');
   if (msg) {
-    msg[0] = '\0';
-    msg++;
+    *msg++ = '\0';
   }
 
   /* delete this user via vchat-user.c */
@@ -440,22 +443,23 @@ static void usersignoff(char *message) {
  *          %s msg  - servers message
  *          %d chan - channel joined */
 static void userjoin(char *message) {
-  char *nick = NULL, *msg = NULL, *channel = NULL;
+  char *nick, *msg, *channel;
   int chan = 0;
 
   /* search start of nickname */
-  nick = strchr(message, ' ');
+  if (!(nick = strchr(message, ' ')))
+    return;
   nick++;
 
   /* search start of message, terminate nick */
-  msg = strchr(nick, ' ');
-  msg[0] = '\0';
-  msg++;
+  if (!(msg = strchr(nick, ' ')))
+    return;
+  *msg++ = '\0';
 
   /* search start of channel, terminate message */
-  channel = strrchr(msg, ' ');
-  channel[0] = '\0';
-  channel++;
+  if (!(channel = strrchr(msg, ' ')))
+    return;
+  *channel++ = '\0';
 
   /* convert channel to integer */
   chan = atoi(channel);
@@ -479,22 +483,23 @@ static void userjoin(char *message) {
  *          %s msg  - servers message
  *          %d chan - channel joined */
 static void userleave(char *message) {
-  char *nick = NULL, *msg = NULL, *channel = NULL;
+  char *nick, *msg, *channel;
   int chan = 0;
 
   /* search start of nickname */
-  nick = strchr(message, ' ');
+  if (!(nick = strchr(message, ' ')))
+    return;
   nick++;
 
   /* search start of message, terminate nick */
-  msg = strchr(nick, ' ');
-  msg[0] = '\0';
-  msg++;
+  if (!(msg = strchr(nick, ' ')))
+    return;
+  *msg++ = '\0';
 
   /* convert channel to integer */
-  channel = strrchr(msg, ' ');
-  channel[0] = '\0';
-  channel++;
+  if (!(channel = strrchr(msg, ' ')))
+    return;
+  *channel++ = '\0';
 
   /* convert channel to integer */
   chan = atoi(channel);
@@ -513,21 +518,22 @@ static void userleave(char *message) {
  *          %s newnick - users new nick
  *          %s msg     - server message */
 static void usernickchange(char *message) {
-  char *oldnick = NULL, *newnick = NULL, *msg = NULL;
+  char *oldnick, *newnick, *msg;
 
   /* search start of old nickname */
-  oldnick = strchr(message, ' ');
+  if (!(oldnick = strchr(message, ' ')))
+    return;
   oldnick++;
 
   /* search start of new nickname, terminate old nick */
-  newnick = strchr(oldnick, ' ');
-  newnick[0] = '\0';
-  newnick++;
+  if (!(newnick = strchr(oldnick, ' ')))
+    return;
+  *newnick++ = '\0';
 
   /* search start of message, terminate new nick */
-  msg = strchr(newnick, ' ');
-  msg[0] = '\0';
-  msg++;
+  if (!(msg = strchr(newnick, ' ')))
+    return;
+  *msg++ = '\0';
 
   /* notice nickchange via vchat-user.c */
   ul_rename(oldnick, newnick);
@@ -552,9 +558,9 @@ void protocol_parsemsg(char *message) {
   /* message to short or starts with '<'? must be channel */
   if (message[0] == '<') {
     str1 = &message[1];
-    str2 = strchr(str1, '>');
-    str2[0] = '\0';
-    str2++;
+    if (!(str2 = strchr(str1, '>')))
+      return;
+    *str2++ = '\0';
     if (str2[0] == ' ')
       str2++;
     if (own_nick_check(str1))
@@ -566,9 +572,9 @@ void protocol_parsemsg(char *message) {
     ul_public_action(str1);
   } else if (message[0] == '[') {
     str1 = &message[1];
-    str2 = strchr(str1, ']');
-    str2[0] = '\0';
-    str2++;
+    if (!(str2 = strchr(str1, ']')))
+      return;
+    *str2++ = '\0';
     if (str2[0] == ' ')
       str2++;
     if (own_nick_check(str1))
@@ -581,9 +587,9 @@ void protocol_parsemsg(char *message) {
   /* message starts with '*'? must be private */
   else if (message[0] == '*') {
     str1 = &message[1];
-    str2 = strchr(str1, '*');
-    str2[0] = '\0';
-    str2++;
+    if (!(str2 = strchr(str1, '*')))
+      return;
+    *str2++ = '\0';
     if (str2[0] == ' ')
       str2++;
     snprintf(tmpstr, TMPSTRSIZE, getformatstr(FS_RXPRIVMSG), str1, str2);
