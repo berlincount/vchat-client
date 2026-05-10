@@ -221,7 +221,7 @@ int vc_poll(int timeout_seconds) {
 
 /* disconnect from server */
 void vc_disconnect() {
-  if (serverfd > 0) {
+  if (serverfd >= 0) {
     close(serverfd);
     serverfd = -1;
   }
