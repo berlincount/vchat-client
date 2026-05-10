@@ -270,6 +270,21 @@ int vc_receive(void) {
   size_t freebytes = sizeof(buf) - buf_fill;
   ssize_t bytes = 0;
 
+  /* If the buffer is already full and contains no newline, the server
+   * sent a single line longer than RECEIVEBUF_SIZE.  We cannot resync
+   * without losing data either way, so report it explicitly and bail
+   * instead of looping with a zero-byte read that the EOF branch then
+   * misreports as "EOF from server". */
+  if (freebytes == 0) {
+    snprintf(tmpstr, TMPSTRSIZE,
+             "Receive fails: server line longer than %zu bytes.", sizeof(buf));
+    snprintf(errstr, ERRSTRSIZE,
+             "Receive fails: server line longer than %zu bytes.\n",
+             sizeof(buf));
+    writecf(FS_ERR, tmpstr);
+    return -1;
+  }
+
   if (!getintoption(CF_USESSL))
     bytes = read(serverfd, buf + buf_fill, freebytes);
   else
