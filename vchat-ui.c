@@ -16,7 +16,7 @@
 
 /* general includes */
 #include <errno.h>
-#include <ncurses.h>
+#include <ncursesw/ncurses.h>
 #include <readline/history.h>
 #include <readline/readline.h>
 #include <regex.h>
@@ -40,7 +40,7 @@ const char *vchat_ui_version =
 
 /* externally used variables */
 /*   current string in topic window */
-char topicstr[TOPICSTRSIZE] = "[] VChat 0.21";
+char topicstr[TOPICSTRSIZE] = "[] VChat 0.22";
 /*   current string in console window */
 char consolestr[CONSOLESTRSIZE] =
     "[ Get help: .h for server /h for client commands";

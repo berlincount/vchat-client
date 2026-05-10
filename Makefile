@@ -9,8 +9,8 @@
 OBJS = vchat-client.o vchat-ui.o vchat-protocol.o vchat-user.o vchat-commands.o vchat-tls.o vchat-connection.o
 
 # On FreeBSD you might want to link -ncursesw
-LIBS = -lncurses
-#LIBS = -lncursesw
+#LIBS = -lncurses
+LIBS = -lncursesw
 
 LIBS += -lreadline
 

@@ -4,7 +4,7 @@
 #nick = noname
 
 # Auto-set from-tag during login
-#from = vc-beta-0.21
+#from = vc-beta-0.22
 
 # Server-host to connect to
 #host = pulse.flatline.de
