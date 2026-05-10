@@ -241,6 +241,18 @@ void vc_disconnect() {
 void vc_sendmessage(const char *msg) {
   static char staging[STAGING_SIZE];
   size_t sent = 0, len = snprintf(staging, sizeof(staging), "%s\r\n", msg);
+  /* The wire protocol is line-oriented; \r and \n are the framing.
+   * Any embedded \r/\n in 'msg' would let a user smuggle additional
+   * protocol commands - e.g. typing "/MSG nick foo\r\n.x bye" inside
+   * a private message body would log the user out.  Replace such
+   * bytes with spaces in the body portion (everything except the
+   * trailing "\r\n" we just appended).  No-op for well-formed input. */
+  if (len > 2) {
+    size_t body = len - 2;
+    for (size_t i = 0; i < body; ++i)
+      if (staging[i] == '\r' || staging[i] == '\n')
+        staging[i] = ' ';
+  }
 #ifdef DEBUG
   /* debugging? log network output! */
   fprintf(dumpfile, ">| (%zd) %s\n", len - 2, msg);
