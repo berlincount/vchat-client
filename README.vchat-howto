@@ -9,7 +9,7 @@ cd to a directory the source shall reside in.
 
 Type:
 
-$ git clone git://erdgeist.org/vchat-client
+$ git clone git://codeberg.org/count/vchat-client
 
 (press return at password prompt)
 
@@ -239,7 +239,9 @@ consuming evaluations. Avoid brackets.
 
 As I am still young *cough cough* I am _STILL_ willing to
 implement features of all stupidity grades. Contact me
-with /m erdgeist <feature request> at any time.
+with /m erdgeist <feature request> at any time. You can
+also /m count <feature request> when he's there, but he
+will most likely mainly raise an eyebrow.
 
 
 8. You help

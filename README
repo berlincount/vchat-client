@@ -4,7 +4,7 @@ this is vchat-client, a GPLed (SSL) client for the vchat protocol.
 
 You can get the most recent version of vchat-client via git, e.g:
 
-git clone git://erdgeist.org/vchat-client
+git clone git://codeberg.org/count/vchat-client
 
 (press return at password prompt)
 

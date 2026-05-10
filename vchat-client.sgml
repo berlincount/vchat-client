@@ -10,8 +10,8 @@ docbook2man $<
   -->
 
   <!ENTITY dhsection   "<manvolnum>1</manvolnum>">
-  <!ENTITY dhemail     "<email>macrotron@president.eu.org</email>">
-  <!ENTITY dhusername  "Hans Freitag">
+  <!ENTITY dhemail     "<email>count@flatline.de</email>">
+  <!ENTITY dhusername  "Andreas 'count' Kotes">
 ]>
 
 <refentry>
@@ -266,7 +266,7 @@ TAB	nick completion
 
 <para>You can get the most recent version of vchat-client via git, e.g:
 <screen>
-<prompt>$ </prompt><userinput>git clone git://erdgeist.org/vchat-client</userinput>
+<prompt>$ </prompt><userinput>git clone git://codeberg.org/count/vchat-client</userinput>
 </screen>
 </para>
 
