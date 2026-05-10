@@ -510,11 +510,31 @@ int main(int argc, char **argv) {
   loadformats(GLOBAL_FORMAT_FILE);
   loadformats(getstroption(CF_FORMFILE));
 
-  /* install signal handler */
-  signal(SIGINT, cleanup);
-  signal(SIGHUP, cleanup);
-  signal(SIGTERM, cleanup);
-  signal(SIGQUIT, SIG_IGN);
+  /* install signal handlers via sigaction() so behaviour is identical
+   * across Linux / *BSD / macOS - signal(2) has historically reset
+   * handlers to SIG_DFL on delivery on some systems.  We also block
+   * SIGINT/SIGHUP/SIGTERM/SIGQUIT during handler execution so the
+   * handler can't be re-entered before it has updated its state.
+   *
+   * SA_RESTART matches the previous signal(2) behaviour on glibc
+   * (BSD-style restart of interrupted syscalls). */
+  {
+    struct sigaction sa;
+    sigemptyset(&sa.sa_mask);
+    sigaddset(&sa.sa_mask, SIGINT);
+    sigaddset(&sa.sa_mask, SIGHUP);
+    sigaddset(&sa.sa_mask, SIGTERM);
+    sigaddset(&sa.sa_mask, SIGQUIT);
+    sa.sa_flags = SA_RESTART;
+
+    sa.sa_handler = cleanup;
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGHUP, &sa, NULL);
+    sigaction(SIGTERM, &sa, NULL);
+
+    sa.sa_handler = SIG_IGN;
+    sigaction(SIGQUIT, &sa, NULL);
+  }
 
   /* initialize userinterface */
   initui();
