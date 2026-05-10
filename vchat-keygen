@@ -18,28 +18,30 @@
 # of the use of this software. 
 #
 
+# Restrict creation modes for everything we write below.
+umask 0077
+
 # where do we want to store the key?
-KEYBASE=$1
-if [ "x$KEYBASE" = "x" ] ; then
-   KEYBASE=$HOME/.vchat
+KEYBASE="$1"
+if [ -z "$KEYBASE" ] ; then
+   KEYBASE="$HOME/.vchat"
 fi
 
 # no key? generate one ...
-if [ ! -e $KEYBASE.key ]; then
+if [ ! -e "$KEYBASE.key" ]; then
    echo "vchat-keygen: generating RSA key $KEYBASE.key"
    echo "vchat-keygen: please set passphrase for local security"
-   umask 0077
    openssl ecparam -genkey -name secp384r1 | \
-   openssl ec -out $KEYBASE.key -aes256
+   openssl ec -out "$KEYBASE.key" -aes256
 else
    echo "vchat-keygen: private key $KEYBASE.key exists"
 fi
 
 # no certificate? dump anonymous CA to disk.
-   if [ ! -e $KEYBASE.csr ]; then 
-      if [ ! -e $KEYBASE.ca.keyconf ]; then
+   if [ ! -e "$KEYBASE.csr" ]; then
+      if [ ! -e "$KEYBASE.ca.keyconf" ]; then
          echo "vchat-keygen: generating config-file for self-signing $KEYBASE.ca.keyconf"
-         cat >$KEYBASE.ca.keyconf <<EOT
+         cat >"$KEYBASE.ca.keyconf" <<EOT
 [ req ]
 default_keyfile                 = user.key
 distinguished_name              = req_distinguished_name
@@ -58,7 +60,7 @@ EOT
       fi
       echo "vchat-keygen: generating Certificate Signing Request $KEYBASE.csr"
 		echo "vchat-keygen: please enter your nickname at the 'Name []:' prompt"
-      openssl req -new -sha256 -config $KEYBASE.ca.keyconf -key $KEYBASE.key -out $KEYBASE.csr
+      openssl req -new -sha256 -config "$KEYBASE.ca.keyconf" -key "$KEYBASE.key" -out "$KEYBASE.csr"
 		echo "vchat-keygen: send this ($KEYBASE.csr) Certificate Signing Request to
 		vchat@vchat.berlin.ccc.de to get it signed by the vchat-CA. You will
 		receive your signed Certificate shortly."
