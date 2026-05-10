@@ -81,6 +81,17 @@ struct sb_entry {
   struct sb_entry *link;
 };
 
+/* The scrollback uses an XOR-linked list and stores
+ * '(unsigned long)prev ^ (unsigned long)next' in 'link'.  That round-
+ * trip silently truncates pointers on any ABI where pointers are
+ * wider than 'unsigned long' - notably 64-bit Windows (LLP64).  Catch
+ * such builds at compile time instead of producing a corrupt list at
+ * runtime.  C11 _Static_assert; the compiler is required to support
+ * it under any -std= we plausibly use today. */
+_Static_assert(sizeof(unsigned long) >= sizeof(void *),
+               "scrollback XOR-linked list assumes sizeof(unsigned long) >= "
+               "sizeof(void*)");
+
 struct sb_data {
   struct sb_entry *entries;
   struct sb_entry *last;
