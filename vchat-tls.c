@@ -407,7 +407,13 @@ int vc_verify_callback(int ok, X509_STORE_CTX *store) {
              X509_verify_cert_error_string(X509_STORE_CTX_get_error(store)));
     writecf(FS_ERR, tmpstr);
   }
-  return (ok | getintoption(CF_IGNSSL));
+  /* Per the OpenSSL contract, the verify callback must return 0 (fail)
+   * or 1 (continue).  When the user has set ignssl, every per-cert
+   * verify failure is reported above and then the handshake is
+   * allowed to proceed regardless.  Use logical-OR so the return
+   * value is always the documented {0, 1}, and document the policy:
+   * if you flip ignssl off later, every reconnect re-validates. */
+  return ok ? 1 : (getintoption(CF_IGNSSL) ? 1 : 0);
 }
 
 ssize_t vc_openssl_sendmessage(const void *buf, size_t size) {
