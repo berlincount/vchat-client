@@ -354,6 +354,11 @@ X509_STORE *vc_x509store_create(vc_x509store_t *vc_store) {
   X509_LOOKUP *lookup = NULL;
 
   store = X509_STORE_new();
+  if (!store) {
+    fprintf(stderr, "[E] SSL_STORE: %s\n",
+            ERR_error_string(ERR_get_error(), NULL));
+    return NULL;
+  }
 
   X509_STORE_set_verify_cb_func(store, vc_verify_callback);
 
