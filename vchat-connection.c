@@ -1,5 +1,5 @@
 /*
- * vchat-client - alpha version
+ * vchat-client - beta version
  * vchat-connection.c - handling of server connection and tls library dispatch
  *
  * Copyright (C) 2022 Dirk Engling <erdgeist@erdgeist.org>

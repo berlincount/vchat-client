@@ -1,5 +1,5 @@
 /*
- * vchat-client - alpha version
+ * vchat-client - beta version
  * vchat-help.h - definitions for help on comands
  *
  * Copyright (C) 2001 Andreas Kotes <count@flatline.de>

@@ -1,5 +1,5 @@
 /*
- * vchat-client - alpha version
+ * vchat-client - beta version
  * vchat-protocol.c - handling of server messages
  *
  * Copyright (C) 2001 Andreas Kotes <count@flatline.de>

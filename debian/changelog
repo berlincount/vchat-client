@@ -1,3 +1,15 @@
+vchat-client (0.21-1) unstable; urgency=low
+
+  * version change to beta version 0.21
+
+ -- Andreas Kotes <count@flatline.de>  Fri,  5 May 2026 20:46:31 +0200
+
+vchat-client (0.20-1) unstable; urgency=low
+
+  * eRdgEiSt maintained version
+
+ -- Dirk Engling <erdgeist@erdgeist.org>  Thu, 22 Jan 2026 19:50:08 +0100
+
 vchat-client (0.19-1) unstable; urgency=high
 
   * fixed version string display

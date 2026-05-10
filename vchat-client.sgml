@@ -25,7 +25,7 @@ docbook2man $<
 	<surname>Kotes</surname>
 	</author>
 	<copyright>
-	<year>2014</year>
+	<year>2026</year>
 	<holder>Andreas Kotes</holder>
 	</copyright>
 </refentryinfo>
@@ -103,7 +103,7 @@ strings used to render the user interface and output.</para></listitem>
 
 <varlistentry>
 <term><option>-f</option> <replaceable>from</replaceable></term>
-<listitem><para>set from (default "vc-alpha-0.20")</para></listitem>
+<listitem><para>set from (default "vc-beta-0.21")</para></listitem>
 </varlistentry>
 
 <varlistentry>
@@ -146,7 +146,7 @@ configure the behavior of vchat-client</para>
 
 <varlistentry>
 <term><option>from</option></term>
-<listitem><para>Sets the from (default is "vc-alpha-0.19")</para></listitem>
+<listitem><para>Sets the from (default is "vc-beta-0.21")</para></listitem>
 </varlistentry>
 
 <varlistentry>

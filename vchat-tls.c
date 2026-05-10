@@ -1,5 +1,5 @@
 /*
- * vchat-client - alpha version
+ * vchat-client - beta version
  * vchat-tls.c - handling of SSL connection and X509 certificate
  * verification
  *

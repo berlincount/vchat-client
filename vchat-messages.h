@@ -1,5 +1,5 @@
 /*
- * vchat-client - alpha version
+ * vchat-client - beta version
  * vchat-messages.h - declaration of servermessage array
  *
  * Copyright (C) 2001 Andreas Kotes <count@flatline.de>

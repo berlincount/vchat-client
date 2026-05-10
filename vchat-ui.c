@@ -1,5 +1,5 @@
 /*
- * vchat-client - alpha version
+ * vchat-client - beta version
  * vchat-ui.c - user-interface and readline handling
  *
  * Copyright (C) 2001 Andreas Kotes <count@flatline.de>
@@ -40,7 +40,7 @@ const char *vchat_ui_version =
 
 /* externally used variables */
 /*   current string in topic window */
-char topicstr[TOPICSTRSIZE] = "[] VChat 0.20";
+char topicstr[TOPICSTRSIZE] = "[] VChat 0.21";
 /*   current string in console window */
 char consolestr[CONSOLESTRSIZE] =
     "[ Get help: .h for server /h for client commands";

@@ -1,5 +1,5 @@
 #
-# vchat-client - alpha version
+# vchat-client - beta version
 #
 
 ##############################################

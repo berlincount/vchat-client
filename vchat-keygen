@@ -1,7 +1,7 @@
 #!/bin/sh
 
 #
-# vchat-client - alpha version
+# vchat-client - beta version
 # vchat-keygen - generate certificate signing request for sending to
 # vchat@vchat.berlin.ccc.de
 #

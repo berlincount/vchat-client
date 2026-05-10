@@ -1,5 +1,5 @@
 /*
- * vchat-client - alpha version
+ * vchat-client - beta version
  * vchat-commands.c - handling of client commands
  *
  * Copyright (C) 2003 Dirk Engling <erdgeist@erdgeist.org>
