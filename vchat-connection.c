@@ -209,7 +209,8 @@ int vc_poll(int timeout_seconds) {
   if (serverfd != -1)
     FD_SET(serverfd, &readfds);
   struct timeval tv = {timeout_seconds, 0};
-  int result = select(serverfd + 2, &readfds, NULL, NULL, &tv);
+  int nfds = (serverfd != -1 ? serverfd : 0) + 1;
+  int result = select(nfds, &readfds, NULL, NULL, &tv);
   if (result <= 0)
     return result;
   result = FD_ISSET(0, &readfds) ? 1 : 0;
