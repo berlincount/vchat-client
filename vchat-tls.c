@@ -615,7 +615,10 @@ int vc_mbedtls_connect(const char *servername, int serverfd, vc_x509store_t *vc_
         ret, "Can not configure parameters on tls context, mbedtls reports: ");
     return -1;
   }
-  mbedtls_ssl_set_hostname(ssl, strdup(servername));
+  /* mbedtls_ssl_set_hostname() takes a copy of the string internally
+   * (see mbedtls/library/ssl_tls.c), so the previous strdup() leaked
+   * one copy per connect.  Pass the caller's pointer directly. */
+  mbedtls_ssl_set_hostname(ssl, servername);
 
   mbedtls_ssl_set_bio(ssl, (void *)(intptr_t)serverfd, static_tcp_send,
                       static_tcp_recv, NULL);
