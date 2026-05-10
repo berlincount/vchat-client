@@ -1509,9 +1509,13 @@ static void vcnredraw(void) {
  * before */
 int passprompt(char *buf, int size, int rwflag, void *userdata) {
   int i;
+  size_t len, copy;
   char *passphrase = NULL;
   (void)rwflag;
   (void)userdata;
+
+  if (size <= 0)
+    return 0;
 
   /* use special non-revealing redraw function */
   /* FIXME: passphrase isn't protected against e.g. swapping */
@@ -1529,8 +1533,24 @@ int passprompt(char *buf, int size, int rwflag, void *userdata) {
   rl_redisplay_function = vciredraw;
   consoleline(NULL);
 
-  /* copy passphrase to buffer */
-  strncpy(buf, passphrase, size);
+  /* Copy bounded by destination size; OpenSSL gives us 'size' bytes
+   * including space for the terminator and reads strlen() of buf to
+   * determine the passphrase length, so we must NUL-terminate within
+   * the buffer ourselves - strncpy(3) does not when src >= size. */
+  len = strlen(passphrase);
+  copy = (len < (size_t)(size - 1)) ? len : (size_t)(size - 1);
+  memcpy(buf, passphrase, copy);
+  buf[copy] = '\0';
+
+  /* Wipe the heap copy before releasing it.  No portable cleanse
+   * primitive in the C standard; volatile-pointer memset prevents
+   * the compiler from optimising the wipe away. */
+  {
+    volatile char *p = (volatile char *)passphrase;
+    while (len--)
+      *p++ = 0;
+  }
+  free(passphrase);
 
   /* try to get readlines stats clean again */
   // rl_free_line_state ();
@@ -1544,8 +1564,8 @@ int passprompt(char *buf, int size, int rwflag, void *userdata) {
   wmove(input, 0, 0);
   wrefresh(input);
 
-  /* return passphrase to OpenSSL */
-  return strlen(buf);
+  /* return passphrase length to OpenSSL */
+  return (int)copy;
 }
 
 /* Filter stuff */
