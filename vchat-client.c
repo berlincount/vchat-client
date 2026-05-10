@@ -80,13 +80,13 @@ static void parsecfg(char *line) {
   while ((value[0] == ' ') || (value[0] == '\t'))
     value++;
   bytes = strlen(value);
-  while ((value[bytes - 1] == ' ') || (value[bytes - 1] == '\t')) {
-    value[bytes - 1] = '\0';
-    bytes = strlen(value);
+  while (bytes > 0 &&
+         ((value[bytes - 1] == ' ') || (value[bytes - 1] == '\t'))) {
+    value[--bytes] = '\0';
   }
   /* bytes should be strlen(value) */
-  if (value[bytes - 1] == '"')
-    value[bytes - 1] = '\0';
+  if (bytes > 0 && value[bytes - 1] == '"')
+    value[--bytes] = '\0';
   if (value[0] == '"')
     value++;
 
@@ -94,18 +94,18 @@ static void parsecfg(char *line) {
   while ((param[0] == ' ') || (param[0] == '\t'))
     param++;
   bytes = strlen(param);
-  while ((param[bytes - 1] == ' ') || (param[bytes - 1] == '\t')) {
-    param[bytes - 1] = '\0';
-    bytes = strlen(param);
+  while (bytes > 0 &&
+         ((param[bytes - 1] == ' ') || (param[bytes - 1] == '\t'))) {
+    param[--bytes] = '\0';
   }
   /* bytes should be strlen(param) */
-  if (param[bytes - 1] == '\"')
-    param[bytes - 1] = '\0';
+  if (bytes > 0 && param[bytes - 1] == '\"')
+    param[--bytes] = '\0';
   if (param[0] == '\"')
     param++;
 
-  if ((!param) || (!value))
-    return; /* failsave */
+  if (!*param)
+    return; /* empty key - nothing to set */
 
   // fprintf(stderr,"\"%s\" -> \"%s\"\n",param,value);
   setnoption(param, value);
