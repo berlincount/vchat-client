@@ -241,10 +241,12 @@ static SSL_CTX *vc_create_sslctx(vc_x509store_t *vc_store) {
   return (ctx);
 }
 
-int vc_openssl_connect(int serverfd, vc_x509store_t *vc_store) {
+int vc_openssl_connect(const char *servername, int serverfd,
+                       vc_x509store_t *vc_store) {
   SSL_CTX *ctx = vc_create_sslctx(vc_store);
   X509 *peercert = NULL;
   BIO *ssl_conn = NULL;
+  SSL *sslp_rw = NULL;
   const SSL *sslp = NULL;
   const SSL_CIPHER *cipher = NULL;
 
@@ -271,6 +273,31 @@ int vc_openssl_connect(int serverfd, vc_x509store_t *vc_store) {
 
   if (!ssl_conn)
     goto ssl_error;
+
+  /* Bind the server hostname into the SSL object before the handshake:
+   *  - SNI extension (SSL_set_tlsext_host_name) so the server can pick
+   *    the right cert when virtual-hosting TLS;
+   *  - hostname check on the peer cert (X509_VERIFY_PARAM_set1_host)
+   *    so a CA-issued cert for the wrong name is rejected.  Without
+   *    this, a valid cert from any trusted CA - for any hostname -
+   *    is accepted, defeating most of the value of SSL_VERIFY_PEER. */
+  if (servername && *servername) {
+    BIO_get_ssl(ssl_conn, &sslp_rw);
+    if (sslp_rw) {
+      X509_VERIFY_PARAM *vpm;
+      SSL_set_tlsext_host_name(sslp_rw, servername);
+      vpm = SSL_get0_param(sslp_rw);
+      X509_VERIFY_PARAM_set_hostflags(vpm,
+                                      X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS);
+      if (!X509_VERIFY_PARAM_set1_host(vpm, servername, 0)) {
+        snprintf(tmpstr, TMPSTRSIZE,
+                 "[SSL CONNECT ERROR   ] could not pin hostname '%s'",
+                 servername);
+        writecf(FS_ERR, tmpstr);
+        goto all_errors;
+      }
+    }
+  }
 
   BIO_push(ssl_conn, server_conn);
   server_conn = ssl_conn;

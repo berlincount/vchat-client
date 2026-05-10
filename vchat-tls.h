@@ -31,7 +31,7 @@ void vc_cleanup_x509store(vc_x509store_t *s);
 
 #ifdef TLS_LIB_OPENSSL
 void vc_openssl_init_x509store(vc_x509store_t *);
-int vc_openssl_connect(int serverfd, vc_x509store_t *);
+int vc_openssl_connect(const char *servername, int serverfd, vc_x509store_t *);
 ssize_t vc_openssl_sendmessage(const void *buf, size_t size);
 ssize_t vc_openssl_receivemessage(void *buf, size_t size);
 void vc_openssl_cleanup();

@@ -162,7 +162,7 @@ int vc_connect(const char *server, const char *port) {
   /* upgrade our plain BIO to ssl */
 #ifdef TLS_LIB_OPENSSL
   if (_engine == TLS_ENGINE_OPENSSL)
-    result = vc_openssl_connect(serverfd, &vc_store);
+    result = vc_openssl_connect(server, serverfd, &vc_store);
 #endif
 #ifdef TLS_LIB_MBEDTLS
   if (_engine == TLS_ENGINE_MBEDTLS)
