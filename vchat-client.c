@@ -171,11 +171,6 @@ static void parseformats(char *line) {
       }
 }
 
-/* UNUSED uncomment if needed
-static void parseknownhosts(char *line) {
-}
-*/
-
 /* load config file */
 void loadcfg(char *file, int complain, void (*lineparser)(char *)) {
   FILE *fh;
