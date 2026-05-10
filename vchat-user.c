@@ -236,18 +236,29 @@ void ul_add_to_dict(char *dict_items) {
 /* Finding users ul_finduser? */
 char *ul_match_user(char *regex) {
   char *dest = tmpstr;
+  size_t left = TMPSTRSIZE;
   int i;
   regex_t preg;
 
   *dest = 0;
   if (!regcomp(&preg, regex, REG_ICASE | REG_EXTENDED | REG_NEWLINE)) {
-
     /* does the username match? */
-    /* XXX overflow for too many matches */
-    for (i = 0; i < g_users_count; ++i)
-      if (!regexec(&preg, g_users[i].nick, 0, NULL,
-                   0)) /* append username to list */
-        dest += snprintf(dest, 256, " %s", g_users[i].nick);
+    for (i = 0; i < g_users_count; ++i) {
+      if (regexec(&preg, g_users[i].nick, 0, NULL, 0))
+        continue;
+      /* snprintf returns the number of bytes that *would* have been
+       * written excluding the terminator; if that is >= left we have
+       * truncated and dest must not be advanced past the buffer. */
+      int n = snprintf(dest, left, " %s", g_users[i].nick);
+      if (n < 0 || (size_t)n >= left) {
+        /* indicate truncation and stop */
+        if (left >= 4)
+          memcpy(dest, " ...", 4);
+        break;
+      }
+      dest += n;
+      left -= n;
+    }
   }
   regfree(&preg);
   return tmpstr;
