@@ -109,8 +109,8 @@ static void pubthoughts(char *message) {
 /* parse and handle server logon */
 static void serverlogin(char *message) {
   (void)message;
-  int utf8 = !strcmp(nl_langinfo(CODESET), "UTF-8");
-  if (utf8)
+  const char *codeset = nl_langinfo(CODESET);
+  if (codeset && !strcmp(codeset, "UTF-8"))
     vc_sendmessage(".e utf8");
 }
 
