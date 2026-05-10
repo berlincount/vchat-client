@@ -188,11 +188,20 @@ static SSL_CTX *vc_create_sslctx(vc_x509store_t *vc_store) {
 
   /* Disable some insecure protocols explicitly */
   SSL_CTX_set_options(ctx, SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
-  if (getstroption(CF_CIPHERSUITE))
-    SSL_CTX_set_cipher_list(ctx, getstroption(CF_CIPHERSUITE));
-  else
-    SSL_CTX_set_cipher_list(ctx,
-                            "ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-SHA");
+  {
+    const char *requested = getstroption(CF_CIPHERSUITE);
+    const char *cipher_list =
+        requested ? requested
+                  : "ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-SHA";
+    if (!SSL_CTX_set_cipher_list(ctx, cipher_list)) {
+      snprintf(tmpstr, sizeof(tmpstr),
+               "CREATE CTX: cipher list \"%s\" matched no enabled suites",
+               cipher_list);
+      writecf(FS_ERR, tmpstr);
+      SSL_CTX_free(ctx);
+      return NULL;
+    }
+  }
 
   SSL_CTX_set_verify_depth(ctx, getintoption(CF_VERIFYSSL));
 
