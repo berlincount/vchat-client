@@ -1464,8 +1464,9 @@ void nickprompt(void) {
   while (!newnick)
     newnick = readline("");
 
+  // own_nick_set also calls setstroption(CF_NICK, ...)
   own_nick_set(newnick);
-  setstroption(CF_NICK, newnick);
+  free(newnick);
 
   /* try to get readlines stats clean again */
   // rl_free_line_state ();
