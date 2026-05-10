@@ -36,11 +36,11 @@
 
 /* version of this module */
 const char *vchat_ui_version =
-    "vchat-ui.c       $Id$";
+    "vchat-ui.c         $Id$";
 
 /* externally used variables */
 /*   current string in topic window */
-char topicstr[TOPICSTRSIZE] = "[] VChat 0.22";
+char topicstr[TOPICSTRSIZE] = "[] VChat 0.23";
 /*   current string in console window */
 char consolestr[CONSOLESTRSIZE] =
     "[ Get help: .h for server /h for client commands";

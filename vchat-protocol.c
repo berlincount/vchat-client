@@ -35,7 +35,7 @@ FILE *dumpfile;
 
 /* version of this module */
 const char *vchat_io_version =
-    "vchat-protocol.c $Id$";
+    "vchat-protocol.c   $Id$";
 
 /* declaration of local helper functions */
 static void usersignon(char *);

@@ -1,7 +1,21 @@
 /*
- * vchat-client
+ * vchat-client - beta version
+ * vchat-user.c - handling of user actions
+ *
+ * Copyright (C) 2022 Dirk Engling <erdgeist@erdgeist.org>
+ *
+ * This program is free software. It can be redistributed and/or modified,
+ * provided that this copyright notice is kept intact. This program is
+ * distributed in the hope that it will be useful, but without any warranty;
+ * without even the implied warranty of merchantability or fitness for a
+ * particular purpose. In no event shall the copyright holder be liable for
+ * any direct, indirect, incidental or special damages arising in any way out
+ * of the use of this software.
+ *
+ */
 
-*/
+#include <errno.h>
+#include <netdb.h>
 
 #include <regex.h>
 #include <stdint.h>
@@ -16,8 +30,8 @@
 #include "vchat.h"
 
 /* version of this module */
-char *vchat_us_version =
-    "vchat-user.c     $Id$";
+const char *vchat_us_version =
+    "vchat-user.c       $Id$";
 
 typedef struct {
   char *nick;

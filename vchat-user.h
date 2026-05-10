@@ -8,7 +8,7 @@
 #ifndef __VCHAT_USER_H__
 #define __VCHAT_USER_H__
 
-extern char *vchat_us_version;
+extern const char *vchat_us_version;
 extern unsigned int ul_case_first;
 
 /* own nick and channel */

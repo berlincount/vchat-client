@@ -32,6 +32,10 @@
 #include "vchat-tls.h"
 #include "vchat.h"
 
+/* version of this module */
+const char *vchat_cn_version =
+    "vchat-connection.c $Id$";
+
 static int serverfd = -1;
 unsigned int want_tcp_keepalive = 0;
 

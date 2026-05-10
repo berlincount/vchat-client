@@ -35,7 +35,7 @@
 
 /* version of this module */
 const char *vchat_cl_version =
-    "vchat-client.c   $Id$";
+    "vchat-client.c     $Id$";
 
 /* externally used variables */
 /*   we're logged in */
@@ -433,6 +433,7 @@ void usage(char *name) {
 void versions() {
   puts(vchat_cl_version);
   puts(vchat_ui_version);
+  puts(vchat_cn_version);
   puts(vchat_io_version);
   puts(vchat_us_version);
   puts(vchat_cm_version);

@@ -32,7 +32,7 @@
 
 /* version of this module */
 const char *vchat_cm_version =
-    "vchat-commands.c $Id$";
+    "vchat-commands.c   $Id$";
 
 /* from vchat-client.c */
 extern int ownquit;

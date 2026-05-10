@@ -1,8 +1,20 @@
-vchat-client (0.22-1) unstable; urgency=low
+vchat-client (0.23-1) unstable; urgency=low
 
-  * hard change to ncursesw
+  * added missing GPL-2.0 license text to archive
+  * added missing vc_cn_version string
+  * aligned some headers
+  * applied 31 carefully reviewed patch by Claude Opus 4.7 (1M context)
+
+  ... most patches were applied verbatim, for some the comments were improved
+  or kept intact, in one case a change to an on-text screen was kept intact.
+
+  Thanks to frank for proving the tokens for this code audit & the patches!
 
  -- Andreas Kotes <count@flatline.de>  Fri,  5 May 2026 21:55:13 +0200
+
+vchat-client (0.22-1) unstable; urgency=low
+
+  * hard switch to using ncursesw per default
 
 vchat-client (0.21-1) unstable; urgency=low
 

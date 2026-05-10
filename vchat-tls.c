@@ -27,7 +27,7 @@
 #include "vchat.h"
 
 const char *vchat_tls_version =
-    "vchat-tls.c      $Id$";
+    "vchat-tls.c        $Id$";
 
 /* Helpers to work with vc_x509store_t used by all tls libs */
 void vc_cleanup_x509store(vc_x509store_t *store) {
