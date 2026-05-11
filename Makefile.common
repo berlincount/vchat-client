@@ -69,7 +69,6 @@ PREFIX=/usr/local
 install: vchat-client vchat-keygen vchatrc.ex $(MANTARGET)
 	install -d $(DESTDIR)/etc
 	install -d $(DESTDIR)$(PREFIX)/bin
-	install -d $(DESTDIR)$(PREFIX)/share/man/man1
 	install -m 0755 ./vchat-client $(DESTDIR)$(PREFIX)/bin
 	install -m 0755 ./vchat-keygen $(DESTDIR)$(PREFIX)/bin
 	install -m 0644 ./vchatrc.ex $(DESTDIR)/etc/vchatrc
