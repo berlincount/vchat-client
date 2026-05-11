@@ -25,11 +25,6 @@ LDFLAGS += -L/usr/local/lib
 CFLAGS += -D_FORTIFY_SOURCE=2
 CFLAGS += -fstack-protector-strong
 CFLAGS += -Wformat -Wformat-security
-## RELRO + immediate-bind is Linux/glibc-specific; harmless on others
-## that ignore unknown -z options, but Apple ld will warn.
-ifneq ($(shell uname),Darwin)
-LDFLAGS += -Wl,-z,relro,-z,now
-endif
 
 ## use this line when you've got an readline before 4.(x|2)
 #CFLAGS += -DOLDREADLINE
@@ -71,23 +66,13 @@ PREFIX=/usr/local
 # general targets                            #
 ##############################################
 
-
-ifdef MANPAGE
-all: vchat-client vchat-client.1
-else
-all: vchat-client
-endif
-
-install: vchat-client vchat-keygen vchatrc.ex
+install: vchat-client vchat-keygen vchatrc.ex $(MANTARGET)
 	install -d $(DESTDIR)/etc
 	install -d $(DESTDIR)$(PREFIX)/bin
 	install -d $(DESTDIR)$(PREFIX)/share/man/man1
 	install -m 0755 ./vchat-client $(DESTDIR)$(PREFIX)/bin
 	install -m 0755 ./vchat-keygen $(DESTDIR)$(PREFIX)/bin
 	install -m 0644 ./vchatrc.ex $(DESTDIR)/etc/vchatrc
-ifdef MANPAGE
-	install -m 0644 ./vchat-client.1 $(DESTDIR)$(PREFIX)/share/man/man1
-endif
 
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/vchat-client
@@ -108,13 +93,13 @@ clean:
 vchat-client: $(OBJS)
 	$(CC) $(CFLAGS) -o vchat-client $(OBJS) $(LIBS) $(LDFLAGS)
 
-vchat-client.o: vchat-client.c vchat-config.h Makefile
+vchat-client.o: vchat-client.c vchat-config.h Makefile.common
 	$(CC) $(CFLAGS) -o vchat-client.o -c vchat-client.c
 
 vchat-ui.o: vchat-ui.c vchat.h
 	$(CC) $(CFLAGS) -o vchat-ui.o -c vchat-ui.c
 
-vchat-protocol.o: vchat-protocol.c vchat-messages.h vchat.h Makefile
+vchat-protocol.o: vchat-protocol.c vchat-messages.h vchat.h Makefile.common
 	$(CC) $(CFLAGS) -o vchat-protocol.o -c vchat-protocol.c
 
 vchat-user.o: vchat-user.c vchat.h
@@ -128,8 +113,3 @@ vchat-tls.o: vchat-tls.c vchat-tls.h
 
 vchat-connection.o: vchat-connection.c vchat-connection.h
 	$(CC) $(CFLAGS) -o vchat-connection.o -c vchat-connection.c
-
-ifdef MANPAGE
-vchat-client.1: vchat-client.sgml
-	docbook2man vchat-client.sgml
-endif

@@ -16,7 +16,11 @@
 
 /* general includes */
 #include <errno.h>
-#include <ncursesw/ncurses.h>
+#ifdef __linux__
+# include <ncursesw/ncurses.h>
+#else
+# include <ncurses.h>
+#endif
 #include <readline/history.h>
 #include <readline/readline.h>
 #include <regex.h>
@@ -562,6 +566,7 @@ static int writescr(WINDOW *win, struct sb_entry *entry) {
     return 0;
 
   /* store original attributes */
+  memset(&orgattr, 0, sizeof(ncurs_attr));
   WATTR_GET(win, orgattr);
   attrbuffer[0] = orgattr;
 
